@@ -1,0 +1,8 @@
+flask
+librosa
+tensorflow
+numpy
+pandas
+scikit-learn
+pydub
+gunicorn
