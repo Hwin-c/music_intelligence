@@ -16,6 +16,7 @@ app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB 제한 설정
 # 모델과 도구 불러오기
 model = tf.keras.models.load_model('saved_models/model.keras')
 model.summary()  # 모델 구조 출력 (터미널에 표시됨)
+model.save('model.keras', save_format='keras')
 
 with open('saved_models/scaler.pkl', 'rb') as f:
     scaler = pickle.load(f)
