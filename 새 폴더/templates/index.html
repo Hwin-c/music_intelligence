@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>음악 장르 분류기</title>
+    <style>
+        #progress-bar {
+            display: none;
+            width: 100%;
+            height: 20px;
+            background-color: #f3f3f3;
+            margin-top: 20px;
+        }
+
+        #progress-bar-inner {
+            height: 100%;
+            width: 0%;
+            background-color: #4caf50;
+            transition: width 0.4s ease;
+        }
+
+        #loading-text {
+            display: none;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>음악 장르 분류기</h1>
+    <form id="upload-form">
+        <input type="file" name="audio" accept=".mp3,.wav" required />
+        <button type="submit">예측 시작</button>
+    </form>
+
+    <div id="progress-bar">
+        <div id="progress-bar-inner"></div>
+    </div>
+    <div id="loading-text">분석 중입니다... 잠시만 기다려주세요.</div>
+
+    <h2 id="result"></h2>
+
+    <script>
+        const form = document.getElementById('upload-form');
+        const progressBar = document.getElementById('progress-bar');
+        const progressBarInner = document.getElementById('progress-bar-inner');
+        const loadingText = document.getElementById('loading-text');
+        const result = document.getElementById('result');
+
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const formData = new FormData(form);
+
+            // 진행률 표시 시작
+            progressBar.style.display = 'block';
+            progressBarInner.style.width = '30%';
+            loadingText.style.display = 'block';
+            result.innerText = '';
+
+            fetch('/predict', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                progressBarInner.style.width = '70%';
+                return response.json();
+            })
+            .then(data => {
+                progressBarInner.style.width = '100%';
+                loadingText.style.display = 'none';
+
+                if (data.label) {
+                    result.innerText = '예측된 장르: ' + data.label;
+                } else if (data.error) {
+                    result.innerText = '오류: ' + data.error;
+                }
+            })
+            .catch(error => {
+                loadingText.style.display = 'none';
+                result.innerText = '요청 중 오류가 발생했습니다: ' + error;
+            })
+            .finally(() => {
+                // 1초 후 진행률 바 숨김
+                setTimeout(() => {
+                    progressBar.style.display = 'none';
+                    progressBarInner.style.width = '0%';
+                }, 1000);
+            });
+        });
+    </script>
+</body>
+</html>

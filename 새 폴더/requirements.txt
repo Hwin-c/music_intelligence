@@ -1,0 +1,8 @@
+flask
+librosa
+tensorflow==2.19.0
+numpy
+pandas
+scikit-learn
+pydub
+gunicorn
