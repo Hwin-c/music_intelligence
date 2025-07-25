@@ -140,13 +140,15 @@
                 return response.json();
             })
             .then(data => {
-                progressBarInner.style.width = '100%';
-                loadingText.style.display = 'none';
-
-                if (data.label) {
-                    result.innerText = '예측된 장르: ' + data.label;
-                } else if (data.error) {
-                    result.innerText = '오류: ' + data.error;
+                if (data.recommendations && data.recommendations.length > 0) {
+                    recommendationResult.innerText = `'${userEmotion}'에 대한 추천 음악:`;
+                    data.recommendations.forEach(song => {
+                        const listItem = document.createElement('li');
+                        listItem.textContent = `제목: ${song.title}, 아티스트: ${song.artist}, BPM: ${song.bpm}`;
+                        recommendationList.appendChild(listItem);
+                    });
+                } else {
+                    recommendationResult.innerText = `'${userEmotion}'에 대한 추천 음악을 찾을 수 없습니다.`;
                 }
             })
             .catch(error => {
