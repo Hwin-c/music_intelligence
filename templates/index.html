@@ -84,6 +84,7 @@
     <h1>통합 음악 인텔리전스 시스템</h1>
 
     <div class="container">
+        <!-- 음악 장르 분류기 섹션 -->
         <div class="section">
             <h2>🎵 음악 장르 분류</h2>
             <form id="upload-form">
@@ -99,6 +100,7 @@
             <h2 id="result"></h2>
         </div>
 
+        <!-- 감정 기반 음악 추천기 섹션 -->
         <div class="section">
             <h2>🎶 감정 기반 음악 추천</h2>
             <form id="recommend-form">
@@ -111,7 +113,7 @@
     </div>
 
     <script>
-        // --- 음악 장르 분류 기능 스크립트 (기존 내용 유지 + logging 대신 console.log 사용) ---
+        // --- 음악 장르 분류 기능 스크립트 ---
         const uploadForm = document.getElementById('upload-form');
         const progressBar = document.getElementById('progress-bar');
         const progressBarInner = document.getElementById('progress-bar-inner');
@@ -126,7 +128,7 @@
             progressBar.style.display = 'block';
             progressBarInner.style.width = '10%'; // 시작 시 낮은 진행률
             loadingText.style.display = 'block';
-            result.innerText = '';
+            result.innerText = ''; // 이전 결과 초기화
 
             fetch('/predict', {
                 method: 'POST',
@@ -140,15 +142,16 @@
                 return response.json();
             })
             .then(data => {
-                if (data.recommendations && data.recommendations.length > 0) {
-                    recommendationResult.innerText = `'${userEmotion}'에 대한 추천 음악:`;
-                    data.recommendations.forEach(song => {
-                        const listItem = document.createElement('li');
-                        listItem.textContent = `제목: ${song.title}, 아티스트: ${song.artist}, BPM: ${song.bpm}`;
-                        recommendationList.appendChild(listItem);
-                    });
+                progressBarInner.style.width = '100%';
+                loadingText.style.display = 'none';
+
+                // 장르 분류 기능의 응답 처리 로직만 남김
+                if (data.label) {
+                    result.innerText = '예측된 장르: ' + data.label;
+                } else if (data.error) {
+                    result.innerText = '오류: ' + data.error;
                 } else {
-                    recommendationResult.innerText = `'${userEmotion}'에 대한 추천 음악을 찾을 수 없습니다.`;
+                    result.innerText = '알 수 없는 응답 형식입니다.'; // 예상치 못한 응답 처리
                 }
             })
             .catch(error => {
@@ -201,7 +204,8 @@
                     recommendationResult.innerText = `'${userEmotion}'에 대한 추천 음악:`;
                     data.recommendations.forEach(song => {
                         const listItem = document.createElement('li');
-                        listItem.textContent = `제목: ${song.제목}, 아티스트: ${song.아티스트}, BPM: ${song.BPM}`;
+                        // 이 부분을 수정합니다: song.제목 -> song.title, song.아티스트 -> song.artist, song.BPM -> song.bpm
+                        listItem.textContent = `제목: ${song.title}, 아티스트: ${song.artist}, BPM: ${song.bpm}`;
                         recommendationList.appendChild(listItem);
                     });
                 } else {
