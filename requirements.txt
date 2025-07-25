@@ -7,7 +7,6 @@ pandas
 scikit-learn
 pydub
 gunicorn
-
 # 2. music-recommendation-by-bpm
 transformers
 torch
