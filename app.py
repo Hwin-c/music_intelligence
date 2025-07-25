@@ -260,6 +260,6 @@ def recommend_music_endpoint():
         return jsonify({'error': f'음악 추천 중 오류 발생: {str(e)}'}), 500
 
 if __name__ == '__main__':
-    # Flask 서버 실행
-    # debug=True는 개발 중에만 사용하고, 실제 배포 시에는 False로 설정하거나 gunicorn과 같은 WSGI 서버를 사용해야 합니다.
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    # Render 환경 변수 'PORT'를 사용하고, 없으면 기본값 5000 사용
+    port = int(os.environ.get("PORT", 5000))
+    app.run(debug=True, host='0.0.0.0', port=port)
