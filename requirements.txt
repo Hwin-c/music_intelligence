@@ -1,3 +1,4 @@
+# 1. music-genre-classification
 flask
 librosa
 tensorflow==2.19.0
@@ -6,3 +7,8 @@ pandas
 scikit-learn
 pydub
 gunicorn
+
+# 2. music-recommendation-by-bpm
+transformers
+torch
+requests
