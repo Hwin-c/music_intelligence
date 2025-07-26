@@ -1,0 +1,5 @@
+Flask
+gunicorn
+transformers
+torch # CPU 전용 빌드는 Render Build Command에서 find-links로 처리
+requests
