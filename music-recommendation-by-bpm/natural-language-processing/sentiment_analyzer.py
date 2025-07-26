@@ -34,10 +34,6 @@ class SentimentAnalyzer:
             self.id2label = self.model.config.id2label
             logging.info(f"SentimentAnalyzer 초기화 완료. 모델 '{model_name}' 사용.")
             logging.info(f"모델은 총 {len(self.id2label)}개의 감정 카테고리를 지원합니다.")
-            # NSMC 모델의 레이블은 보통 0: 부정, 1: 긍정입니다.
-            # self.id2label은 {'0': 'LABEL_0', '1': 'LABEL_1'} 형태일 수 있으므로
-            # 실제 레이블 매핑을 확인하고 필요시 조정해야 합니다.
-            # 예: self.sentiment_map = {0: "부정", 1: "긍정"}
 
         except Exception as e:
             logging.error(f"SentimentAnalyzer 초기화 중 치명적인 오류 발생: {e}")
@@ -79,40 +75,43 @@ class SentimentAnalyzer:
 # 모델 테스트 (이 부분은 파일이 직접 실행될 때만 작동하며, 로깅을 사용하도록 변경)
 if __name__ == "__main__":
     logging.info("--- SentimentAnalyzer 모듈 직접 실행 테스트 시작 ---")
-    try:
+    # try 블록을 이 위치로 옮겨서 전체 테스트를 감싸도록 수정
+    try: # <-- 이 try 블록이 여기에 있어야 합니다.
         from transformers import pipeline # pipeline은 테스트용으로만 필요
         import torch
     except ImportError:
         logging.error("transformers 및 torch 라이브러리가 설치되어 있지 않습니다. 'pip install transformers torch'를 실행해주세요.")
         exit(1)
 
-    analyzer = SentimentAnalyzer()
+    # 이 try-except 블록은 전체 테스트 실행을 감쌉니다.
+    try: # <-- 이 try 블록은 삭제합니다. (이전 코드에서 잘못 추가된 부분)
+        analyzer = SentimentAnalyzer()
 
-    logging.info("\n--- 감정 분석 테스트 ---")
+        logging.info("\n--- 감정 분석 테스트 ---")
 
-    test_cases = [
-        "신나는 날이야!",
-        "우울한 날이야",
-        "공부하느라 집중해야 해",
-        "정말 화가 나!",
-        "와우, 깜짝 놀랐어!",
-        "아, 정말 짜증나 죽겠네.",
-        "너무 편안하고 기분이 좋아.",
-        "조금 걱정이 되네.",
-        "나는 지금 행복해",
-        "이 상황은 정말 혼란스럽다."
-    ]
+        test_cases = [
+            "신나는 날이야!",
+            "우울한 날이야",
+            "공부하느라 집중해야 해",
+            "정말 화가 나!",
+            "와우, 깜짝 놀랐어!",
+            "아, 정말 짜증나 죽겠네.",
+            "너무 편안하고 기분이 좋아.",
+            "조금 걱정이 되네.",
+            "나는 지금 행복해",
+            "이 상황은 정말 혼란스럽다."
+        ]
 
-    for i, text in enumerate(test_cases):
-        logging.info(f"\n--- 테스트 케이스 {i+1} ---")
-        result = analyzer.analyze_sentiment(text)
-        logging.info(f"텍스트: '{text}'")
-        logging.info(f"예측된 레이블: {result['label']} (스코어: {result['score']:.4f})")
-        logging.debug(f"모든 확률: {result['all_probabilities']}")
-    
-    logging.info("--- SentimentAnalyzer 모듈 직접 실행 테스트 완료 ---")
+        for i, text in enumerate(test_cases):
+            logging.info(f"\n--- 테스트 케이스 {i+1} ---")
+            result = analyzer.analyze_sentiment(text)
+            logging.info(f"텍스트: '{text}'")
+            logging.info(f"예측된 레이블: {result['label']} (스코어: {result['score']:.4f})")
+            logging.debug(f"모든 확률: {result['all_probabilities']}")
+        
+        logging.info("--- SentimentAnalyzer 모듈 직접 실행 테스트 완료 ---")
 
-    except Exception as e:
+    except Exception as e: # <-- 이 except 블록이 115번째 줄에서 오류를 일으켰습니다.
         logging.error(f"SentimentAnalyzer 직접 실행 중 오류 발생: {e}")
         logging.error(traceback.format_exc())
         exit(1)
