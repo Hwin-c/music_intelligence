@@ -36,7 +36,7 @@ app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB 제한 설정
 
 # 로깅 설정
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s') # DEBUG로 변경
 
 # --- 1. 음악 장르 분류 기능 관련 모델 및 도구 로드 ---
 # 모델 파일 경로를 절대 경로 또는 app.py 기준으로 상대 경로로 정확히 지정해야 합니다.

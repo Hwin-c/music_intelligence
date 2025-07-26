@@ -4,7 +4,7 @@ librosa
 tensorflow-cpu==2.19.0
 numpy
 pandas
-scikit-learn
+scikit-learn==1.6.1
 pydub
 gunicorn
 # 2. music-recommendation-by-bpm
