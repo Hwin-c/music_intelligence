@@ -85,6 +85,13 @@ getsongbpm_api_key = os.environ.get("GETSONGBPM_API_KEY", "YOUR_GETSONGBPM_API_K
 recommender = MusicRecommender(getsongbpm_api_key)
 logging.info("음악 추천 시스템 인스턴스 초기화 완료.")
 
+@app.route('/healthz')
+def health_check():
+    """
+    Render 헬스 체크를 위한 엔드포인트.
+    앱이 성공적으로 로드되면 200 OK를 반환합니다.
+    """
+    return "OK", 200
 
 # --- 1. 음악 장르 분류 기능 엔드포인트 ---
 
