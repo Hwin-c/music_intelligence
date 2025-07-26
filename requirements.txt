@@ -1,7 +1,7 @@
 Flask
 gunicorn
 transformers
-torch==2.7.1+cpu
+torch
 requests
 librosa
 pandas
