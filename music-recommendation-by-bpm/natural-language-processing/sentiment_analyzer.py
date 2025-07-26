@@ -2,13 +2,14 @@ import logging
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import torch
 import numpy as np
-import traceback # traceback 모듈 추가
+import traceback
 
-# 로깅 설정: app.py의 로깅 설정을 따르지만, 이 파일에서도 상세 로그를 위해 DEBUG 레벨 유지
+# 로깅 설정 (app.py의 로깅 설정을 따르지만, 이 파일에서도 상세 로그를 위해 DEBUG 레벨 유지)
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class SentimentAnalyzer:
-    def __init__(self, model_name="hun3359/klue-bert-base-sentiment"):
+    # 모델 이름을 'daekeun-ml/koelectra-small-v3-nsmc'로 변경합니다.
+    def __init__(self, model_name="daekeun-ml/koelectra-small-v3-nsmc"): 
         """
         감정 분석 모델을 초기화합니다.
         모델은 초기화 시 한 번만 로드됩니다.
@@ -33,6 +34,10 @@ class SentimentAnalyzer:
             self.id2label = self.model.config.id2label
             logging.info(f"SentimentAnalyzer 초기화 완료. 모델 '{model_name}' 사용.")
             logging.info(f"모델은 총 {len(self.id2label)}개의 감정 카테고리를 지원합니다.")
+            # NSMC 모델의 레이블은 보통 0: 부정, 1: 긍정입니다.
+            # self.id2label은 {'0': 'LABEL_0', '1': 'LABEL_1'} 형태일 수 있으므로
+            # 실제 레이블 매핑을 확인하고 필요시 조정해야 합니다.
+            # 예: self.sentiment_map = {0: "부정", 1: "긍정"}
 
         except Exception as e:
             logging.error(f"SentimentAnalyzer 초기화 중 치명적인 오류 발생: {e}")
@@ -60,7 +65,7 @@ class SentimentAnalyzer:
         predicted_score, predicted_id = torch.max(probabilities, dim=-1)
         
         # id2label을 사용하여 실제 레이블 가져오기
-        predicted_label = self.id2label.get(predicted_id.item(), "unknown")
+        predicted_label = self.id2label.get(str(predicted_id.item()), "unknown") # .item()으로 int, str()로 변환
         
         # 결과를 딕셔너리 형태로 반환
         result = {
@@ -75,39 +80,37 @@ class SentimentAnalyzer:
 if __name__ == "__main__":
     logging.info("--- SentimentAnalyzer 모듈 직접 실행 테스트 시작 ---")
     try:
-        # transformers 및 torch 라이브러리 설치 여부 확인
-        try:
-            from transformers import pipeline # pipeline은 테스트용으로만 필요
-            import torch
-        except ImportError:
-            logging.error("transformers 및 torch 라이브러리가 설치되어 있지 않습니다. 'pip install transformers torch'를 실행해주세요.")
-            exit(1)
+        from transformers import pipeline # pipeline은 테스트용으로만 필요
+        import torch
+    except ImportError:
+        logging.error("transformers 및 torch 라이브러리가 설치되어 있지 않습니다. 'pip install transformers torch'를 실행해주세요.")
+        exit(1)
 
-        analyzer = SentimentAnalyzer()
+    analyzer = SentimentAnalyzer()
 
-        logging.info("\n--- 감정 분석 테스트 ---")
+    logging.info("\n--- 감정 분석 테스트 ---")
 
-        test_cases = [
-            "신나는 날이야!",
-            "우울한 날이야",
-            "공부하느라 집중해야 해",
-            "정말 화가 나!",
-            "와우, 깜짝 놀랐어!",
-            "아, 정말 짜증나 죽겠네.",
-            "너무 편안하고 기분이 좋아.",
-            "조금 걱정이 되네.",
-            "나는 지금 행복해",
-            "이 상황은 정말 혼란스럽다."
-        ]
+    test_cases = [
+        "신나는 날이야!",
+        "우울한 날이야",
+        "공부하느라 집중해야 해",
+        "정말 화가 나!",
+        "와우, 깜짝 놀랐어!",
+        "아, 정말 짜증나 죽겠네.",
+        "너무 편안하고 기분이 좋아.",
+        "조금 걱정이 되네.",
+        "나는 지금 행복해",
+        "이 상황은 정말 혼란스럽다."
+    ]
 
-        for i, text in enumerate(test_cases):
-            logging.info(f"\n--- 테스트 케이스 {i+1} ---")
-            result = analyzer.analyze_sentiment(text)
-            logging.info(f"텍스트: '{text}'")
-            logging.info(f"예측된 레이블: {result['label']} (스코어: {result['score']:.4f})")
-            logging.debug(f"모든 확률: {result['all_probabilities']}")
-        
-        logging.info("--- SentimentAnalyzer 모듈 직접 실행 테스트 완료 ---")
+    for i, text in enumerate(test_cases):
+        logging.info(f"\n--- 테스트 케이스 {i+1} ---")
+        result = analyzer.analyze_sentiment(text)
+        logging.info(f"텍스트: '{text}'")
+        logging.info(f"예측된 레이블: {result['label']} (스코어: {result['score']:.4f})")
+        logging.debug(f"모든 확률: {result['all_probabilities']}")
+    
+    logging.info("--- SentimentAnalyzer 모듈 직접 실행 테스트 완료 ---")
 
     except Exception as e:
         logging.error(f"SentimentAnalyzer 직접 실행 중 오류 발생: {e}")
