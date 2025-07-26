@@ -3,7 +3,7 @@ import os
 import librosa
 import pandas as pd
 import numpy as np
-import tensorflow.lite as tflite # TFLite 인터프리터 임포트
+import tensorflow.lite as tflite
 import pickle
 import json
 from pydub import AudioSegment
@@ -46,6 +46,7 @@ MODEL_DIR = os.path.join(project_root, 'music-genre-classification', 'saved_mode
 app.template_folder = os.path.join(project_root, 'templates')
 
 # 모델 관련 변수들을 None으로 초기화하여 지연 로딩을 준비
+# 이 변수들은 이제 _load_genre_classification_models 함수 내에서 global로 선언됩니다.
 interpreter = None
 input_details = None
 output_details = None
@@ -57,7 +58,8 @@ def _load_genre_classification_models():
     """
     음악 장르 분류 모델과 관련 도구들을 지연 로드하는 내부 함수.
     """
-    nonlocal interpreter, input_details, output_details, scaler, genre_labels, train_cols
+    # nonlocal 대신 global 키워드를 사용하여 전역 변수를 참조합니다.
+    global interpreter, input_details, output_details, scaler, genre_labels, train_cols
     
     if interpreter is not None: # 이미 로드되었다면 다시 로드하지 않음
         return
