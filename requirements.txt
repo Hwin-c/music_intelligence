@@ -1,13 +1,11 @@
-# 1. music-genre-classification
-flask
-librosa
-tensorflow-cpu==2.19.0
-numpy
-pandas
-scikit-learn==1.6.1
-pydub
+Flask
 gunicorn
-# 2. music-recommendation-by-bpm
 transformers
 torch
 requests
+# pydub (음악 장르 분류의 MP3 변환에만 사용되었으므로 제거)
+# librosa (음악 장르 분류의 피처 추출에만 사용되었으므로 제거)
+# pandas (음악 장르 분류의 피처 데이터프레임에만 사용되었으므로 제거)
+# numpy (음악 장르 분류의 피처 추출에만 사용되었으므로 제거)
+# tensorflow (음악 장르 분류 모델에만 사용되었으므로 제거)
+# scikit-learn (음악 장르 분류의 스케일러에만 사용되었으므로 제거)
