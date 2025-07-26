@@ -16,11 +16,17 @@ import sys
 project_root = os.path.dirname(os.path.abspath(__file__))
 music_rec_dir = os.path.join(project_root, 'music-recommendation-by-bpm')
 
+logging.debug(f"프로젝트 루트: {project_root}")
+logging.debug(f"음악 추천 모듈 디렉토리: {music_rec_dir}")
+
 if music_rec_dir not in sys.path:
     sys.path.append(music_rec_dir)
+    logging.debug(f"'{music_rec_dir}'를 sys.path에 추가했습니다.")
 
 try:
+    logging.debug("music_recommender 모듈 임포트 시도 중...")
     from music_recommender import MusicRecommender
+    logging.debug("music_recommender 모듈 임포트 성공.")
 except ImportError as e:
     logging.error(f"오류: 'music_recommender' 모듈을 임포트할 수 없습니다. {e}")
     logging.error("다음 사항을 확인해주세요:")
@@ -34,35 +40,39 @@ app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB 제한 설정
 
 # 로깅 설정
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.debug("Flask 앱 초기화 시작.")
 
 # --- 1. 음악 장르 분류 기능 관련 모델 및 도구 로드 ---
 MODEL_DIR = os.path.join(project_root, 'music-genre-classification', 'saved_models')
 app.template_folder = os.path.join(project_root, 'templates')
 
-try:
-    # model_path = os.path.join(MODEL_DIR, 'model.keras') # 기존 Keras 모델 경로 (주석 처리)
-    tflite_model_path = os.path.join(MODEL_DIR, 'quantized_model.tflite') # 양자화된 TFLite 모델 경로
+logging.debug(f"모델 디렉토리: {MODEL_DIR}")
 
+try:
+    tflite_model_path = os.path.join(MODEL_DIR, 'quantized_model.tflite')
     scaler_path = os.path.join(MODEL_DIR, 'scaler.pkl')
     genre_labels_path = os.path.join(MODEL_DIR, 'genre_labels.json')
     feature_columns_path = os.path.join(MODEL_DIR, 'feature_columns.json')
 
-    # Keras 모델 대신 TFLite 모델 로드
+    logging.debug(f"TFLite 모델 로드 시도 중: {tflite_model_path}")
     interpreter = tflite.Interpreter(model_path=tflite_model_path)
-    interpreter.allocate_tensors() # 텐서 할당
+    interpreter.allocate_tensors()
+    logging.debug("TFLite 모델 로드 및 텐서 할당 완료.")
 
-    # 입력 및 출력 텐서 세부 정보 가져오기 (예측 시 필요)
-    input_details = interpreter.get_input_details()
-    output_details = interpreter.get_output_details()
-
+    logging.debug(f"스케일러 로드 시도 중: {scaler_path}")
     with open(scaler_path, 'rb') as f:
         scaler = pickle.load(f)
+    logging.debug("스케일러 로드 완료.")
 
+    logging.debug(f"장르 레이블 로드 시도 중: {genre_labels_path}")
     with open(genre_labels_path, 'r') as f:
         genre_labels = json.load(f)
+    logging.debug("장르 레이블 로드 완료.")
     
+    logging.debug(f"피처 컬럼 로드 시도 중: {feature_columns_path}")
     with open(feature_columns_path, 'r') as f:
         train_cols = json.load(f)
+    logging.debug("피처 컬럼 로드 완료.")
 
     logging.info("음악 장르 분류 TFLite 모델 및 도구 로드 성공.")
 except Exception as e:
@@ -72,8 +82,15 @@ except Exception as e:
 
 # --- 2. 음악 추천 기능 관련 MusicRecommender 인스턴스 초기화 ---
 getsongbpm_api_key = os.environ.get("GETSONGBPM_API_KEY", "YOUR_GETSONGBPM_API_KEY_HERE")
-recommender = MusicRecommender(getsongbpm_api_key)
-logging.info("음악 추천 시스템 인스턴스 초기화 완료.")
+
+logging.debug(f"MusicRecommender 인스턴스 초기화 시도 중 (API Key 존재 여부: {getsongbpm_api_key != 'YOUR_GETSONGBPM_API_KEY_HERE'})...")
+try:
+    recommender = MusicRecommender(getsongbpm_api_key)
+    logging.info("음악 추천 시스템 인스턴스 초기화 완료.")
+except Exception as e:
+    logging.error(f"음악 추천 시스템 인스턴스 초기화 중 오류 발생: {e}")
+    logging.error(traceback.format_exc())
+    sys.exit(1) # MusicRecommender 초기화 실패 시 앱 종료
 
 # --- Render 헬스 체크 엔드포인트 ---
 @app.route('/healthz')
@@ -82,6 +99,7 @@ def health_check():
     Render 헬스 체크를 위한 엔드포인트.
     앱이 성공적으로 로드되면 200 OK를 반환합니다.
     """
+    logging.debug("Health check 요청 수신.")
     return "OK", 200
 
 # --- 1. 음악 장르 분류 기능 엔드포인트 ---
@@ -246,4 +264,5 @@ def recommend_music_endpoint():
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
+    logging.debug(f"로컬 개발 서버 시작 시도 중 (host=0.0.0.0, port={port})...")
     app.run(debug=True, host='0.0.0.0', port=port)
