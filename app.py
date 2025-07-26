@@ -209,8 +209,8 @@ def predict():
 
         # TFLite 모델을 사용하여 예측 수행
         interpreter.set_tensor(input_details[0]['index'], features_scaled.astype(input_details[0]['dtype']))
-        interpreter.invoke() # 추론 실행
-        preds = interpreter.get_tensor(output_details[0]['index']) # 결과 가져오기
+        interpreter.invoke()
+        preds = interpreter.get_tensor(output_details[0]['index'])
 
         logging.debug(f"모델 예측값:\n{preds}")
 
