@@ -1,15 +1,9 @@
 from flask import Flask, request, jsonify, render_template
 import os
-import librosa
-import pandas as pd
-import numpy as np
-import tensorflow.lite as tflite
-import pickle
-import json
-from pydub import AudioSegment
 import logging
 import traceback
 import sys
+# librosa, pandas, numpy, tensorflow, pickle, json, pydub 임포트는 이제 함수 내부로 이동합니다.
 
 # --- 음악 추천 기능 관련 모듈 임포트 ---
 project_root = os.path.dirname(os.path.abspath(__file__))
@@ -22,6 +16,8 @@ if music_rec_dir not in sys.path:
     sys.path.append(music_rec_dir)
     logging.debug(f"'{music_rec_dir}'를 sys.path에 추가했습니다.")
 
+# MusicRecommender 모듈 자체는 여전히 앱 시작 시 임포트됩니다.
+# MusicRecommender 내부의 SentimentAnalyzer는 이미 지연 로딩됩니다.
 try:
     logging.debug("music_recommender 모듈 임포트 시도 중...")
     from music_recommender import MusicRecommender
@@ -57,10 +53,19 @@ train_cols = None
 def _load_genre_classification_models():
     """
     음악 장르 분류 모델과 관련 도구들을 지연 로드하는 내부 함수.
+    이 함수가 호출될 때 관련 라이브러리(tensorflow, librosa, pandas, numpy, pickle, json, pydub)를 임포트합니다.
     """
-    # nonlocal 대신 global 키워드를 사용하여 전역 변수를 참조합니다.
     global interpreter, input_details, output_details, scaler, genre_labels, train_cols
     
+    # 필요한 라이브러리들을 함수 내부에서 임포트 (극단적인 지연 로딩)
+    import tensorflow.lite as tflite
+    import librosa
+    import pandas as pd
+    import numpy as np
+    import pickle
+    import json
+    # from pydub import AudioSegment # pydub은 predict 함수 내에서만 필요하므로 여기서는 제거
+
     if interpreter is not None: # 이미 로드되었다면 다시 로드하지 않음
         return
 
@@ -99,31 +104,12 @@ def _load_genre_classification_models():
         logging.error(traceback.format_exc())
         raise # 예외를 다시 발생시켜 상위 호출자에게 알림
 
-# --- 2. 음악 추천 기능 관련 MusicRecommender 인스턴스 초기화 ---
-# MusicRecommender는 자체적으로 SentimentAnalyzer를 지연 로드하므로, 여기서는 변경 없음
-getsongbpm_api_key = os.environ.get("GETSONGBPM_API_KEY", "YOUR_GETSONGBPM_API_KEY_HERE")
-
-logging.debug(f"MusicRecommender 인스턴스 초기화 시도 중 (API Key 존재 여부: {getsongbpm_api_key != 'YOUR_GETSONGBPM_API_KEY_HERE'})...")
-try:
-    recommender = MusicRecommender(getsongbpm_api_key)
-    logging.info("음악 추천 시스템 인스턴스 초기화 완료.")
-except Exception as e:
-    logging.error(f"음악 추천 시스템 인스턴스 초기화 중 오류 발생: {e}")
-    logging.error(traceback.format_exc())
-    sys.exit(1) # MusicRecommender 초기화 실패 시 앱 종료
-
-# --- Render 헬스 체크 엔드포인트 ---
-@app.route('/healthz')
-def health_check():
-    """
-    Render 헬스 체크를 위한 엔드포인트.
-    앱이 성공적으로 로드되면 200 OK를 반환합니다.
-    """
-    logging.debug("Health check 요청 수신.")
-    return "OK", 200
-
-# --- 1. 음악 장르 분류 기능 엔드포인트 ---
+# extract_features_from_audio 함수 자체에 필요한 라이브러리 임포트 추가
 def extract_features_from_audio(file_path):
+    import librosa
+    import numpy as np # <-- np 경고 해결: 함수 내에서 numpy 임포트
+    import pandas as pd
+
     y, sr = librosa.load(file_path, sr=44100)
 
     if np.isnan(y).any():
@@ -188,6 +174,10 @@ def predict():
     temp_wav_path = os.path.join(project_root, temp_input_name + '.wav')
 
     try:
+        from pydub import AudioSegment # pydub 임포트도 이 함수 내부로 이동
+        # scikit-learn 임포트도 이 함수 내부로 이동 (scaler.transform 사용 시 필요)
+        import sklearn.preprocessing # StandardScaler가 이 모듈에 있습니다.
+
         if filename.endswith('.mp3'):
             temp_mp3_path = os.path.join(project_root, temp_input_name + '.mp3')
             audio_file.save(temp_mp3_path)
@@ -263,6 +253,10 @@ def recommend_music_endpoint():
     """
     사용자 텍스트를 입력받아 감정 기반 음악을 추천하는 엔드포인트입니다.
     """
+    # recommender는 전역 변수로 이미 정의되어 있으므로, Pylance 경고는 무시해도 되지만
+    # 명시적으로 global 선언을 추가하여 경고를 없앨 수도 있습니다.
+    # global recommender # <-- 이 줄을 추가하면 Pylance 경고가 사라질 수 있습니다.
+
     data = request.get_json()
     user_text = data.get('text')
 
