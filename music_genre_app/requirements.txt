@@ -1,8 +1,5 @@
 Flask
 gunicorn
-transformers
-torch
-requests
 librosa
 pandas
 numpy
