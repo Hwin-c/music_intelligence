@@ -1,13 +1,11 @@
-# 1. music-genre-classification
-flask
+Flask
+gunicorn
+transformers
+torch==2.7.1+cpu
+requests
 librosa
-tensorflow-cpu==2.19.0
-numpy
 pandas
+numpy
+tensorflow
 scikit-learn==1.6.1
 pydub
-gunicorn
-# 2. music-recommendation-by-bpm
-transformers
-torch
-requests

@@ -3,7 +3,6 @@ import os
 import librosa
 import pandas as pd
 import numpy as np
-# import tensorflow as tf # 기존 tensorflow 임포트 (주석 처리 또는 삭제)
 import tensorflow.lite as tflite # TFLite 인터프리터 임포트
 import pickle
 import json
@@ -42,45 +41,64 @@ app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB 제한 설정
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 logging.debug("Flask 앱 초기화 시작.")
 
-# --- 1. 음악 장르 분류 기능 관련 모델 및 도구 로드 ---
+# --- 1. 음악 장르 분류 기능 관련 모델 및 도구 로드 (지연 로딩을 위해 전역 변수로 선언) ---
 MODEL_DIR = os.path.join(project_root, 'music-genre-classification', 'saved_models')
 app.template_folder = os.path.join(project_root, 'templates')
 
-logging.debug(f"모델 디렉토리: {MODEL_DIR}")
+# 모델 관련 변수들을 None으로 초기화하여 지연 로딩을 준비
+interpreter = None
+input_details = None
+output_details = None
+scaler = None
+genre_labels = None
+train_cols = None
 
-try:
-    tflite_model_path = os.path.join(MODEL_DIR, 'quantized_model.tflite')
-    scaler_path = os.path.join(MODEL_DIR, 'scaler.pkl')
-    genre_labels_path = os.path.join(MODEL_DIR, 'genre_labels.json')
-    feature_columns_path = os.path.join(MODEL_DIR, 'feature_columns.json')
-
-    logging.debug(f"TFLite 모델 로드 시도 중: {tflite_model_path}")
-    interpreter = tflite.Interpreter(model_path=tflite_model_path)
-    interpreter.allocate_tensors()
-    logging.debug("TFLite 모델 로드 및 텐서 할당 완료.")
-
-    logging.debug(f"스케일러 로드 시도 중: {scaler_path}")
-    with open(scaler_path, 'rb') as f:
-        scaler = pickle.load(f)
-    logging.debug("스케일러 로드 완료.")
-
-    logging.debug(f"장르 레이블 로드 시도 중: {genre_labels_path}")
-    with open(genre_labels_path, 'r') as f:
-        genre_labels = json.load(f)
-    logging.debug("장르 레이블 로드 완료.")
+def _load_genre_classification_models():
+    """
+    음악 장르 분류 모델과 관련 도구들을 지연 로드하는 내부 함수.
+    """
+    nonlocal interpreter, input_details, output_details, scaler, genre_labels, train_cols
     
-    logging.debug(f"피처 컬럼 로드 시도 중: {feature_columns_path}")
-    with open(feature_columns_path, 'r') as f:
-        train_cols = json.load(f)
-    logging.debug("피처 컬럼 로드 완료.")
+    if interpreter is not None: # 이미 로드되었다면 다시 로드하지 않음
+        return
 
-    logging.info("음악 장르 분류 TFLite 모델 및 도구 로드 성공.")
-except Exception as e:
-    logging.error(f"음악 장르 분류 모델 로드 중 오류 발생: {e}")
-    logging.error(traceback.format_exc())
-    sys.exit(1)
+    logging.debug("음악 장르 분류 모델 및 도구 지연 로드 시작.")
+    try:
+        tflite_model_path = os.path.join(MODEL_DIR, 'quantized_model.tflite')
+        scaler_path = os.path.join(MODEL_DIR, 'scaler.pkl')
+        genre_labels_path = os.path.join(MODEL_DIR, 'genre_labels.json')
+        feature_columns_path = os.path.join(MODEL_DIR, 'feature_columns.json')
+
+        logging.debug(f"TFLite 모델 로드 시도 중 (지연 로드): {tflite_model_path}")
+        interpreter = tflite.Interpreter(model_path=tflite_model_path)
+        interpreter.allocate_tensors()
+        input_details = interpreter.get_input_details()
+        output_details = interpreter.get_output_details()
+        logging.debug("TFLite 모델 로드 및 텐서 할당 완료 (지연 로드).")
+
+        logging.debug(f"스케일러 로드 시도 중 (지연 로드): {scaler_path}")
+        with open(scaler_path, 'rb') as f:
+            scaler = pickle.load(f)
+        logging.debug("스케일러 로드 완료 (지연 로드).")
+
+        logging.debug(f"장르 레이블 로드 시도 중 (지연 로드): {genre_labels_path}")
+        with open(genre_labels_path, 'r') as f:
+            genre_labels = json.load(f)
+        logging.debug("장르 레이블 로드 완료 (지연 로드).")
+        
+        logging.debug(f"피처 컬럼 로드 시도 중 (지연 로드): {feature_columns_path}")
+        with open(feature_columns_path, 'r') as f:
+            train_cols = json.load(f)
+        logging.debug("피처 컬럼 로드 완료 (지연 로드).")
+
+        logging.info("음악 장르 분류 TFLite 모델 및 도구 지연 로드 성공.")
+    except Exception as e:
+        logging.error(f"음악 장르 분류 모델 지연 로드 중 오류 발생: {e}")
+        logging.error(traceback.format_exc())
+        raise # 예외를 다시 발생시켜 상위 호출자에게 알림
 
 # --- 2. 음악 추천 기능 관련 MusicRecommender 인스턴스 초기화 ---
+# MusicRecommender는 자체적으로 SentimentAnalyzer를 지연 로드하므로, 여기서는 변경 없음
 getsongbpm_api_key = os.environ.get("GETSONGBPM_API_KEY", "YOUR_GETSONGBPM_API_KEY_HERE")
 
 logging.debug(f"MusicRecommender 인스턴스 초기화 시도 중 (API Key 존재 여부: {getsongbpm_api_key != 'YOUR_GETSONGBPM_API_KEY_HERE'})...")
@@ -154,6 +172,9 @@ def index():
 
 @app.route('/predict', methods=['POST'])
 def predict():
+    # 음악 장르 분류 모델을 사용하기 전에 지연 로드
+    _load_genre_classification_models()
+
     if 'audio' not in request.files:
         logging.warning("파일이 업로드되지 않았습니다.")
         return jsonify({'error': 'No file uploaded'}), 400
@@ -209,8 +230,8 @@ def predict():
 
         # TFLite 모델을 사용하여 예측 수행
         interpreter.set_tensor(input_details[0]['index'], features_scaled.astype(input_details[0]['dtype']))
-        interpreter.invoke()
-        preds = interpreter.get_tensor(output_details[0]['index'])
+        interpreter.invoke() # 추론 실행
+        preds = interpreter.get_tensor(output_details[0]['index']) # 결과 가져오기
 
         logging.debug(f"모델 예측값:\n{preds}")
 
