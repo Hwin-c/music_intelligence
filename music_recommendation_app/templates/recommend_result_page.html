@@ -71,7 +71,7 @@
 
     .music-item {
       display: flex;
-      align-items: center;
+      align-items: flex-start; /* 텍스트가 상단에 정렬되도록 변경 */
       background-color: #f9f9f9;
       padding: 1rem;
       border-radius: 10px;
@@ -79,40 +79,50 @@
       text-align: left;
     }
 
-    .music-item .rank-icon {
-        width: 30px;
-        height: 30px;
+    .music-item .rank-number { /* 랭크 번호 스타일 */
+        font-weight: bold;
+        font-size: 1.8rem; /* 더 크게 */
+        color: #4a90e2; /* 로고 색상과 유사하게 */
         margin-right: 15px;
         flex-shrink: 0;
+        width: 40px; /* 고정 너비로 정렬 */
+        text-align: right;
     }
 
-    .music-item .cover {
-      width: 80px;
-      height: 80px;
-      border-radius: 8px;
-      background-color: #eee; /* Placeholder background */
-      margin-right: 15px;
-      flex-shrink: 0;
-      object-fit: cover; /* 이미지가 잘리지 않고 채워지도록 */
-    }
+    /* 기존 .rank-icon 및 .cover 관련 스타일 제거 */
+    /* .music-item .rank-icon { display: none; } */
+    /* .music-item .cover { display: none; } */
 
     .music-item .details {
       flex-grow: 1;
     }
 
-    .music-item .title {
+    .music-item .title-link { /* 노래 제목 링크 스타일 */
       font-weight: bold;
-      font-size: 1.1rem;
+      font-size: 1.5rem; /* 가장 크게 굵은 글씨 */
+      color: #0056b3; /* 클릭 가능한 링크 색상 */
+      text-decoration: none; /* 밑줄 제거 */
+      margin-bottom: 0.2rem;
+      display: block; /* 블록 요소로 만들어 줄바꿈 */
+    }
+    .music-item .title-link:hover {
+        text-decoration: underline; /* 호버 시 밑줄 */
+    }
+
+
+    .music-item .artist-name { /* 아티스트 이름 스타일 */
+      font-size: 1.1rem; /* 약간 더 크게 */
+      color: #333; /* 기본 텍스트 색상 */
       margin-bottom: 0.2rem;
     }
 
-    .music-item .artist {
-      font-size: 0.95rem;
-      color: #666;
-      margin-bottom: 0.2rem;
+    .music-item .genre-text { /* 장르 스타일 추가 */
+        font-size: 0.95rem;
+        color: #666;
+        margin-bottom: 0.2rem;
     }
 
-    .music-item .bpm {
+    .music-item .bpm-text { /* BPM 스타일 */
       font-size: 0.9rem;
       color: #888;
     }
@@ -149,24 +159,19 @@
             font-size: 1.4rem;
         }
         .music-item {
-            flex-direction: row; /* 모바일에서도 가로 정렬 유지 */
-            align-items: center;
+            flex-direction: row;
+            align-items: flex-start; /* 모바일에서도 상단 정렬 유지 */
             padding: 0.8rem;
         }
-        .music-item .cover {
-            width: 60px;
-            height: 60px;
+        .music-item .rank-number {
+            font-size: 1.5rem;
+            width: 30px;
             margin-right: 10px;
         }
-        .music-item .rank-icon {
-            width: 25px;
-            height: 25px;
-            margin-right: 10px;
+        .music-item .title-link {
+            font-size: 1.2rem;
         }
-        .music-item .title {
-            font-size: 1rem;
-        }
-        .music-item .artist, .music-item .bpm {
+        .music-item .artist-name, .music-item .genre-text, .music-item .bpm-text {
             font-size: 0.85rem;
         }
         .actions {
@@ -213,14 +218,19 @@
         {% if recommendations %}
           {% for song in recommendations %}
             <div class="music-item">
-              {% if song.rank_icon %}
-                <img src="{{ song.rank_icon }}" alt="{{ loop.index }}위" class="rank-icon">
-              {% endif %}
-              <img src="{{ song.album_cover_url }}" alt="앨범 커버" class="cover" />
+              <div class="rank-number">{{ loop.index }}.</div> <!-- 랭크 번호로 대체 -->
+              <!-- 기존 앨범 커버 이미지 태그 제거 -->
               <div class="details">
-                <div class="title">{{ song.title }}</div>
-                <div class="artist">{{ song.artist }}</div>
-                <div class="bpm">BPM: {{ song.bpm }}</div>
+                <!-- 노래 제목 (가장 크게 굵은 글씨, URI 링크) -->
+                <a href="{{ song.uri }}" target="_blank" class="title-link">{{ song.title }}</a>
+                <!-- 아티스트 -->
+                <p class="artist-name">아티스트: {{ song.artist }}</p>
+                <!-- 장르 (존재할 경우) -->
+                {% if song.genres %}
+                    <p class="genre-text">장르: {{ song.genres | join(', ') }}</p>
+                {% endif %}
+                <!-- BPM -->
+                <p class="bpm-text">BPM: {{ song.bpm }}</p>
               </div>
             </div>
           {% endfor %}
