@@ -108,7 +108,8 @@ class MusicRecommender:
             response.raise_for_status() # Raise HTTPError for bad responses (4xx or 5xx)
             return response.json()
         except requests.exceptions.HTTPError as http_err:
-            logging.error(f"HTTP error occurred: {http_err} - Response Text: {response.text if response else 'N/A'}")
+            # 403 Forbidden 에러 시 응답 텍스트를 명확히 로깅
+            logging.error(f"HTTP error occurred: {http_err} - Response Status: {response.status_code if response else 'N/A'} - Response Text: {response.text if response else 'N/A'}")
         except requests.exceptions.ConnectionError as conn_err:
             logging.error(f"Network connection error: {conn_err}")
         except requests.exceptions.Timeout as timeout_err:
@@ -125,6 +126,8 @@ class MusicRecommender:
         logging.info(f"Attempting to search for songs in BPM range {min_bpm}~{max_bpm} using getsong.co API...")
         
         found_songs = []
+        api_call_successful = False # API 호출 성공 여부 플래그
+
         try:
             search_queries = ["pop", "dance", "rock", "electronic", "jazz", "hip hop", "ballad", "r&b"] 
             
@@ -133,6 +136,7 @@ class MusicRecommender:
                 api_response = self._call_getsongbpm_api("search/tracks", params) 
 
                 if api_response and api_response.get("tracks"):
+                    api_call_successful = True # API 호출 성공
                     for track in api_response["tracks"]:
                         track_bpm = track.get("bpm")
                         if track_bpm is not None:
@@ -147,7 +151,6 @@ class MusicRecommender:
                                         "artist": artist_name,
                                         "bpm": track_bpm,
                                         "album_cover_url": track.get("album", {}).get("image", "https://placehold.co/140x140/cccccc/000000?text=No+Cover")
-                                        # YouTube 검색 링크 완전 제거
                                     })
                                     if len(found_songs) >= limit: 
                                         break
@@ -159,10 +162,11 @@ class MusicRecommender:
         except Exception as e:
             logging.error(f"Error during getsong.co API search: {e}")
             logging.error(traceback.format_exc())
-            pass
-
-        if not found_songs:
-            logging.warning(f"No relevant songs found from getsong.co API for BPM range {min_bpm}~{max_bpm}. Falling back to mock data.")
+            api_call_successful = False # 예외 발생 시 API 호출 실패로 간주
+            
+        # API 호출이 성공했으나 결과가 없거나, API 호출 자체가 실패했을 경우 Mock 데이터 사용
+        if not api_call_successful or not found_songs:
+            logging.warning(f"API call failed or no relevant songs found from getsong.co API for BPM range {min_bpm}~{max_bpm}. Falling back to mock data.")
             mock_songs_data = [
                 {"title": "기분 좋은 아침 (Mock)", "artist": "김미소 (Mock)", "bpm": 130, "album_cover_url": "https://placehold.co/140x140/FFD700/000000?text=Happy"},
                 {"title": "고요한 숲길 (Mock)", "artist": "이평화 (Mock)", "bpm": 75, "album_cover_url": "https://placehold.co/140x140/ADD8E6/000000?text=Calm"},
@@ -212,7 +216,6 @@ class MusicRecommender:
         if recommended_songs:
             logging.info("\n--- Recommended Music List ---")
             for i, song in enumerate(recommended_songs):
-                # YouTube 정보 로깅 제거
                 logging.info(f"{i+1}. Title: {song['title']}, Artist: {song['artist']}, BPM: {song['bpm']}, Cover: {song.get('album_cover_url', 'N/A')}")
         else:
             logging.info("\nSorry, no music found for the current BPM range.")

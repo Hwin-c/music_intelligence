@@ -20,12 +20,13 @@ getsongbpm_api_key = os.environ.get("GETSONGBPM_API_KEY", "YOUR_GETSONGBPM_API_K
 def _load_recommendation_models():
     """
     음악 추천 모델과 관련 도구들을 지연 로드하는 내부 함수.
+    모델 로드 실패 시 앱이 종료되지 않고, 오류를 반환하도록 수정.
     """
     global recommender
     
     if recommender is not None: # 이미 로드되었다면 다시 로드하지 않음
         logging.debug("음악 추천 모델이 이미 로드되어 있습니다. 다시 로드하지 않습니다.")
-        return
+        return True # 성공적으로 로드되었음을 알림
 
     logging.debug("음악 추천 모델 지연 로드 시작.")
     # 현재 getsongbpm_api_key 값 로깅 (디버깅용)
@@ -48,14 +49,17 @@ def _load_recommendation_models():
             recommender = MusicRecommender(getsongbpm_api_key) # MusicRecommender 사용
         
         logging.info("음악 추천 모델 및 도구 지연 로드 성공.")
+        return True # 성공적으로 로드되었음을 알림
     except ImportError as e:
         logging.error(f"필수 모듈 임포트 실패: {e}")
         logging.error("music_recommender.py 및 관련 NLP 모듈이 올바른 경로에 있는지 확인하십시오.")
-        sys.exit(1)
+        recommender = None # 로드 실패 시 recommender를 None으로 설정
+        return False # 로드 실패
     except Exception as e:
         logging.error(f"음악 추천 모델 지연 로드 중 오류 발생: {e}")
         logging.error(traceback.format_exc())
-        sys.exit(1)
+        recommender = None # 로드 실패 시 recommender를 None으로 설정
+        return False # 로드 실패
 
 @app.route('/')
 def index():
@@ -72,7 +76,9 @@ def recommend_music_endpoint():
     """
     사용자 텍스트를 입력받아 음악을 추천하는 엔드포인트입니다.
     """
-    _load_recommendation_models() # 모델 로드
+    # 모델 로드 시도 및 실패 처리
+    if not _load_recommendation_models():
+        return jsonify({'error': '음악 추천 시스템 초기화에 실패했습니다. 서버 로그를 확인하세요.'}), 500
 
     user_text = request.form.get('user_text')
     if not user_text:
@@ -92,6 +98,7 @@ def recommend_music_endpoint():
     except Exception as e:
         logging.error(f'음악 추천 중 오류 발생: {str(e)}')
         logging.error(traceback.format_exc())
+        # API 호출 실패 등 백엔드 오류 발생 시에도 JSON 응답 반환
         return jsonify({'error': f'음악 추천 중 오류 발생: {str(e)}'}), 500
 
 @app.route('/recommend_result')
