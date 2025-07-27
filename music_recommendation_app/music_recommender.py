@@ -4,6 +4,7 @@ import os
 import sys
 import logging
 import time
+import traceback
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -73,26 +74,36 @@ class MusicRecommender:
         MusicRecommender를 초기화합니다.
 
         Args:
-            getsongbpm_api_key (str): getsongbpm.com API 키.
+            getsongbpm_api_key (str): getsong.co API 키.
         """
         self.sentiment_analyzer = SentimentAnalyzer()
         self.bpm_mapper = BPMMapper()
         self.getsongbpm_api_key = getsongbpm_api_key
-        self.getsongbpm_base_url = "https://api.getsongbpm.com"
-        logging.info("Music recommendation system initialized.")
+        # getsong.co API Base URL로 변경
+        self.getsongbpm_base_url = "https://api.getsong.co/" 
+        logging.info(f"Music recommendation system initialized with API Base URL: {self.getsongbpm_base_url}")
+        # getsong.co API는 시간당 3000회 요청 제한이 있습니다.
+        # (If you exceed this number, your key will be blocked for one hour.)
 
     def _call_getsongbpm_api(self, endpoint: str, params: dict = None):
         """
-        getsongbpm API를 호출하는 내부 도우미 메서드입니다.
+        getsong.co API를 호출하는 내부 도우미 메서드입니다.
+        API Key는 X-API-KEY 헤더 또는 URL 파라미터로 전송 가능하며, 여기서는 X-API-KEY 헤더를 사용합니다.
         """
         headers = {
             "x-api-key": self.getsongbpm_api_key,
             "Content-Type": "application/json"
         }
         
+        # getsong.co API는 엔드포인트에 선행 슬래시가 필요할 수 있습니다.
+        # base_url이 이미 슬래시로 끝나므로 endpoint에 슬래시가 없도록 합니다.
+        if endpoint.startswith('/'):
+            endpoint = endpoint[1:]
+        
         url = f"{self.getsongbpm_base_url}{endpoint}"
+        
         try:
-            logging.debug(f"Calling getsongbpm API: {url} with params {params}")
+            logging.debug(f"Calling getsong.co API: {url} with params {params}")
             response = requests.get(url, headers=headers, params=params)
             response.raise_for_status() # Raise HTTPError for bad responses (4xx or 5xx)
             return response.json()
@@ -108,51 +119,50 @@ class MusicRecommender:
 
     def get_songs_by_bpm_range(self, min_bpm: int, max_bpm: int, limit: int = 5):
         """
-        getsongbpm API를 사용하여 특정 BPM 범위 내의 노래를 검색합니다.
+        getsong.co API를 사용하여 특정 BPM 범위 내의 노래를 검색합니다.
         실제 API 호출을 시도하고, 실패 시 Mock 데이터로 대체합니다.
         """
-        logging.info(f"Attempting to search for songs in BPM range {min_bpm}~{max_bpm} using getsongbpm API...")
+        logging.info(f"Attempting to search for songs in BPM range {min_bpm}~{max_bpm} using getsong.co API...")
         
         found_songs = []
         try:
-            # getsongbpm API의 /search/tracks 엔드포인트를 사용합니다.
-            # 직접적인 BPM 범위 검색은 지원하지 않으므로, 일반적인 검색어(예: "pop", "dance")로 검색 후 클라이언트 측에서 필터링합니다.
-            # 더 많은 결과를 얻기 위해 여러 일반적인 장르/키워드를 시도할 수 있습니다.
-            search_queries = ["pop", "dance", "rock", "electronic", "jazz", "hip hop"]
+            search_queries = ["pop", "dance", "rock", "electronic", "jazz", "hip hop", "ballad", "r&b"] 
             
             for query in search_queries:
-                params = {"q": query, "per_page": 20} # 페이지당 더 많은 결과 요청
-                api_response = self._call_getsongbpm_api("/search/tracks", params)
+                params = {"q": query, "per_page": 20} 
+                api_response = self._call_getsongbpm_api("search/tracks", params) 
 
                 if api_response and api_response.get("tracks"):
                     for track in api_response["tracks"]:
                         track_bpm = track.get("bpm")
                         if track_bpm is not None:
                             try:
-                                track_bpm = int(track_bpm) # BPM이 문자열일 수 있으므로 int로 변환
+                                track_bpm = int(track_bpm) 
                                 if min_bpm <= track_bpm <= max_bpm:
+                                    song_title = track.get("title", "Unknown Title")
+                                    artist_name = track.get("artist", {}).get("name", "Unknown Artist")
+                                    
                                     found_songs.append({
-                                        "title": track.get("title", "Unknown Title"),
-                                        "artist": track.get("artist", {}).get("name", "Unknown Artist"),
+                                        "title": song_title,
+                                        "artist": artist_name,
                                         "bpm": track_bpm,
-                                        "album_cover_url": track.get("album", {}).get("image", "https://placehold.co/140x140/cccccc/000000?text=No+Cover") # 기본 이미지 제공
+                                        "album_cover_url": track.get("album", {}).get("image", "https://placehold.co/140x140/cccccc/000000?text=No+Cover")
+                                        # YouTube 검색 링크 완전 제거
                                     })
-                                    if len(found_songs) >= limit: # 필요한 개수만큼 찾으면 중단
+                                    if len(found_songs) >= limit: 
                                         break
                             except ValueError:
-                                logging.warning(f"Invalid BPM value received for track {track.get('title')}: {track_bpm}")
+                                logging.warning(f"Invalid BPM value received for track {track.get('title', 'N/A')}: {track_bpm}")
                 if len(found_songs) >= limit:
                     break
 
         except Exception as e:
-            logging.error(f"Error during getsongbpm API search: {e}")
+            logging.error(f"Error during getsong.co API search: {e}")
             logging.error(traceback.format_exc())
-            # API 호출 중 오류가 발생하면 Mock 데이터로 대체
-            pass # 아래 로직에서 Mock 데이터로 대체될 것임
+            pass
 
         if not found_songs:
-            logging.warning(f"No relevant songs found from getsongbpm API for BPM range {min_bpm}~{max_bpm}. Falling back to mock data.")
-            # API에서 결과를 찾지 못했을 때만 Mock 데이터로 대체
+            logging.warning(f"No relevant songs found from getsong.co API for BPM range {min_bpm}~{max_bpm}. Falling back to mock data.")
             mock_songs_data = [
                 {"title": "기분 좋은 아침 (Mock)", "artist": "김미소 (Mock)", "bpm": 130, "album_cover_url": "https://placehold.co/140x140/FFD700/000000?text=Happy"},
                 {"title": "고요한 숲길 (Mock)", "artist": "이평화 (Mock)", "bpm": 75, "album_cover_url": "https://placehold.co/140x140/ADD8E6/000000?text=Calm"},
@@ -170,7 +180,6 @@ class MusicRecommender:
             ]
             return random.sample(mock_songs_data, min(limit, len(mock_songs_data)))
         
-        # API에서 찾은 곡이 있다면 그 중에서 랜덤으로 limit 개수만큼 선택
         return random.sample(found_songs, min(limit, len(found_songs)))
 
 
@@ -197,12 +206,13 @@ class MusicRecommender:
         min_bpm, max_bpm = self.bpm_mapper.get_bpm_range(emotion_label)
         logging.info(f"Recommended BPM range for '{emotion_label}' emotion: {min_bpm}-{max_bpm}")
 
-        # 3. getsongbpm API를 통해 노래 검색 (또는 시뮬레이션 데이터 사용)
-        recommended_songs = self.get_songs_by_bpm_range(min_bpm, max_bpm, limit=3) # <-- limit=3 유지
+        # 3. getsong.co API를 통해 노래 검색 (또는 시뮬레이션 데이터 사용)
+        recommended_songs = self.get_songs_by_bpm_range(min_bpm, max_bpm, limit=3) 
         
         if recommended_songs:
             logging.info("\n--- Recommended Music List ---")
             for i, song in enumerate(recommended_songs):
+                # YouTube 정보 로깅 제거
                 logging.info(f"{i+1}. Title: {song['title']}, Artist: {song['artist']}, BPM: {song['bpm']}, Cover: {song.get('album_cover_url', 'N/A')}")
         else:
             logging.info("\nSorry, no music found for the current BPM range.")
@@ -237,15 +247,12 @@ class MockMusicRecommender(MusicRecommender):
         ]
 
         # 사용자 입력에 따라 다른 mock 데이터를 반환하는 간단한 로직 (예시)
-        # 이 부분은 실제 API 호출이 아니므로, BPM 범위 필터링은 Mock 데이터 내에서만 이루어집니다.
         filtered_by_bpm_and_text = []
         for song in mock_data:
             if min_bpm <= song["bpm"] <= max_bpm:
-                # '신나는' 감정일 경우 더 활기찬 Mock 데이터를 선호
-                if "신나는" in self.sentiment_analyzer.analyze_sentiment("신나는 음악 추천해줘!")['label'] and song["bpm"] > 110:
+                if "긍정" in self.sentiment_analyzer.analyze_sentiment("긍정적인 음악 추천해줘!")['label'] and song["bpm"] > 110:
                     filtered_by_bpm_and_text.append(song)
-                # '조용한' 감정일 경우 더 차분한 Mock 데이터를 선호
-                elif "조용한" in self.sentiment_analyzer.analyze_sentiment("조용한 음악 추천해줘!")['label'] and song["bpm"] < 90:
+                elif "부정" in self.sentiment_analyzer.analyze_sentiment("슬픈 음악 추천해줘!")['label'] and song["bpm"] < 90:
                     filtered_by_bpm_and_text.append(song)
                 else:
                     filtered_by_bpm_and_text.append(song)

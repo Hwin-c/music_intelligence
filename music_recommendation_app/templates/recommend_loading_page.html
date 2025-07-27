@@ -63,6 +63,7 @@
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
+
     @media (max-width: 600px) {
         .loading-text {
             font-size: 1.5rem;
@@ -77,7 +78,7 @@
         margin-top: auto;
         padding: 1rem;
         text-align: center;
-        color: #777;
+        color: #ddd; /* 로딩 페이지에 맞게 색상 조정 */
         font-size: 0.9em;
         width: 100%;
         box-sizing: border-box;
@@ -86,8 +87,9 @@
         margin: 0.5rem 0;
     }
     footer a {
-        color: #0056b3;
+        color: #fff; /* 로딩 페이지에 맞게 색상 조정 */
         text-decoration: none;
+        font-weight: bold;
     }
     footer a:hover {
         text-decoration: underline;
@@ -107,7 +109,21 @@
   </main>
 
   <footer>
-      <p>&copy; 2025 음잘딱깔센 Powered by getsongbpm.com</p>
+      <p>&copy; 2025 음잘딱깔센 | Powered by <a href="https://getsongbpm.com/" target="_blank">getsongbpm.com</a></p>
   </footer>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const logoPlaceholderUrl = "{{ url_for('static', filename='logo.png') }}";
+
+        const logoImage = document.querySelector('.logo-image');
+        if (logoImage) {
+            logoImage.onerror = function() {
+                this.src = logoPlaceholderUrl;
+                this.alt = '로고 (이미지 없음)';
+            };
+        }
+    });
+  </script>
 </body>
 </html>

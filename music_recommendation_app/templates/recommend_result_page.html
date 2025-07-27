@@ -221,6 +221,7 @@
                 <div class="title">{{ song.title }}</div>
                 <div class="artist">{{ song.artist }}</div>
                 <div class="bpm">BPM: {{ song.bpm }}</div>
+                {# YouTube 링크 관련 내용 완전 제거 #}
               </div>
             </div>
           {% endfor %}
@@ -235,15 +236,13 @@
   </main>
 
   <footer>
-      <p>&copy; 2025 음잘딱깔센 Powered by getsongbpm.com</p>
+      <p>&copy; 2025 음잘딱깔센 | Powered by <a href="https://getsongbpm.com/" target="_blank">getsongbpm.com</a></p>
   </footer>
 
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Flask url_for로 생성된 정적 파일 경로를 JavaScript 변수로 저장
         const logoPlaceholderUrl = "{{ url_for('static', filename='logo.png') }}";
 
-        // 로고 이미지 로드 실패 시 대체 이미지 설정
         const logoImage = document.querySelector('.logo-image');
         if (logoImage) {
             logoImage.onerror = function() {
@@ -251,9 +250,6 @@
                 this.alt = '로고 (이미지 없음)';
             };
         }
-
-        // 앨범 커버 이미지에는 더 이상 onerror가 필요하지 않습니다.
-        // 만약 앨범 커버 URL이 비어있다면, CSS의 background-color: #eee; 가 표시됩니다.
     });
   </script>
 </body>
