@@ -4,141 +4,131 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 
 class BPMMapper:
     """
-    감정 레이블을 음악의 BPM 범위와 매핑하는 클래스입니다.
-    사용자의 감정에 따라 적절한 음악 BPM 범위를 제공합니다.
+    감정 레이블을 음악의 BPM 범위 및 기타 오디오 특성(danceability, acousticness)과 매핑하는 클래스입니다.
+    사용자의 감정에 따라 적절한 음악 특성 범위를 제공합니다.
     """
     def __init__(self):
         """
-        감정 레이블과 BPM 범위 간의 매핑 규칙을 초기화합니다.
+        감정 레이블과 BPM/오디오 특성 범위 간의 매핑 규칙을 초기화합니다.
         이 매핑은 모델의 60가지 세분화된 감정 레이블과
-        일반적인 음악 분위기 및 BPM 상관관계를 기반으로 정의되었습니다.
+        일반적인 음악 분위기 및 BPM, danceability, acousticness 상관관계를 기반으로 정의되었습니다.
         여기에 '긍정'과 '부정'과 같은 더 넓은 범주의 감정 매핑을 추가합니다.
         """
-        self.emotion_to_bpm_map = {
-            # --- 긍정적/활기찬 감정 (높은 BPM: 120-160+) ---
-            "긍정": (110, 140), # 새로 추가된 넓은 범주의 긍정 감정
-            "기쁨": (120, 140),       # 보편적으로 활기찬 느낌
-            "신이 난": (130, 160),     # 매우 활동적이고 빠른 음악
-            "흥분": (140, 170),       # 최고조의 활기, 댄스/EDM 등에 적합
-            "감사하는": (110, 130),    # 따뜻하고 긍정적이지만 너무 빠르지 않은
-            "신뢰하는": (100, 120),    # 안정적이면서 긍정적인 느낌
-            "편안한": (80, 110),       # 차분하고 안정적인, 집중에도 도움
-            "만족스러운": (90, 120),    # 평화롭고 만족스러운
-            "느긋": (70, 100),         # 매우 여유롭고 차분한
-            "안도": (90, 110),         # 긴장 완화 후의 편안함
-            "자신하는": (100, 125),    # 자신감 있는, 약간의 활기
+        self.emotion_features_map = {
+            # --- 긍정적/활기찬 감정 (높은 BPM, 높은 danceability, 낮은 acousticness) ---
+            "긍정": {"bpm": (110, 140), "danceability": (70, 100), "acousticness": (0, 30)},
+            "기쁨": {"bpm": (120, 140), "danceability": (75, 100), "acousticness": (0, 25)},
+            "신이 난": {"bpm": (130, 160), "danceability": (80, 100), "acousticness": (0, 20)},
+            "흥분": {"bpm": (140, 170), "danceability": (85, 100), "acousticness": (0, 15)},
+            "감사하는": {"bpm": (110, 130), "danceability": (60, 80), "acousticness": (20, 50)},
+            "신뢰하는": {"bpm": (100, 120), "danceability": (50, 70), "acousticness": (30, 60)},
+            "편안한": {"bpm": (80, 110), "danceability": (40, 60), "acousticness": (50, 80)},
+            "만족스러운": {"bpm": (90, 120), "danceability": (50, 75), "acousticness": (40, 70)},
+            "느긋": {"bpm": (70, 100), "danceability": (30, 50), "acousticness": (60, 90)},
+            "안도": {"bpm": (90, 110), "danceability": (45, 65), "acousticness": (45, 75)},
+            "자신하는": {"bpm": (100, 125), "danceability": (60, 85), "acousticness": (10, 40)},
 
-            # --- 부정적/차분한 감정 (낮은 BPM: 50-90) ---
-            "부정": (60, 90), # 새로 추가된 넓은 범주의 부정 감정
-            "슬픔": (60, 80),         # 발라드, 잔잔한 곡
-            "우울한": (50, 70),        # 매우 침체된, 느린 곡
-            "비통한": (40, 60),        # 깊은 슬픔, 매우 느린 곡
-            "후회되는": (60, 80),      # 회상적이고 차분한
-            "낙담한": (50, 70),        # 우울함과 유사
-            "마비된": (40, 60),        # 무기력한, 극도로 느린
-            "염세적인": (50, 70),      # 어둡고 느린
-            "눈물이 나는": (60, 85),   # 감성적인 발라드
-            "실망한": (65, 85),        # 다소 느리고 차분한
-            "환멸을 느끼는": (60, 80), # 냉소적이고 차분한
+            # --- 부정적/차분한 감정 (낮은 BPM, 낮은 danceability, 높은 acousticness) ---
+            "부정": {"bpm": (60, 90), "danceability": (0, 40), "acousticness": (50, 100)},
+            "슬픔": {"bpm": (60, 80), "danceability": (0, 30), "acousticness": (60, 100)},
+            "우울한": {"bpm": (50, 70), "danceability": (0, 25), "acousticness": (70, 100)},
+            "비통한": {"bpm": (40, 60), "danceability": (0, 20), "acousticness": (80, 100)},
+            "후회되는": {"bpm": (60, 80), "danceability": (10, 35), "acousticness": (55, 95)},
+            "낙담한": {"bpm": (50, 70), "danceability": (0, 25), "acousticness": (70, 100)},
+            "마비된": {"bpm": (40, 60), "danceability": (0, 15), "acousticness": (85, 100)},
+            "염세적인": {"bpm": (50, 70), "danceability": (0, 30), "acousticness": (65, 95)},
+            "눈물이 나는": {"bpm": (60, 85), "danceability": (15, 40), "acousticness": (50, 90)},
+            "실망한": {"bpm": (65, 85), "danceability": (20, 45), "acousticness": (45, 85)},
+            "환멸을 느끼는": {"bpm": (60, 80), "danceability": (10, 30), "acousticness": (50, 90)},
 
             # --- 불안/긴장/복잡한 감정 (중간 BPM 또는 특정 분위기) ---
-            "불안": (80, 110),         # 긴장감을 줄여주는 차분한 곡 또는 약간 빠른 곡
-            "두려운": (70, 100),        # 긴장감 있는 배경음악, 또는 안정적인 곡으로 완화
-            "스트레스 받는": (90, 120), # 경쾌하거나 혹은 차분한 곡으로 완화
-            "취약한": (70, 90),         # 부드럽고 보호적인 느낌
-            "혼란스러운": (80, 110),    # 안정감을 주는 곡
-            "당혹스러운": (80, 110),    # 혼란스러운과 유사
-            "회의적인": (70, 95),      # 깊이 생각하게 하는 곡
-            "걱정스러운": (80, 105),    # 안정감을 주는 곡
-            "조심스러운": (70, 90),     # 섬세하고 조용한
-            "초조한": (100, 130),      # 에너지를 발산하거나 진정시키는 리듬
+            "불안": {"bpm": (80, 110), "danceability": (30, 70), "acousticness": (20, 60)},
+            "두려운": {"bpm": (70, 100), "danceability": (20, 50), "acousticness": (30, 70)},
+            "스트레스 받는": {"bpm": (90, 120), "danceability": (40, 70), "acousticness": (10, 50)},
+            "취약한": {"bpm": (70, 90), "danceability": (25, 45), "acousticness": (50, 80)},
+            "혼란스러운": {"bpm": (80, 110), "danceability": (35, 65), "acousticness": (25, 55)},
+            "당혹스러운": {"bpm": (80, 110), "danceability": (35, 65), "acousticness": (25, 55)},
+            "회의적인": {"bpm": (70, 95), "danceability": (20, 50), "acousticness": (40, 70)},
+            "걱정스러운": {"bpm": (80, 105), "danceability": (30, 60), "acousticness": (30, 65)},
+            "조심스러운": {"bpm": (70, 90), "danceability": (25, 45), "acousticness": (50, 80)},
+            "초조한": {"bpm": (100, 130), "danceability": (50, 80), "acousticness": (10, 40)},
 
-            # --- 분노/적대적 감정 (강렬하거나 중간 BPM) ---
-            "분노": (120, 150),       # 락, 메탈, 강렬한 힙합 등 높은 에너지를 표출하는 곡
-            "툴툴대는": (90, 120),      # 다소 시니컬하거나 리듬감 있는
-            "좌절한": (90, 120),       # 답답함을 해소할 수 있는 곡
-            "짜증내는": (100, 130),     # 불만을 표출하는, 혹은 진정시키는
-            "방어적인": (80, 110),      # 묵직하거나 안정적인
-            "악의적인": (100, 130),     # 다소 어둡고 리듬감 있는
-            "안달하는": (110, 140),     # 빠르게 전환되거나 에너지를 주는
+            # --- 분노/적대적 감정 (강렬하거나 중간 BPM, 낮은 acousticness) ---
+            "분노": {"bpm": (120, 150), "danceability": (60, 90), "acousticness": (0, 20)},
+            "툴툴대는": {"bpm": (90, 120), "danceability": (40, 70), "acousticness": (10, 50)},
+            "좌절한": {"bpm": (90, 120), "danceability": (40, 70), "acousticness": (10, 50)},
+            "짜증내는": {"bpm": (100, 130), "danceability": (50, 80), "acousticness": (10, 40)},
+            "방어적인": {"bpm": (80, 110), "danceability": (30, 60), "acousticness": (20, 60)},
+            "악의적인": {"bpm": (100, 130), "danceability": (50, 80), "acousticness": (10, 40)},
+            "안달하는": {"bpm": (110, 140), "danceability": (55, 85), "acousticness": (0, 30)},
 
             # --- 상처/부정적 관계 감정 ---
-            "상처": (60, 90),         # 위로가 되는 차분한 곡
-            "질투하는": (80, 110),     # 복잡한 감정을 표현하는
-            "배신당한": (60, 90),      # 슬픔과 유사
-            "고립된": (60, 90),         # 외로움을 달래는 차분한 곡
-            "충격 받은": (80, 110),     # 감정을 가라앉히는
-            "가난한 불우한": (50, 80), # 공감하고 위로하는
-            "희생된": (50, 80),         # 묵직하거나 차분한
-            "억울한": (70, 100),        # 답답함을 풀어주는
-            "괴로워하는": (60, 90),     # 깊은 고통을 표현
+            "상처": {"bpm": (60, 90), "danceability": (10, 40), "acousticness": (50, 90)},
+            "질투하는": {"bpm": (80, 110), "danceability": (30, 60), "acousticness": (20, 60)},
+            "배신당한": {"bpm": (60, 90), "danceability": (10, 40), "acousticness": (50, 90)},
+            "고립된": {"bpm": (60, 90), "danceability": (10, 40), "acousticness": (50, 90)},
+            "충격 받은": {"bpm": (80, 110), "danceability": (30, 60), "acousticness": (20, 60)},
+            "가난한 불우한": {"bpm": (50, 80), "danceability": (0, 30), "acousticness": (60, 100)},
+            "희생된": {"bpm": (50, 80), "danceability": (0, 30), "acousticness": (60, 100)},
+            "억울한": {"bpm": (70, 100), "danceability": (20, 50), "acousticness": (30, 70)},
+            "괴로워하는": {"bpm": (60, 90), "danceability": (10, 40), "acousticness": (50, 90)},
 
             # --- 당황/부정적 자아 감정 ---
-            "고립된(당황한)": (80, 110), # 혼란스러운과 유사
-            "남의 시선을 의식하는": (70, 100), # 조심스럽거나 차분한
-            "외로운": (60, 90),         # 고립된과 유사
-            "열등감": (70, 100),        # 자신감을 북돋아 주거나 차분하게
-            "죄책감의": (60, 90),       # 반성적인
-            "부끄러운": (70, 95),       # 조용하고 차분한
-            "혐오스러운": (90, 120),    # 강렬하거나 불쾌함을 표현
-            "한심한": (60, 90),         # 위로가 필요한
-            "혼란스러운(당황한)": (80, 110), # 혼란스러운과 유사
-            
-            # --- 기타 (매핑이 불분명하거나 특정 상황에 따라 달라지는 감정) ---
-            # 60가지 레이블 중 여기에 없는 것은 아래 default_bpm_range로 처리됩니다.
-            # 필요에 따라 매핑을 더 추가하거나 수정할 수 있습니다.
+            "고립된(당황한)": {"bpm": (80, 110), "danceability": (35, 65), "acousticness": (25, 55)},
+            "남의 시선을 의식하는": {"bpm": (70, 100), "danceability": (25, 55), "acousticness": (40, 70)},
+            "외로운": {"bpm": (60, 90), "danceability": (10, 40), "acousticness": (50, 90)},
+            "열등감": {"bpm": (70, 100), "danceability": (20, 50), "acousticness": (30, 70)},
+            "죄책감의": {"bpm": (60, 90), "danceability": (10, 40), "acousticness": (50, 90)},
+            "부끄러운": {"bpm": (70, 95), "danceability": (20, 50), "acousticness": (40, 70)},
+            "혐오스러운": {"bpm": (90, 120), "danceability": (40, 70), "acousticness": (10, 50)},
+            "한심한": {"bpm": (60, 90), "danceability": (10, 40), "acousticness": (50, 90)},
+            "혼란스러운(당황한)": {"bpm": (80, 110), "danceability": (35, 65), "acousticness": (25, 55)},
         }
         
-        # 매핑되지 않은 감정에 대한 기본 BPM 범위 설정
-        self.default_bpm_range = (90, 120) # 일반적인 팝 음악 BPM
-        logging.info(f"BPM 매퍼 초기화 완료. 기본 BPM 범위: {self.default_bpm_range}")
+        # 매핑되지 않은 감정에 대한 기본 오디오 특성 범위 설정
+        self.default_features_range = {"bpm": (90, 120), "danceability": (40, 80), "acousticness": (20, 70)}
+        logging.info(f"BPM 매퍼 초기화 완료. 기본 오디오 특성 범위: {self.default_features_range}")
 
     def get_bpm_range(self, emotion_label: str) -> tuple:
         """
         주어진 감정 레이블에 해당하는 BPM 범위를 반환합니다.
-        매핑되지 않은 감정 레이블의 경우 기본 BPM 범위를 반환합니다.
+        (이전 버전과의 호환성을 위해 유지)
+        """
+        features = self.emotion_features_map.get(emotion_label, self.default_features_range)
+        return features["bpm"]
+
+    def get_audio_feature_ranges(self, emotion_label: str) -> dict:
+        """
+        주어진 감정 레이블에 해당하는 오디오 특성(BPM, danceability, acousticness) 범위를 반환합니다.
+        매핑되지 않은 감정 레이블의 경우 기본 오디오 특성 범위를 반환합니다.
 
         Args:
             emotion_label (str): SentimentAnalyzer에서 예측한 감정 레이블.
 
         Returns:
-            tuple: (min_bpm, max_bpm) 형태의 BPM 범위 튜플.
+            dict: {"bpm": (min_bpm, max_bpm), "danceability": (min_dance, max_dance), "acousticness": (min_acoustic, max_acoustic)} 형태의 딕셔너리.
         """
-        bpm_range = self.emotion_to_bpm_map.get(emotion_label)
+        features_range = self.emotion_features_map.get(emotion_label)
         
-        if bpm_range:
-            return bpm_range
+        if features_range:
+            return features_range
         else:
-            logging.warning(f"'{emotion_label}' 감정에 대한 BPM 매핑이 정의되지 않았습니다. 기본 BPM 범위 {self.default_bpm_range}를 사용합니다.")
-            return self.default_bpm_range
+            logging.warning(f"'{emotion_label}' 감정에 대한 오디오 특성 매핑이 정의되지 않았습니다. 기본 범위 {self.default_features_range}를 사용합니다.")
+            return self.default_features_range
 
 # 이 파일이 직접 실행될 때만 실행되는 테스트 코드
 if __name__ == "__main__":
     mapper = BPMMapper()
     
-    logging.info("\n--- BPM 매핑 테스트 ---")
+    logging.info("\n--- 오디오 특성 매핑 테스트 ---")
     
     # 긍정적/활기찬 감정 테스트
-    logging.info(f"감정: '긍정' -> BPM: {mapper.get_bpm_range('긍정')}")
-    logging.info(f"감정: '신이 난' -> BPM: {mapper.get_bpm_range('신이 난')}")
-    logging.info(f"감정: '기쁨' -> BPM: {mapper.get_bpm_range('기쁨')}")
-    logging.info(f"감정: '편안한' -> BPM: {mapper.get_bpm_range('편안한')}")
-
+    logging.info(f"감정: '긍정' -> 특성: {mapper.get_audio_feature_ranges('긍정')}")
+    logging.info(f"감정: '신이 난' -> 특성: {mapper.get_audio_feature_ranges('신이 난')}")
+    
     # 부정적/차분한 감정 테스트
-    logging.info(f"감정: '부정' -> BPM: {mapper.get_bpm_range('부정')}")
-    logging.info(f"감정: '우울한' -> BPM: {mapper.get_bpm_range('우울한')}")
-    logging.info(f"감정: '슬픔' -> BPM: {mapper.get_bpm_range('슬픔')}")
-    logging.info(f"감정: '비통한' -> BPM: {mapper.get_bpm_range('비통한')}")
-
-    # 불안/긴장/복잡한 감정 테스트
-    logging.info(f"감정: '스트레스 받는' -> BPM: {mapper.get_bpm_range('스트레스 받는')}")
-    logging.info(f"감정: '혼란스러운' -> BPM: {mapper.get_bpm_range('혼란스러운')}")
-    logging.info(f"감정: '초조한' -> BPM: {mapper.get_bpm_range('초조한')}")
-
-    # 분노/적대적 감정 테스트
-    logging.info(f"감정: '분노' -> BPM: {mapper.get_bpm_range('분노')}")
-    logging.info(f"감정: '짜증내는' -> BPM: {mapper.get_bpm_range('짜증내는')}")
+    logging.info(f"감정: '슬픔' -> 특성: {mapper.get_audio_feature_ranges('슬픔')}")
+    logging.info(f"감정: '우울한' -> 특성: {mapper.get_audio_feature_ranges('우울한')}")
 
     # 매핑되지 않은 감정 테스트 (기본값 반환 확인)
-    logging.info(f"감정: '알 수 없는 감정' -> BPM: {mapper.get_bpm_range('알 수 없는 감정')}")
-    logging.info(f"감정: '놀란' (60가지 레이블에 없는 가정) -> BPM: {mapper.get_bpm_range('놀란')}")
+    logging.info(f"감정: '알 수 없는 감정' -> 특성: {mapper.get_audio_feature_ranges('알 수 없는 감정')}")
