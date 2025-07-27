@@ -8,13 +8,9 @@ import time
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Mock SentimentAnalyzer 및 BPMMapper 클래스 (실제 모듈이 없을 경우를 대비)
-# 이 클래스들은 natural-language-processing 디렉토리에 실제 파일로 존재해야 합니다.
-# 만약 해당 파일들이 없다면, 이 코드를 natural-language-processing/sentiment_analyzer.py
-# 및 natural-language-processing/bpm_mapper.py 에 각각 넣어주셔야 합니다.
 class MockSentimentAnalyzer:
     def analyze_sentiment(self, text: str):
         logging.debug(f"MockSentimentAnalyzer: Analyzing '{text}'")
-        # 간단한 텍스트 기반 감정 매핑 (예시)
         if "신나" in text or "기분 좋" in text or "활기찬" in text:
             return {"label": "happy", "score": 0.9}
         elif "슬프" in text or "우울" in text:
@@ -194,7 +190,7 @@ class MockMusicRecommender(MusicRecommender):
     """
     def __init__(self, getsongbpm_api_key: str = None): # api_key를 선택적으로 받도록 수정
         # MockMusicRecommender는 실제 API 키가 필요 없으므로, getsongbpm_api_key를 None으로 설정
-        super().__init__(api_key) 
+        super().__init__(getsongbpm_api_key) # <-- 이 부분을 수정했습니다.
         logging.info("--- Mock Music Recommender initialized ---")
 
     def get_songs_by_bpm_range(self, min_bpm: int, max_bpm: int, limit: int = 5):
