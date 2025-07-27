@@ -1,129 +1,171 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>음악 추천 중... | 음잘딱깔센</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(to bottom right, #a3c8f5, #4a90e2);
-      color: #ffffff;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-
-    header {
-      display: flex;
-      align-items: center;
-      padding: 1rem 2rem;
-    }
-
-    .logo-link {
-      text-decoration: none;
-    }
-
-    .logo-image {
-      height: 50px;
-    }
-
-    main {
-      flex-grow: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-    }
-
-    .loading-text {
-      font-size: 2rem;
-      font-weight: bold;
-      margin-top: 2rem;
-      animation: blink 1.5s infinite;
-    }
-
-    @keyframes blink {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
-    }
-
-    .spinner {
-      width: 80px;
-      height: 80px;
-      border: 10px solid rgba(255, 255, 255, 0.3);
-      border-top: 10px solid white;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    @media (max-width: 600px) {
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>음악 추천 중... | 음잘딱깔센</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(to bottom right, #a3c8f5, #4a90e2);
+            color: #ffffff;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        .loading-container {
+            background-color: #ffffffcc;
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+            max-width: 500px;
+            width: 90%;
+            display: flex; /* Flexbox for centering content inside */
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
         .loading-text {
-            font-size: 1.5rem;
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #0056b3; /* 텍스트 색상을 배경과 대비되도록 변경 */
+            margin-bottom: 1.5rem;
+            animation: blink 1.5s infinite;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
         }
         .spinner {
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid #4a90e2; /* 스피너 색상 조정 */
+            border-radius: 50%;
             width: 60px;
             height: 60px;
-            border-width: 8px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1.5rem auto;
         }
-    }
-    footer {
-        margin-top: auto;
-        padding: 1rem;
-        text-align: center;
-        color: #ddd; /* 로딩 페이지에 맞게 색상 조정 */
-        font-size: 0.9em;
-        width: 100%;
-        box-sizing: border-box;
-    }
-    footer p {
-        margin: 0.5rem 0;
-    }
-    footer a {
-        color: #fff; /* 로딩 페이지에 맞게 색상 조정 */
-        text-decoration: none;
-        font-weight: bold;
-    }
-    footer a:hover {
-        text-decoration: underline;
-    }
-  </style>
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .message {
+            font-size: 1.1rem;
+            color: #555; /* 텍스트 색상을 배경과 대비되도록 변경 */
+        }
+
+        /* Header and Footer styles (copied from result page for consistency) */
+        header {
+            display: flex;
+            align-items: center;
+            padding: 1rem 2rem;
+            width: 100%; /* Full width */
+            box-sizing: border-box; /* Include padding in width */
+            position: absolute; /* Keep it at the top */
+            top: 0;
+            left: 0;
+        }
+
+        .logo-link {
+            text-decoration: none;
+        }
+
+        .logo-image {
+            height: 50px;
+        }
+
+        footer {
+            margin-top: auto;
+            padding: 1rem;
+            text-align: center;
+            color: #777; /* Adjust color for better visibility on this background */
+            font-size: 0.9em;
+            width: 100%;
+            box-sizing: border-box;
+            position: absolute; /* Keep it at the bottom */
+            bottom: 0;
+            left: 0;
+        }
+        footer p {
+            margin: 0.5rem 0;
+        }
+        footer a {
+            color: #0056b3; /* Adjust link color for better visibility */
+            text-decoration: none;
+        }
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 600px) {
+            .loading-text {
+                font-size: 1.5rem;
+            }
+            .spinner {
+                width: 50px;
+                height: 50px;
+                border-width: 6px;
+            }
+            .loading-container {
+                padding: 2rem;
+            }
+            header, footer {
+                padding: 0.8rem 1rem;
+            }
+            .logo-image {
+                height: 40px;
+            }
+        }
+    </style>
 </head>
 <body>
-  <header>
-    <a href="/" class="logo-link">
-      <img src="{{ url_for('static', filename='logo.png') }}" alt="로고" class="logo-image" onerror="this.src='https://placehold.co/50x50/cccccc/000000?text=Logo'; this.alt='로고 (이미지 없음)';" />
-    </a>
-  </header>
+    <header>
+        <a href="/" class="logo-link">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="로고" class="logo-image" onerror="this.src='https://placehold.co/50x50/cccccc/000000?text=Logo'; this.alt='로고 (이미지 없음)';" />
+        </a>
+    </header>
 
-  <main>
-    <div class="spinner"></div>
-    <div class="loading-text">추천 음악을 찾고 있어요..!</div>
-  </main>
+    <main>
+        <div class="loading-container">
+            <div class="spinner"></div>
+            <div class="loading-text">추천 음악을 찾고 있어요..!</div>
+            <p class="message">잠시만 기다려 주세요.</p>
+        </div>
+    </main>
 
-  <footer>
-      <p>&copy; 2025 음잘딱깔센 | Powered by <a href="https://api.getsong.co/" target="_blank">getsong.co</a></p>
-  </footer>
+    <footer>
+        <p>&copy; 2025 음잘딱깔센 | Powered by <a href="https://api.getsong.co/" target="_blank">getsong.co</a></p>
+    </footer>
 
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const logoPlaceholderUrl = "{{ url_for('static', filename='logo.png') }}";
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Flask에서 전달받은 user_message와 recommendation_info_json을 JavaScript 변수로 가져옵니다.
+            // recommendation_info_json은 이미 JSON 문자열로 Flask에서 전달되므로,
+            // 이를 JavaScript 문자열 리터럴로 받아온 후 JSON.parse()를 사용합니다.
+            const userMessage = "{{ user_message | js_escaped }}";
+            const recommendationInfoJsonString = "{{ recommendation_info_json | js_escaped }}"; 
+            
+            let recommendationInfo;
+            try {
+                recommendationInfo = JSON.parse(recommendationInfoJsonString);
+            } catch (e) {
+                console.error("Failed to parse recommendation_info_json:", e);
+                // 파싱 실패 시 기본값 설정 (오류 페이지로 리다이렉트하거나 사용자에게 메시지 표시)
+                recommendationInfo = {"recommendations": [], "user_emotion": "오류 발생", "target_audio_features": {"bpm": [0,0], "danceability": [0,0], "acousticness": [0,0]}, "error_message": "데이터 로드 중 오류가 발생했습니다."};
+            }
 
-        const logoImage = document.querySelector('.logo-image');
-        if (logoImage) {
-            logoImage.onerror = function() {
-                this.src = logoPlaceholderUrl;
-                this.alt = '로고 (이미지 없음)';
-            };
-        }
-    });
-  </script>
+            // 3초 후 결과 페이지로 리다이렉트 (실제 API 호출 시간 고려)
+            setTimeout(function() {
+                // URL 쿼리 파라미터로 전달할 때 인코딩해야 합니다.
+                // recommendationInfo 객체를 다시 JSON 문자열로 변환하여 전달합니다.
+                const url = `/recommend_result?user_message=${encodeURIComponent(userMessage)}&recommendation_info_json=${encodeURIComponent(JSON.stringify(recommendationInfo))}`;
+                window.location.href = url;
+            }, 3000); // 3초 지연
+        });
+    </script>
 </body>
 </html>

@@ -1,149 +1,104 @@
-from flask import Flask, request, jsonify, render_template, redirect, url_for
 import os
+from flask import Flask, render_template, request, jsonify
 import logging
-import traceback
 import sys
-
-# Flask 앱 인스턴스 생성 시 static_folder와 template_folder를 명시적으로 설정
-app = Flask(__name__,
-            static_folder=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static'),
-            template_folder=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates'))
+import json # json 모듈 임포트
 
 # 로깅 설정
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 logging.debug("Music Recommendation App 초기화 시작.")
 
-# --- 음악 추천 기능 관련 모듈 로드 (전역 변수로 선언) ---
-recommender = None
-getsongbpm_api_key = os.environ.get("GETSONGBPM_API_KEY", "YOUR_GETSONGBPM_API_KEY_HERE")
+# music_recommender.py가 있는 경로를 sys.path에 추가
+current_dir = os.path.dirname(os.path.abspath(__file__))
+if current_dir not in sys.path:
+    sys.path.insert(0, current_dir)
+    logging.debug(f"Added {current_dir} to sys.path for music_recommender.py")
 
-def _load_recommendation_models():
-    """
-    음악 추천 모델과 관련 도구들을 로드하는 내부 함수.
-    이 함수는 애플리케이션 시작 시점에 한 번만 호출됩니다.
-    """
-    global recommender
-    
-    if recommender is not None: # 이미 로드되었다면 다시 로드하지 않음
-        logging.debug("음악 추천 모델이 이미 로드되어 있습니다. 다시 로드하지 않습니다.")
-        return True # 성공적으로 로드되었음을 알림
+from music_recommender import MusicRecommender, MockMusicRecommender
 
-    logging.info("음악 추천 모델 로드 시작.")
-    logging.info(f"GETSONGBPM_API_KEY 환경 변수 값: '{getsongbpm_api_key}'")
+app = Flask(__name__)
 
-    try:
-        # music_recommender.py가 있는 디렉토리를 sys.path에 추가하여 임포트 가능하게 함
-        recommender_dir = os.path.dirname(os.path.abspath(__file__))
-        if recommender_dir not in sys.path:
-            sys.path.append(recommender_dir)
-            logging.debug(f"Added {recommender_dir} to sys.path for music_recommender.py")
+# 환경 변수에서 API 키 로드
+GETSONGBPM_API_KEY = os.environ.get("GETSONGBPM_API_KEY")
 
-        from music_recommender import MusicRecommender, MockMusicRecommender 
+# API 키 유무에 따라 실제 또는 Mock 추천기 초기화
+if GETSONGBPM_API_KEY:
+    logging.info("GETSONGBPM_API_KEY가 설정되어 실제 API를 사용 합니다.")
+    recommender = MusicRecommender(GETSONGBPM_API_KEY)
+else:
+    logging.warning("GETSONGBPM_API_KEY 환경 변수가 설정되지 않았습니다. Mock 추천기를 사용합니다.")
+    recommender = MockMusicRecommender()
 
-        if getsongbpm_api_key == "YOUR_GETSONGBPM_API_KEY_HERE":
-            logging.warning("[WARNING]: getsong.co API 키가 설정되지 않았습니다. 모의(Mock) 데이터를 사용하여 테스트를 진행합니다.")
-            recommender = MockMusicRecommender(getsongbpm_api_key) # MockMusicRecommender 사용
-        else:
-            logging.info("GETSONGBPM_API_KEY가 설정되어 실제 API를 사용합니다.")
-            recommender = MusicRecommender(getsongbpm_api_key) # MusicRecommender 사용
-        
-        logging.info("음악 추천 모델 및 도구 로드 성공.")
-        return True # 성공적으로 로드되었음을 알림
-    except ImportError as e:
-        logging.error(f"필수 모듈 임포트 실패: {e}")
-        logging.error("music_recommender.py 및 관련 NLP 모듈이 올바른 경로에 있는지 확인하십시오.")
-        recommender = None # 로드 실패 시 recommender를 None으로 설정
-        return False # 로드 실패
-    except Exception as e:
-        logging.error(f"음악 추천 모델 로드 중 오류 발생: {e}")
-        logging.error(traceback.format_exc())
-        recommender = None # 로드 실패 시 recommender를 None으로 설정
-        return False # 로드 실패
-
-# 애플리케이션 시작 시 모델 로드 시도
-# Gunicorn 환경에서는 이 부분이 워커 프로세스별로 실행될 수 있습니다.
-# 따라서, 모델 로딩이 완료될 때까지 시간이 걸릴 수 있습니다.
-# Render의 헬스 체크가 충분히 기다려주거나, 모델 크기가 너무 크지 않아야 합니다.
-if not _load_recommendation_models():
-    logging.critical("CRITICAL: 음악 추천 시스템 초기 로드에 실패했습니다. 애플리케이션이 제대로 작동하지 않을 수 있습니다.")
-    # 실제 배포 환경에서는 이 시점에서 앱이 종료되거나 헬스 체크 실패를 반환해야 합니다.
-    # 하지만 개발 편의를 위해 일단 계속 진행하도록 합니다.
+logging.info("음악 추천 모델 및 도구 로드 성공.")
 
 @app.route('/')
 def index():
+    """
+    메인 페이지를 렌더링합니다.
+    """
     return render_template('index.html')
-
-@app.route('/healthz')
-def health_check():
-    """Render 헬스 체크를 위한 엔드포인트."""
-    logging.debug("Health check 요청 수신.")
-    if recommender is not None:
-        return "OK", 200
-    else:
-        # 모델 로드 실패 시 헬스 체크 실패 반환
-        return "Service Unavailable: Models not loaded", 503
 
 @app.route('/recommend', methods=['POST'])
 def recommend_music_endpoint():
     """
-    사용자 텍스트를 입력받아 음악을 추천하는 엔드포인트입니다.
+    사용자 메시지를 받아 음악을 추천하고 결과를 반환합니다.
     """
-    # 모델이 성공적으로 로드되었는지 다시 확인 (초기 로드 실패에 대비)
-    if recommender is None:
-        logging.error("음악 추천 시스템이 초기화되지 않았습니다. 요청을 처리할 수 없습니다.")
-        return jsonify({'error': '음악 추천 시스템이 준비되지 않았습니다. 잠시 후 다시 시도해주세요.'}), 503
-
-    user_text = request.form.get('user_text')
+    user_text = request.form.get('user_message')
     if not user_text:
-        logging.warning("사용자 텍스트가 제공되지 않았습니다.")
-        return jsonify({'error': 'No user text provided'}), 400
+        return jsonify({"error": "No user message provided"}), 400
 
-    try:
-        recommended_songs = recommender.recommend_music(user_text)
-        
-        # 앨범 커버 URL이 없는 경우 빈 문자열로 유지 (HTML에서 처리)
-        for song in recommended_songs:
-            if 'album_cover_url' not in song or not song['album_cover_url']:
-                song['album_cover_url'] = '' # 빈 문자열로 설정
-        
-        return jsonify({'user_message': user_text, 'recommendations': recommended_songs}), 200
-
-    except Exception as e:
-        logging.error(f'음악 추천 중 오류 발생: {str(e)}')
-        logging.error(traceback.format_exc())
-        # API 호출 실패 등 백엔드 오류 발생 시에도 JSON 응답 반환
-        return jsonify({'error': f'음악 추천 중 오류 발생: {str(e)}'}), 500
-
-@app.route('/recommend_result')
-def recommend_result():
-    """음악 추천 결과 페이지 렌더링."""
-    # JSON 문자열로 받은 데이터를 파싱
-    user_message = request.args.get('user_message', '요청하신 내용을 바탕으로 추천했어요…!')
-    recommendations_str = request.args.get('recommendations', '[]')
+    logging.info(f"\n--- Starting music recommendation for '{user_text}' ---")
     
     try:
-        import json
-        recommendations = json.loads(recommendations_str)
-    except json.JSONDecodeError:
-        logging.error(f"Failed to decode recommendations JSON: {recommendations_str}")
-        recommendations = []
+        # recommend_music 함수가 이제 딕셔너리를 반환합니다.
+        recommendation_data = recommender.recommend_music(user_text)
+        
+        # 결과를 recommend_loading_page.html로 전달합니다.
+        # recommendation_data는 딕셔너리이므로, JSON 문자열로 변환하여 전달합니다.
+        return render_template(
+            'recommend_loading_page.html',
+            user_message=user_text,
+            recommendation_info_json=json.dumps(recommendation_data) # JSON 문자열로 변환
+        )
+    except Exception as e:
+        logging.error(f"음악 추천 중 오류 발생: {e}")
+        # 오류 발생 시 사용자에게 친화적인 메시지 표시
+        # 이 경우에도 recommendation_info_json을 빈 값으로 전달하여 JS 오류 방지
+        return render_template(
+            'recommend_loading_page.html', # 로딩 페이지에서 오류 메시지를 보여주거나, 바로 결과 페이지로 넘어가도록
+            user_message=user_text,
+            recommendation_info_json=json.dumps({"recommendations": [], "user_emotion": "오류 발생", "target_audio_features": {"bpm": (0,0), "danceability": (0,0), "acousticness": (0,0)}, "error_message": "음악을 추천하는 중 오류가 발생했습니다. 다시 시도해주세요."})
+        )
 
-    # 순위 아이콘 경로 설정
-    rank_icons = {
-        1: url_for('static', filename='1st.png'),
-        2: url_for('static', filename='2nd.png'),
-        3: url_for('static', filename='3rd.png'),
-    }
+@app.route('/recommend_result')
+def recommend_result_page():
+    """
+    음악 추천 결과를 표시하는 페이지를 렌더링합니다.
+    """
+    user_message = request.args.get('user_message')
+    recommendation_info_json = request.args.get('recommendation_info_json')
+    
+    recommendation_info = {}
+    if recommendation_info_json:
+        try:
+            recommendation_info = json.loads(recommendation_info_json)
+        except json.JSONDecodeError:
+            logging.error("Failed to decode recommendation_info JSON string.")
+            recommendation_info = {"recommendations": [], "user_emotion": "알 수 없음", "target_audio_features": {"bpm": (0,0), "danceability": (0,0), "acousticness": (0,0)}}
+    
+    # recommendation_info가 비어있을 경우 기본값 설정 (오류 방지)
+    if not recommendation_info.get("recommendations"):
+        recommendation_info["recommendations"] = []
+    if not recommendation_info.get("user_emotion"):
+        recommendation_info["user_emotion"] = "알 수 없음"
+    if not recommendation_info.get("target_audio_features"):
+        recommendation_info["target_audio_features"] = {"bpm": (0,0), "danceability": (0,0), "acousticness": (0,0)}
 
-    # 각 추천곡에 순위 아이콘 경로 추가
-    for i, song in enumerate(recommendations):
-        song['rank_icon'] = rank_icons.get(i + 1, '') # 1, 2, 3위만 아이콘 적용
-
-    return render_template('recommend_result_page.html', 
-                           user_message=user_message, 
-                           recommendations=recommendations)
+    return render_template(
+        'recommend_result_page.html',
+        user_message=user_message,
+        recommendation_info=recommendation_info
+    )
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5001)) # 추천 앱은 5001 포트 사용
-    logging.debug(f"Music Recommendation App 로컬 개발 서버 시작 시도 중 (host=0.0.0.0, port={port})...")
-    app.run(debug=True, host='0.0.0.0', port=port)
+    app.run(debug=True)

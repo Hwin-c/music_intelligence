@@ -58,8 +58,28 @@
     .response-text {
       font-size: 1.6rem;
       font-weight: bold;
-      margin-bottom: 2rem;
+      margin-bottom: 1rem;
       color: #0056b3;
+    }
+
+    .recommendation-explanation {
+        font-size: 1.1rem;
+        color: #666;
+        margin-bottom: 2rem;
+        line-height: 1.5;
+        text-align: left; /* 설명 텍스트 왼쪽 정렬 */
+        padding: 0 1rem; /* 좌우 패딩 */
+    }
+    .recommendation-explanation strong {
+        color: #0056b3;
+    }
+    .recommendation-explanation ul {
+        list-style: none; /* 기본 리스트 스타일 제거 */
+        padding-left: 0; /* 기본 패딩 제거 */
+        margin-top: 0.5rem;
+    }
+    .recommendation-explanation ul li {
+        margin-bottom: 0.3rem;
     }
 
     .music-list {
@@ -71,21 +91,22 @@
 
     .music-item {
       display: flex;
-      align-items: flex-start; /* 텍스트가 상단에 정렬되도록 변경 */
+      align-items: flex-start;
       background-color: #f9f9f9;
       padding: 1rem;
       border-radius: 10px;
       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
       text-align: left;
+      position: relative;
     }
 
-    .music-item .rank-number { /* 랭크 번호 스타일 */
+    .music-item .rank-number {
         font-weight: bold;
-        font-size: 1.8rem; /* 더 크게 */
-        color: #4a90e2; /* 로고 색상과 유사하게 */
+        font-size: 1.8rem;
+        color: #4a90e2;
         margin-right: 15px;
         flex-shrink: 0;
-        width: 40px; /* 고정 너비로 정렬 */
+        width: 40px;
         text-align: right;
     }
 
@@ -93,40 +114,84 @@
       flex-grow: 1;
     }
 
-    .music-item .title-label { /* "제목:" 라벨 스타일 */
+    .music-item .title-label {
         font-weight: bold;
-        font-size: 1.5rem; /* 노래 제목과 동일한 크기 */
-        color: #333; /* 일반 텍스트 색상 */
-        margin-right: 0.5rem; /* 제목과 라벨 사이 간격 */
+        font-size: 1.5rem;
+        color: #333;
+        margin-right: 0.5rem;
     }
 
-    .music-item .title-link { /* 노래 제목 링크 스타일 */
+    .music-item .title-link {
       font-weight: bold;
-      font-size: 1.5rem; /* 가장 크게 굵은 글씨 */
-      color: #0056b3; /* 클릭 가능한 링크 색상 */
-      text-decoration: none; /* 밑줄 제거 */
-      display: inline; /* 라벨 옆에 오도록 인라인으로 변경 */
+      font-size: 1.5rem;
+      color: #0056b3;
+      text-decoration: none;
+      display: inline;
     }
     .music-item .title-link:hover {
-        text-decoration: underline; /* 호버 시 밑줄 */
+        text-decoration: underline;
     }
 
-
-    .music-item .artist-name { /* 아티스트 이름 스타일 */
-      font-size: 1.1rem; /* 약간 더 크게 */
-      color: #333; /* 기본 텍스트 색상 */
+    .music-item .artist-name {
+      font-size: 1.1rem;
+      color: #333;
       margin-bottom: 0.2rem;
     }
 
-    .music-item .genre-text { /* 장르 스타일 추가 */
+    .music-item .genre-text {
         font-size: 0.95rem;
         color: #666;
         margin-bottom: 0.2rem;
     }
 
-    .music-item .bpm-text { /* BPM 스타일 */
-      font-size: 0.9rem;
-      color: #888;
+    /* 오디오 특성 바 스타일 */
+    .audio-features {
+        margin-top: 0.8rem;
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 0.2rem 0.5rem;
+        align-items: center;
+        width: 100%;
+        max-width: 300px;
+    }
+    .audio-features div {
+        font-size: 0.85rem;
+        color: #555;
+    }
+    .audio-features .feature-label {
+        font-weight: bold;
+        text-align: right;
+    }
+    .audio-features .feature-bar-container {
+        background-color: #e0e0e0;
+        border-radius: 5px;
+        height: 10px;
+        overflow: hidden;
+    }
+    .audio-features .feature-bar {
+        height: 100%;
+        background-color: #4a90e2;
+        border-radius: 5px;
+        transition: width 0.5s ease-out;
+    }
+    .audio-features .feature-value {
+        font-weight: bold;
+        text-align: left;
+        min-width: 30px;
+    }
+
+    /* 점수 배지 */
+    .score-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background-color: #28a745;
+        color: white;
+        padding: 0.3rem 0.6rem;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        font-weight: bold;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
     }
 
     .actions {
@@ -160,9 +225,13 @@
         .response-text {
             font-size: 1.4rem;
         }
+        .recommendation-explanation {
+            font-size: 0.95rem;
+            padding: 0 0.5rem;
+        }
         .music-item {
             flex-direction: row;
-            align-items: flex-start; /* 모바일에서도 상단 정렬 유지 */
+            align-items: flex-start;
             padding: 0.8rem;
         }
         .music-item .rank-number {
@@ -174,8 +243,21 @@
         .music-item .title-link {
             font-size: 1.2rem;
         }
-        .music-item .artist-name, .music-item .genre-text, .music-item .bpm-text {
+        .music-item .artist-name, .music-item .genre-text {
             font-size: 0.85rem;
+        }
+        .audio-features {
+            grid-template-columns: auto 1fr auto;
+            gap: 0.1rem 0.3rem;
+        }
+        .audio-features div {
+            font-size: 0.75rem;
+        }
+        .score-badge {
+            padding: 0.2rem 0.4rem;
+            font-size: 0.7rem;
+            top: 5px;
+            right: 5px;
         }
         .actions {
             flex-direction: column;
@@ -209,7 +291,7 @@
 <body>
   <header>
     <a href="/" class="logo-link">
-      <img src="{{ url_for('static', filename='logo.png') }}" alt="로고" class="logo-image" />
+      <img src="{{ url_for('static', filename='logo.png') }}" alt="로고" class="logo-image" onerror="this.src='https://placehold.co/50x50/cccccc/000000?text=Logo'; this.alt='로고 (이미지 없음)';" />
     </a>
   </header>
 
@@ -217,26 +299,63 @@
     <div class="result-box">
       <div class="user-message">"{{ user_message }}"</div>
       <div class="response-text">요청하신 내용을 바탕으로 추천했어요…!</div>
+
+      <!-- 감정 분석 및 추천 근거 설명 추가 -->
+      <div class="recommendation-explanation">
+        {% if recommendation_info.user_emotion and recommendation_info.target_audio_features %}
+            사용자님의 감정은 <strong>{{ recommendation_info.user_emotion }}</strong> 으로 분석되었습니다.<br>
+            이에 따라, 다음과 같은 음악적 특성 범위의 음악을 추천했습니다:
+            <ul>
+                <li>BPM: <strong>{{ recommendation_info.target_audio_features.bpm[0] }} ~ {{ recommendation_info.target_audio_features.bpm[1] }}</strong></li>
+                <li>Danceability: <strong>{{ recommendation_info.target_audio_features.danceability[0] }} ~ {{ recommendation_info.target_audio_features.danceability[1] }}</strong></li>
+                <li>Acousticness: <strong>{{ recommendation_info.target_audio_features.acousticness[0] }} ~ {{ recommendation_info.target_audio_features.acousticness[1] }}</strong></li>
+            </ul>
+            아래 추천 목록은 각 음악의 특성이 설정된 범위에 얼마나 잘 부합하는지 점수를 매겨 높은 순서대로 정렬되었습니다.
+        {% else %}
+            <p>추천 정보를 불러오는 데 문제가 발생했습니다.</p>
+        {% endif %}
+      </div>
+
       <div class="music-list">
-        {% if recommendations %}
-          {% for song in recommendations %}
+        {% if recommendation_info.recommendations %}
+          {% for song in recommendation_info.recommendations %}
             <div class="music-item">
-              <div class="rank-number">{{ loop.index }}.</div> <!-- 랭크 번호 -->
+              <div class="rank-number">{{ loop.index }}.</div>
               <div class="details">
-                <!-- 노래 제목 (가장 크게 굵은 글씨, URI 링크) -->
                 <div class="flex items-baseline mb-1">
                     <span class="title-label">제목:</span>
                     <a href="{{ song.uri }}" target="_blank" class="title-link">{{ song.title }}</a>
                 </div>
-                <!-- 아티스트 -->
                 <p class="artist-name">아티스트: {{ song.artist }}</p>
-                <!-- 장르 (존재할 경우) -->
                 {% if song.genres %}
                     <p class="genre-text">장르: {{ song.genres | join(', ') }}</p>
                 {% endif %}
-                <!-- BPM -->
-                <p class="bpm-text">BPM: {{ song.bpm }}</p>
+                
+                <!-- 오디오 특성 표시 -->
+                <div class="audio-features">
+                    <div class="feature-label">BPM:</div>
+                    <div class="feature-bar-container">
+                        <div class="feature-bar" data-width="{{ (song.bpm / 200 * 100) | round(0) }}"></div> <!-- BPM은 대략 0~200 범위로 가정 -->
+                    </div>
+                    <div class="feature-value">{{ song.bpm }}</div>
+
+                    <div class="feature-label">Danceability:</div>
+                    <div class="feature-bar-container">
+                        <div class="feature-bar" data-width="{{ song.danceability }}"></div>
+                    </div>
+                    <div class="feature-value">{{ song.danceability }}</div>
+
+                    <div class="feature-label">Acousticness:</div>
+                    <div class="feature-bar-container">
+                        <div class="feature-bar" data-width="{{ song.acousticness }}"></div>
+                    </div>
+                    <div class="feature-value">{{ song.acousticness }}</div>
+                </div>
               </div>
+              <!-- 점수 배지 -->
+              {% if song.relevance_score is not none %}
+                <div class="score-badge">점수: {{ song.relevance_score | round(2) }}</div>
+              {% endif %}
             </div>
           {% endfor %}
         {% else %}
@@ -264,6 +383,12 @@
                 this.alt = '로고 (이미지 없음)';
             };
         }
+
+        // 오디오 특성 바의 너비를 동적으로 설정
+        document.querySelectorAll('.feature-bar').forEach(bar => {
+            const width = bar.dataset.width;
+            bar.style.width = `${width}%`;
+        });
     });
   </script>
 </body>
