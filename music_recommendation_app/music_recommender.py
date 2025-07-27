@@ -17,49 +17,55 @@ if nlp_dir not in sys.path:
     sys.path.insert(0, nlp_dir)
     logging.debug(f"Added {nlp_dir} to sys.path for NLP modules.")
 
-# SentimentAnalyzer와 BPMMapper를 임포트합니다.
-# 이 임포트는 이제 try-except 블록 외부에 위치하여 항상 시도됩니다.
-# 만약 NLP 모듈이 없으면 ImportError가 발생하므로, 아래 Mock 클래스들을 정의하여 사용합니다.
+# --- Mock SentimentAnalyzer 및 BPMMapper 클래스들을 먼저 정의합니다. ---
+# 이 클래스들은 실제 모듈 임포트가 실패할 경우 사용될 fallback 입니다.
+class SentimentAnalyzer: # 기본적으로 Mock 버전으로 시작
+    def analyze_sentiment(self, text: str):
+        logging.debug(f"MockSentimentAnalyzer: Analyzing '{text}'")
+        if "신나" in text or "기분 좋" in text or "활기찬" in text:
+            return {"label": "긍정", "score": 0.9}
+        elif "슬프" in text or "우울" in text:
+            return {"label": "부정", "score": 0.8}
+        elif "공부" in text or "집중" in text or "잔잔" in text:
+            return {"label": "긍정", "score": 0.7}
+        elif "화가 나" in text or "분노" in text:
+            return {"label": "부정", "score": 0.85}
+        elif "스트레스" in text or "쉬고 싶" in text:
+            return {"label": "부정", "score": 0.75}
+        else:
+            return {"label": "긍정", "score": 0.5}
+
+class BPMMapper: # 기본적으로 Mock 버전으로 시작
+    def __init__(self):
+        self.emotion_features_map = {
+            "긍정": {"bpm": (110, 140), "danceability": (70, 100), "acousticness": (0, 30)},
+            "부정": {"bpm": (60, 90), "danceability": (0, 40), "acousticness": (50, 100)},
+            "공부": {"bpm": (80, 110), "danceability": (0, 50), "acousticness": (30, 70)},
+            "화가 나": {"bpm": (130, 180), "danceability": (50, 90), "acousticness": (0, 20)},
+            "스트레스": {"bpm": (70, 100), "danceability": (20, 60), "acousticness": (40, 90)},
+            "편안": {"bpm": (70, 100), "danceability": (20, 60), "acousticness": (40, 90)},
+            "불안": {"bpm": (95, 125), "danceability": (30, 70), "acousticness": (20, 60)},
+            "neutral": {"bpm": (90, 120), "danceability": (40, 80), "acousticness": (20, 70)}
+        }
+        logging.info("MockBPMMapper initialized.")
+
+    def get_audio_feature_ranges(self, emotion_label: str):
+        logging.debug(f"MockBPMMapper: Mapping audio features for '{emotion_label}'")
+        return self.emotion_features_map.get(emotion_label, self.emotion_features_map["neutral"])
+
+# --- 실제 SentimentAnalyzer 및 BPMMapper 임포트 시도 ---
+# 성공하면 위에 정의된 Mock 클래스들을 덮어씁니다.
 try:
-    from sentiment_analyzer import SentimentAnalyzer
-    from bpm_mapper import BPMMapper
-    logging.debug("SentimentAnalyzer and BPMMapper imported successfully.")
+    from sentiment_analyzer import SentimentAnalyzer as RealSentimentAnalyzer
+    from bpm_mapper import BPMMapper as RealBPMMapper
+    
+    # 실제 클래스로 전역 변수를 덮어씁니다.
+    SentimentAnalyzer = RealSentimentAnalyzer
+    BPMMapper = RealBPMMapper
+    logging.debug("Actual SentimentAnalyzer and BPMMapper imported successfully.")
 except ImportError as e:
-    logging.warning(f"Failed to import actual NLP modules: {e}. Using fallback Mock versions for SentimentAnalyzer and BPMMapper.")
-    # 실제 모듈 임포트 실패 시 사용할 Mock 버전 정의
-    class SentimentAnalyzer:
-        def analyze_sentiment(self, text: str):
-            logging.debug(f"MockSentimentAnalyzer: Analyzing '{text}'")
-            if "신나" in text or "기분 좋" in text or "활기찬" in text:
-                return {"label": "긍정", "score": 0.9}
-            elif "슬프" in text or "우울" in text:
-                return {"label": "부정", "score": 0.8}
-            elif "공부" in text or "집중" in text or "잔잔" in text:
-                return {"label": "긍정", "score": 0.7}
-            elif "화가 나" in text or "분노" in text:
-                return {"label": "부정", "score": 0.85}
-            elif "스트레스" in text or "쉬고 싶" in text:
-                return {"label": "부정", "score": 0.75}
-            else:
-                return {"label": "긍정", "score": 0.5}
-
-    class BPMMapper:
-        def __init__(self):
-            self.emotion_features_map = {
-                "긍정": {"bpm": (110, 140), "danceability": (70, 100), "acousticness": (0, 30)},
-                "부정": {"bpm": (60, 90), "danceability": (0, 40), "acousticness": (50, 100)},
-                "공부": {"bpm": (80, 110), "danceability": (0, 50), "acousticness": (30, 70)},
-                "화가 나": {"bpm": (130, 180), "danceability": (50, 90), "acousticness": (0, 20)},
-                "스트레스": {"bpm": (70, 100), "danceability": (20, 60), "acousticness": (40, 90)},
-                "편안": {"bpm": (70, 100), "danceability": (20, 60), "acousticness": (40, 90)},
-                "불안": {"bpm": (95, 125), "danceability": (30, 70), "acousticness": (20, 60)},
-                "neutral": {"bpm": (90, 120), "danceability": (40, 80), "acousticness": (20, 70)}
-            }
-            logging.info("MockBPMMapper initialized.")
-
-        def get_audio_feature_ranges(self, emotion_label: str):
-            logging.debug(f"MockBPMMapper: Mapping audio features for '{emotion_label}'")
-            return self.emotion_features_map.get(emotion_label, self.emotion_features_map["neutral"])
+    logging.warning(f"Failed to import actual NLP modules: {e}. Continuing with Mock versions.")
+    # 이 경우 SentimentAnalyzer와 BPMMapper는 이미 위에 정의된 Mock 버전입니다.
 
 
 class MusicRecommender:
@@ -73,8 +79,8 @@ class MusicRecommender:
         Args:
             getsongbpm_api_key (str): getsong.co API 키.
         """
-        self.sentiment_analyzer = SentimentAnalyzer()
-        self.bpm_mapper = BPMMapper()
+        self.sentiment_analyzer = SentimentAnalyzer() # 이제 SentimentAnalyzer는 실제 또는 Mock 중 하나
+        self.bpm_mapper = BPMMapper() # 이제 BPMMapper는 실제 또는 Mock 중 하나
         self.getsongbpm_api_key = getsongbpm_api_key
         self.getsongbpm_base_url = "https://api.getsong.co/" 
         logging.info(f"Music recommendation system initialized with API Base URL: {self.getsongbpm_base_url}")
@@ -157,7 +163,6 @@ class MusicRecommender:
         # Danceability 점수 계산
         song_danceability = song_data.get("danceability")
         min_dance, max_dance = target_features["danceability"]
-        # song_data에 danceability 값이 없을 경우 0으로 처리하여 오류 방지
         if song_danceability is not None:
             try:
                 song_danceability = int(song_danceability)
@@ -175,7 +180,6 @@ class MusicRecommender:
         # Acousticness 점수 계산
         song_acousticness = song_data.get("acousticness")
         min_acoustic, max_acoustic = target_features["acousticness"]
-        # song_data에 acousticness 값이 없을 경우 0으로 처리하여 오류 방지
         if song_acousticness is not None:
             try:
                 song_acousticness = int(song_acousticness)
@@ -349,7 +353,7 @@ class MusicRecommender:
                 {"title": "Lose Yourself (Mock)", "artist": "Eminem (Mock)", "bpm": 171, "uri": "#", "genres": ["Hip Hop", "Rap"], "danceability": 60, "acousticness": 10},
                 {"title": "Imagine (Mock)", "artist": "John Lennon (Mock)", "bpm": 75, "uri": "#", "genres": ["Pop", "Soft Rock"], "danceability": 20, "acousticness": 90},
                 {"title": "What a Wonderful World (Mock)", "artist": "Louis Armstrong (Mock)", "bpm": 82, "uri": "#", "genres": ["Jazz", "Vocal"], "danceability": 35, "acousticness": 70},
-                {"title": "Stairway to Heaven (Mock)", "artist": "Led Zeppelin (Mock)", "bpm": 82, "uri": "#", "genres": ["Rock", "Hard Rock"], "danceability": 25, "acousticness": 60},
+                {"title": "Stairway to Heaven (Mock)", "artist": "Led Zeppelin (Mock)", "bpm": 147, "uri": "#", "genres": ["Rock", "Hard Rock"], "danceability": 25, "acousticness": 60}, # BPM 82 -> 147로 변경
                 {"title": "Hotel California (Mock)", "artist": "Eagles (Mock)", "bpm": 147, "uri": "#", "genres": ["Rock", "Classic Rock"], "danceability": 50, "acousticness": 40},
                 {"title": "Yesterday (Mock)", "artist": "The Beatles (Mock)", "bpm": 94, "uri": "#", "genres": ["Pop", "Rock"], "danceability": 45, "acousticness": 50},
                 {"title": "Smells Like Teen Spirit (Mock)", "artist": "Nirvana (Mock)", "bpm": 117, "uri": "#", "genres": ["Grunge", "Rock"], "danceability": 60, "acousticness": 10},
