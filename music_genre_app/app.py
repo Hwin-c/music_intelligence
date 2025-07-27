@@ -4,7 +4,10 @@ import logging
 import traceback
 import sys
 
-app = Flask(__name__)
+# Flask 앱 인스턴스 생성 시 static_folder와 template_folder를 명시적으로 설정
+app = Flask(__name__,
+            static_folder=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static'),
+            template_folder=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates'))
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB 제한 설정
 
 # 로깅 설정
@@ -12,9 +15,7 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 logging.debug("Music Genre App 초기화 시작.")
 
 # --- 음악 장르 분류 기능 관련 모델 및 도구 로드 (지연 로딩을 위해 전역 변수로 선언) ---
-# 모델 파일들이 music_genre_app 바로 아래에 있으므로 경로를 직접 참조합니다.
 MODEL_DIR = os.path.dirname(os.path.abspath(__file__)) # 현재 app.py가 있는 디렉토리
-app.template_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates') # templates 경로 설정
 
 interpreter = None
 input_details = None
@@ -39,6 +40,7 @@ def _load_genre_classification_models():
     import json
     
     if interpreter is not None: # 이미 로드되었다면 다시 로드하지 않음
+        logging.debug("모델 및 도구가 이미 로드되어 있습니다. 다시 로드하지 않습니다.")
         return
 
     logging.debug("음악 장르 분류 모델 및 도구 지연 로드 시작.")
@@ -75,56 +77,64 @@ def _load_genre_classification_models():
     except Exception as e:
         logging.error(f"음악 장르 분류 모델 지연 로드 중 오류 발생: {e}")
         logging.error(traceback.format_exc())
-        raise # 예외를 다시 발생시켜 상위 호출자에게 알림
+        sys.exit(1) # 모델 로드 실패 시 앱 종료 (배포 환경에서 중요)
 
 def extract_features_from_audio(file_path):
     import librosa
     import numpy as np
     import pandas as pd
 
-    y, sr = librosa.load(file_path, sr=44100)
+    try:
+        y, sr = librosa.load(file_path, sr=44100)
 
-    if np.isnan(y).any():
-        raise ValueError("오디오 신호가 유효하지 않습니다.")
-    
-    logging.info(f"Audio loaded: duration={len(y)/sr:.2f} seconds, sr={sr}")
+        if np.isnan(y).any():
+            raise ValueError("오디오 신호가 유효하지 않습니다. NaN 값이 포함되어 있습니다.")
+        
+        logging.info(f"Audio loaded: duration={len(y)/sr:.2f} seconds, sr={sr}")
 
-    chroma_stft = librosa.feature.chroma_stft(y=y, sr=sr)
-    rms = librosa.feature.rms(y=y)
-    spec_centroid = librosa.feature.spectral_centroid(y=y, sr=sr)
-    spec_bandwidth = librosa.feature.spectral_bandwidth(y=y, sr=sr)
-    rolloff = librosa.feature.spectral_rolloff(y=y, sr=sr)
-    zcr = librosa.feature.zero_crossing_rate(y)
-    harmony = librosa.effects.harmonic(y)
-    perceptr = librosa.feature.spectral_flatness(y=y)
-    tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
-    mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=20)
+        chroma_stft = librosa.feature.chroma_stft(y=y, sr=sr)
+        rms = librosa.feature.rms(y=y)
+        spec_centroid = librosa.feature.spectral_centroid(y=y, sr=sr)
+        spec_bandwidth = librosa.feature.spectral_bandwidth(y=y, sr=sr)
+        rolloff = librosa.feature.spectral_rolloff(y=y, sr=sr)
+        zcr = librosa.feature.zero_crossing_rate(y)
+        harmony = librosa.effects.harmonic(y)
+        perceptr = librosa.feature.spectral_flatness(y=y)
+        
+        # tempo는 librosa.beat.beat_track이 튜플을 반환하므로 첫 번째 요소만 사용
+        tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
+        
+        mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=20)
 
-    features = {
-        'chroma_stft_mean': np.mean(chroma_stft),
-        'chroma_stft_var': np.var(chroma_stft),
-        'rms_mean': np.mean(rms),
-        'rms_var': np.var(rms),
-        'spectral_centroid_mean': np.mean(spec_centroid),
-        'spectral_centroid_var': np.var(spec_centroid),
-        'spectral_bandwidth_mean': np.mean(spec_bandwidth),
-        'spectral_bandwidth_var': np.var(spec_bandwidth),
-        'rolloff_mean': np.mean(rolloff),
-        'rolloff_var': np.var(rolloff),
-        'zero_crossing_rate_mean': np.mean(zcr),
-        'zero_crossing_rate_var': np.var(zcr),
-        'harmony_mean': np.mean(harmony),
-        'harmony_var': np.var(harmony),
-        'perceptr_mean': np.mean(perceptr),
-        'perceptr_var': np.var(perceptr),
-        'tempo': tempo,
-    }
+        features = {
+            'chroma_stft_mean': np.mean(chroma_stft),
+            'chroma_stft_var': np.var(chroma_stft),
+            'rms_mean': np.mean(rms),
+            'rms_var': np.var(rms),
+            'spectral_centroid_mean': np.mean(spec_centroid),
+            'spectral_centroid_var': np.var(spec_centroid),
+            'spectral_bandwidth_mean': np.mean(spec_bandwidth),
+            'spectral_bandwidth_var': np.var(spec_bandwidth),
+            'rolloff_mean': np.mean(rolloff),
+            'rolloff_var': np.var(rolloff),
+            'zero_crossing_rate_mean': np.mean(zcr),
+            'zero_crossing_rate_var': np.var(zcr),
+            'harmony_mean': np.mean(harmony),
+            'harmony_var': np.var(harmony),
+            'perceptr_mean': np.mean(perceptr),
+            'perceptr_var': np.var(perceptr),
+            'tempo': tempo, # tempo는 스칼라 값으로 바로 할당
+        }
 
-    for i in range(20):
-        features[f'mfcc{i+1}_mean'] = np.mean(mfcc[i])
-        features[f'mfcc{i+1}_var'] = np.var(mfcc[i])
+        for i in range(20):
+            features[f'mfcc{i+1}_mean'] = np.mean(mfcc[i])
+            features[f'mfcc{i+1}_var'] = np.var(mfcc[i])
 
-    return pd.DataFrame([features])
+        return pd.DataFrame([features])
+    except Exception as e:
+        logging.error(f"오디오 특징 추출 중 오류 발생: {e}")
+        logging.error(traceback.format_exc())
+        raise # 특징 추출 실패 시 예외를 다시 발생시킴
 
 @app.route('/')
 def index():
@@ -171,31 +181,36 @@ def predict_genre_endpoint():
             logging.warning(f"지원하지 않는 파일 형식: {filename}")
             return jsonify({'error': 'Unsupported file format. Please upload mp3 or wav.'}), 400
 
-        features = extract_features_from_audio(temp_wav_path)
+        features_df = extract_features_from_audio(temp_wav_path) # DataFrame으로 반환됨
 
-        app_cols = list(features.columns)
-        if train_cols == app_cols:
-            logging.info("피처 컬럼 이름과 순서가 정확히 일치합니다.")
-        else:
-            logging.warning("피처 컬럼이 일치하지 않습니다!")
-            logging.warning(f"학습에 있었으나 현재 없음: {list(set(train_cols) - set(app_cols))}")
-            logging.warning(f"현재에 있으나 학습에는 없음: {list(set(app_cols) - set(train_cols))}")
-            for i, (tc, ac) in enumerate(zip(train_cols, app_cols)):
-                if tc != ac:
-                    logging.warning(f"{i}번째 컬럼 불일치: 학습 시 '{tc}' vs 현재 '{ac}'")
+        # train_cols와 features_df의 컬럼 순서 및 일치 여부 확인
+        # train_cols에 없는 컬럼이 features_df에 있다면 제거
+        # features_df에 없는 컬럼이 train_cols에 있다면 0으로 채우기
+        processed_features = pd.DataFrame(columns=train_cols)
+        for col in train_cols:
+            if col in features_df.columns:
+                processed_features[col] = features_df[col]
+            else:
+                processed_features[col] = 0.0 # 없는 컬럼은 0으로 채움
 
-        if features['tempo'].dtype == object:
+        # tempo 컬럼이 object 타입일 경우 float으로 변환 시도
+        if processed_features['tempo'].dtype == object:
             try:
-                features['tempo'] = features['tempo'].astype(float)
+                processed_features['tempo'] = processed_features['tempo'].astype(float)
                 logging.info("'tempo' 컬럼을 float 타입으로 변환했습니다.")
             except Exception as e:
-                logging.error(f"'tempo'를 float으로 변환하는 데 실패했습니다: {e}")
+                logging.error(f"'tempo'를 float으로 변환하는 데 실패했습니다: {e}. 기본값으로 설정합니다.")
+                processed_features['tempo'] = 0.0 # 변환 실패 시 기본값 설정
 
-        logging.debug(f"학습 시 사용된 피처 개수: {len(train_cols)}")
-        logging.debug(f"현재 추출된 피처 개수: {len(app_cols)}")
-        logging.debug(f"현재 피처 데이터 타입:\n{features.dtypes}")
-        logging.debug(f"스케일링 전 피처:\n{features}")
+        # 스케일링 전 데이터 로깅
+        logging.debug(f"스케일링 전 피처 (processed_features):\n{processed_features.head()}")
+        logging.debug(f"스케일링 전 피처 데이터 타입:\n{processed_features.dtypes}")
+        
+        # 스케일링
+        features_scaled = scaler.transform(processed_features)
+        logging.debug(f"스케일링 후 피처 (features_scaled):\n{features_scaled}")
 
+        # TFLite 모델 예측
         interpreter.set_tensor(input_details[0]['index'], features_scaled.astype(input_details[0]['dtype']))
         interpreter.invoke()
         preds = interpreter.get_tensor(output_details[0]['index'])

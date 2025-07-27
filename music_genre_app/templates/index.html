@@ -118,6 +118,24 @@
         50% { opacity: 0.5; }
     }
 
+    .audio-player-section {
+        margin-top: 1.5rem;
+        width: 100%;
+        text-align: left;
+        color: #555;
+    }
+    .audio-player-section h3 {
+        margin-top: 0;
+        margin-bottom: 0.5rem;
+        font-size: 1.1rem;
+    }
+    #audio-preview {
+        width: 100%;
+        border-radius: 8px;
+        background-color: #f0f0f0;
+    }
+
+
     @media (max-width: 600px) {
         main {
             padding: 1rem;
@@ -142,6 +160,25 @@
             border-width: 8px;
         }
     }
+    footer {
+        margin-top: auto;
+        padding: 1rem;
+        text-align: center;
+        color: #777;
+        font-size: 0.9em;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    footer p {
+        margin: 0.5rem 0;
+    }
+    footer a {
+        color: #0056b3;
+        text-decoration: none;
+    }
+    footer a:hover {
+        text-decoration: underline;
+    }
   </style>
 </head>
 <body>
@@ -153,13 +190,17 @@
 
   <main>
     <div class="upload-box">
-      <!-- 음악 장르 분류 이미지 추가 -->
-      <img src="{{ url_for('static', filename='music_genre_classification.jpg') }}" alt="음악 장르 분류 이미지" style="width: 100%; max-width: 300px; border-radius: 15px; margin-bottom: 1rem;">
+      <img src="{{ url_for('static', filename='music_genre_classification.jpg') }}" alt="음악 장르 분류 이미지" style="width: 100%; max-width: 300px; border-radius: 15px; margin-bottom: 1rem;" onerror="this.src='https://placehold.co/300x200/cccccc/000000?text=Genre+Image'; this.alt='음악 장르 분류 이미지 (없음)';">
       <h2>음악 파일을 업로드하세요</h2>
       <form id="upload-form">
         <input type="file" name="audio" accept=".mp3,.wav" required />
         <button type="submit" class="predict-button">예측 시작</button>
       </form>
+
+      <div class="audio-player-section" style="display: none;">
+          <h3>업로드될 음악 미리듣기:</h3>
+          <audio id="audio-preview" controls></audio>
+      </div>
     </div>
   </main>
 
@@ -168,9 +209,28 @@
       <div class="loading-text">인공지능 모델이 장르를 분석하고 있어요..!</div>
   </div>
 
+  <footer>
+      <p>&copy; 2025 음잘딱깔센</p>
+  </footer>
+
   <script>
     const uploadForm = document.getElementById('upload-form');
     const loadingOverlay = document.getElementById('loading-overlay');
+    const audioFileInput = document.querySelector('input[type="file"]');
+    const audioPreviewSection = document.querySelector('.audio-player-section');
+    const audioPreview = document.getElementById('audio-preview');
+
+    audioFileInput.addEventListener('change', function() {
+        if (this.files.length > 0) {
+            const file = this.files[0];
+            const fileURL = URL.createObjectURL(file);
+            audioPreview.src = fileURL;
+            audioPreviewSection.style.display = 'block'; // Show the audio player
+        } else {
+            audioPreview.src = '';
+            audioPreviewSection.style.display = 'none'; // Hide if no file selected
+        }
+    });
 
     uploadForm.addEventListener('submit', async function (e) {
         e.preventDefault();
@@ -192,7 +252,7 @@
             const data = await response.json();
             
             const genre = data.label;
-            window.location.href = `/result?genre=${encodeURIComponent(genre)}`;
+            window.location.href = `/result?genre=${encodeURIComponent(genre)}&probability=${encodeURIComponent(data.probability)}`;
 
         } catch (error) {
             console.error('장르 분류 요청 중 오류 발생:', error);
@@ -205,6 +265,10 @@
     document.querySelector('.logo-image').onerror = function() {
         this.src = 'https://placehold.co/50x50/cccccc/000000?text=Logo';
         this.alt = '로고 (이미지 없음)';
+    };
+    document.querySelector('img[alt="음악 장르 분류 이미지"]').onerror = function() {
+        this.src = 'https://placehold.co/300x200/cccccc/000000?text=Genre+Image';
+        this.alt = '음악 장르 분류 이미지 (없음)';
     };
   </script>
 </body>
