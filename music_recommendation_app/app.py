@@ -37,6 +37,12 @@ def index():
     error_message = request.args.get('error_message')
     return render_template('index.html', error_message=error_message)
 
+@app.route('/healthz')
+def health_check():
+    """Render 헬스 체크를 위한 엔드포인트."""
+    logging.debug("Health check 요청 수신.")
+    return "OK", 200
+
 @app.route('/recommend', methods=['POST'])
 def recommend_music_endpoint():
     """
@@ -80,6 +86,7 @@ def recommend_result_page():
             recommendation_info = json.loads(recommendation_info_json)
         except json.JSONDecodeError:
             logging.error("Failed to decode recommendation_info JSON string.")
+            # energy와 liveness 기본값 제거
             recommendation_info = {"recommendations": [], "user_emotion": "알 수 없음", "target_audio_features": {"bpm": (0,0), "danceability": (0,0), "acousticness": (0,0)}}
     
     if not recommendation_info.get("recommendations"):
@@ -87,6 +94,7 @@ def recommend_result_page():
     if not recommendation_info.get("user_emotion"):
         recommendation_info["user_emotion"] = "알 수 없음"
     if not recommendation_info.get("target_audio_features"):
+        # energy와 liveness 기본값 제거
         recommendation_info["target_audio_features"] = {"bpm": (0,0), "danceability": (0,0), "acousticness": (0,0)}
 
     return render_template(
