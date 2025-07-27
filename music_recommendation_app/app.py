@@ -30,7 +30,6 @@ def _load_recommendation_models():
     logging.debug("음악 추천 모델 지연 로드 시작.")
     try:
         # music_recommender 모듈을 임포트합니다.
-        # 이제 MockMusicRecommender가 music_recommender.py의 최상위 레벨에 있습니다.
         from music_recommender import MusicRecommender, MockMusicRecommender 
 
         if getsongbpm_api_key == "YOUR_GETSONGBPM_API_KEY_HERE":
@@ -74,10 +73,10 @@ def recommend_music_endpoint():
     try:
         recommended_songs = recommender.recommend_music(user_text)
         
-        # 앨범 커버 URL이 없는 경우 플레이스홀더 이미지로 대체
+        # 앨범 커버 URL이 없는 경우 빈 문자열로 유지 (HTML에서 처리)
         for song in recommended_songs:
             if 'album_cover_url' not in song or not song['album_cover_url']:
-                song['album_cover_url'] = url_for('static', filename='placeholder_cover.png') # 대체 이미지 경로
+                song['album_cover_url'] = '' # 빈 문자열로 설정
         
         return jsonify({'user_message': user_text, 'recommendations': recommended_songs}), 200
 

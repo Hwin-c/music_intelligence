@@ -242,7 +242,6 @@
     document.addEventListener('DOMContentLoaded', function() {
         // Flask url_for로 생성된 정적 파일 경로를 JavaScript 변수로 저장
         const logoPlaceholderUrl = "{{ url_for('static', filename='logo.png') }}";
-        const coverPlaceholderUrl = "{{ url_for('static', filename='placeholder_cover.png') }}";
 
         // 로고 이미지 로드 실패 시 대체 이미지 설정
         const logoImage = document.querySelector('.logo-image');
@@ -253,13 +252,8 @@
             };
         }
 
-        // 앨범 커버 이미지 로드 실패 시 대체 이미지 설정 (개별 아이템)
-        document.querySelectorAll('.music-item .cover').forEach(img => {
-            img.onerror = function() {
-                this.src = coverPlaceholderUrl;
-                this.alt = '앨범 커버 (없음)';
-            };
-        });
+        // 앨범 커버 이미지에는 더 이상 onerror가 필요하지 않습니다.
+        // 만약 앨범 커버 URL이 비어있다면, CSS의 background-color: #eee; 가 표시됩니다.
     });
   </script>
 </body>

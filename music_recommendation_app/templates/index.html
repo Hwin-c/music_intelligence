@@ -193,7 +193,7 @@
   <main>
     <h1 class="main-heading">음악 추천</h1>
     <div class="chat-box">
-      <img src="{{ url_for('static', filename='music_recommendation.png') }}" alt="음악 추천 이미지" style="width: 100%; max-width: 300px; border-radius: 15px; margin-bottom: 1rem;" onerror="this.src='https://placehold.co/300x200/cccccc/000000?text=Recommendation+Image'; this.alt='음악 추천 이미지 (없음)';">
+      <img src="{{ url_for('static', filename='music_recommendation.png') }}" alt="음악 추천 이미지" style="width: 100%; max-width: 300px; border-radius: 15px; margin-bottom: 1rem;" />
       <h2>어떤 음악을 추천해 드릴까요?</h2>
       <form id="recommend-form">
         <textarea id="user-text" placeholder="예: '신나는 음악 추천해줘!', '공부할 때 들을 조용한 노래', '기분 전환할 때 좋은 노래'"></textarea>
@@ -253,15 +253,13 @@
         }
     });
 
-    // 이미지 로드 실패 시 대체 이미지 설정
+    // 이미지 로드 실패 시 대체 이미지 설정 (로고)
     document.querySelector('.logo-image').onerror = function() {
         this.src = 'https://placehold.co/50x50/cccccc/000000?text=Logo';
         this.alt = '로고 (이미지 없음)';
     };
-    document.querySelector('img[alt="음악 추천 이미지"]').onerror = function() {
-        this.src = 'https://placehold.co/300x200/cccccc/000000?text=Recommendation+Image';
-        this.alt = '음악 추천 이미지 (없음)';
-    };
+    // music_recommendation.png 이미지에는 더 이상 onerror가 필요하지 않습니다.
+    // 만약 해당 이미지가 로드되지 않는다면, 이는 파일 경로 또는 파일 자체의 문제일 수 있습니다.
   </script>
 </body>
 </html>
