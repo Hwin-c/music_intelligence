@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>음악 추천 결과 | 음잘따끈센</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(to bottom right, #a3c8f5, #4a90e2);
+      color: #333;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      padding: 1rem 2rem;
+    }
+
+    .logo-link {
+      text-decoration: none;
+    }
+
+    .logo-image {
+      height: 50px;
+    }
+
+    main {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2rem;
+    }
+
+    .result-box {
+      background-color: #ffffffcc;
+      padding: 3rem;
+      border-radius: 20px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+      max-width: 800px;
+      width: 90%;
+    }
+
+    .user-message {
+      font-size: 1.2rem;
+      font-style: italic;
+      color: #333;
+      margin-bottom: 1rem;
+    }
+
+    .response-text {
+      font-size: 1.4rem;
+      font-weight: bold;
+      margin-bottom: 2rem;
+    }
+
+    .music-list {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .music-item {
+      background: white;
+      border-radius: 10px;
+      width: 200px;
+      padding: 1rem;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      text-align: left;
+    }
+
+    .cover {
+      width: 100%;
+      height: 140px;
+      background-color: #ddd;
+      border-radius: 10px;
+      margin-bottom: 0.5rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #666;
+      font-size: 0.9em;
+      background-image: url('https://placehold.co/140x140/dddddd/666666?text=Cover');
+      background-size: cover;
+      background-position: center;
+    }
+
+    .title {
+      font-weight: bold;
+      font-size: 1.1rem;
+      margin-bottom: 0.2rem;
+    }
+
+    .artist, .bpm {
+        font-size: 0.9em;
+        color: #555;
+    }
+
+    .actions {
+      margin-top: 2rem;
+      display: flex;
+      gap: 1.5rem;
+      justify-content: center;
+    }
+
+    .action-button {
+      padding: 0.8rem 2rem;
+      font-size: 1rem;
+      background-color: #4a90e2;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .action-button:hover {
+      background-color: #357abd;
+    }
+
+    @media (max-width: 600px) {
+        .result-box {
+            padding: 1.5rem;
+        }
+        .user-message, .response-text {
+            font-size: 1rem;
+        }
+        .music-item {
+            width: 100%;
+        }
+        .actions {
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .action-button {
+            width: 100%;
+        }
+    }
+    footer {
+        margin-top: auto; /* Push footer to the bottom */
+        padding: 1rem;
+        text-align: center;
+        color: #777;
+        font-size: 0.9em;
+        width: 100%;
+        box-sizing: border-box; /* Include padding in width */
+    }
+    footer p {
+        margin: 0.5rem 0;
+    }
+    footer a {
+        color: #0056b3;
+        text-decoration: none;
+    }
+    footer a:hover {
+        text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <a href="/" class="logo-link">
+      <img src="{{ url_for('static', filename='logo.jpg') }}" alt="로고" class="logo-image" onerror="this.src='https://placehold.co/50x50/cccccc/000000?text=Logo'; this.alt='로고 (이미지 없음)';" />
+    </a>
+  </header>
+
+  <main>
+    <div class="result-box">
+      <div class="user-message" id="user-query-display"></div>
+      <div class="response-text">요청하신 내용을 바탕으로 추천했어요…!</div>
+      <div class="music-list" id="music-list-container">
+        <!-- 음악 목록은 JavaScript로 동적으로 채워집니다. -->
+      </div>
+      <div class="actions">
+        <button class="action-button" onclick="location.href='/'">다시 해보기</button>
+        <button class="action-button" onclick="location.href='/'">홈으로 이동</button>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+      <p>Powered by <a href="https://getsongbpm.com" target="_blank">GetSongBPM</a></p>
+      <p>&copy; 2023 Music Intelligence System</p>
+  </footer>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const userQuery = urlParams.get('query');
+        const recommendationsJson = urlParams.get('recommendations');
+
+        const userQueryDisplay = document.getElementById('user-query-display');
+        const musicListContainer = document.getElementById('music-list-container');
+
+        if (userQuery) {
+            userQueryDisplay.textContent = `"${userQuery}"`;
+        } else {
+            userQueryDisplay.textContent = '사용자 요청 없음';
+        }
+
+        if (recommendationsJson) {
+            try {
+                const recommendations = JSON.parse(decodeURIComponent(recommendationsJson));
+                if (recommendations.length > 0) {
+                    recommendations.forEach((song, index) => {
+                        const musicItem = document.createElement('div');
+                        musicItem.className = 'music-item';
+                        musicItem.innerHTML = `
+                            <div class="cover" style="background-image: url('https://placehold.co/140x140/dddddd/666666?text=Cover+${index + 1}');"></div>
+                            <div class="title">${song.title}</div>
+                            <div class="artist">${song.artist}</div>
+                            <div class="bpm">BPM: ${song.bpm}</div>
+                        `;
+                        musicListContainer.appendChild(musicItem);
+                    });
+                } else {
+                    musicListContainer.innerHTML = '<p>추천 음악을 찾을 수 없습니다.</p>';
+                }
+            } catch (e) {
+                console.error('추천 데이터를 파싱하는 중 오류 발생:', e);
+                musicListContainer.innerHTML = '<p>추천 데이터를 불러오는 데 실패했습니다.</p>';
+            }
+        } else {
+            musicListContainer.innerHTML = '<p>추천 음악 데이터를 불러오지 못했습니다.</p>';
+        }
+    });
+
+    document.querySelector('.logo-image').onerror = function() {
+        this.src = 'https://placehold.co/50x50/cccccc/000000?text=Logo';
+        this.alt = '로고 (이미지 없음)';
+    };
+  </script>
+</body>
+</html>

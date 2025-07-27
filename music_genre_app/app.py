@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, redirect, url_for
 import os
 import logging
 import traceback
@@ -12,8 +12,9 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 logging.debug("Music Genre App 초기화 시작.")
 
 # --- 음악 장르 분류 기능 관련 모델 및 도구 로드 (지연 로딩을 위해 전역 변수로 선언) ---
-MODEL_DIR = os.path.dirname(os.path.abspath(__file__))
-app.template_folder = os.path.join(MODEL_DIR, 'templates')
+# 모델 파일들이 music_genre_app 바로 아래에 있으므로 경로를 직접 참조합니다.
+MODEL_DIR = os.path.dirname(os.path.abspath(__file__)) # 현재 app.py가 있는 디렉토리
+app.template_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates') # templates 경로 설정
 
 interpreter = None
 input_details = None
@@ -23,20 +24,26 @@ genre_labels = None
 train_cols = None
 
 def _load_genre_classification_models():
+    """
+    음악 장르 분류 모델과 관련 도구들을 지연 로드하는 내부 함수.
+    이 함수가 호출될 때 관련 라이브러리(tensorflow, librosa, pandas, numpy, pickle, json, pydub)를 임포트합니다.
+    """
     global interpreter, input_details, output_details, scaler, genre_labels, train_cols
-
+    
+    # 필요한 라이브러리들을 함수 내부에서 임포트 (극단적인 지연 로딩)
     import tensorflow.lite as tflite
     import librosa
     import pandas as pd
     import numpy as np
     import pickle
     import json
-
-    if interpreter is not None:
+    
+    if interpreter is not None: # 이미 로드되었다면 다시 로드하지 않음
         return
 
     logging.debug("음악 장르 분류 모델 및 도구 지연 로드 시작.")
     try:
+        # 모델 파일 경로를 MODEL_DIR (music_genre_app 디렉토리) 바로 아래로 설정
         tflite_model_path = os.path.join(MODEL_DIR, 'quantized_model.tflite')
         scaler_path = os.path.join(MODEL_DIR, 'scaler.pkl')
         genre_labels_path = os.path.join(MODEL_DIR, 'genre_labels.json')
@@ -49,14 +56,17 @@ def _load_genre_classification_models():
         output_details = interpreter.get_output_details()
         logging.debug("TFLite 모델 로드 및 텐서 할당 완료 (지연 로드).")
 
+        logging.debug(f"스케일러 로드 시도 중 (지연 로드): {scaler_path}")
         with open(scaler_path, 'rb') as f:
             scaler = pickle.load(f)
         logging.debug("스케일러 로드 완료 (지연 로드).")
 
+        logging.debug(f"장르 레이블 로드 시도 중 (지연 로드): {genre_labels_path}")
         with open(genre_labels_path, 'r') as f:
             genre_labels = json.load(f)
         logging.debug("장르 레이블 로드 완료 (지연 로드).")
-
+        
+        logging.debug(f"피처 컬럼 로드 시도 중 (지연 로드): {feature_columns_path}")
         with open(feature_columns_path, 'r') as f:
             train_cols = json.load(f)
         logging.debug("피처 컬럼 로드 완료 (지연 로드).")
@@ -65,7 +75,7 @@ def _load_genre_classification_models():
     except Exception as e:
         logging.error(f"음악 장르 분류 모델 지연 로드 중 오류 발생: {e}")
         logging.error(traceback.format_exc())
-        raise
+        raise # 예외를 다시 발생시켜 상위 호출자에게 알림
 
 def extract_features_from_audio(file_path):
     import librosa
@@ -76,6 +86,8 @@ def extract_features_from_audio(file_path):
 
     if np.isnan(y).any():
         raise ValueError("오디오 신호가 유효하지 않습니다.")
+    
+    logging.info(f"Audio loaded: duration={len(y)/sr:.2f} seconds, sr={sr}")
 
     chroma_stft = librosa.feature.chroma_stft(y=y, sr=sr)
     rms = librosa.feature.rms(y=y)
@@ -120,27 +132,33 @@ def index():
 
 @app.route('/healthz')
 def health_check():
+    """Render 헬스 체크를 위한 엔드포인트."""
+    logging.debug("Health check 요청 수신.")
     return "OK", 200
 
 @app.route('/predict', methods=['POST'])
 def predict_genre_endpoint():
-    _load_genre_classification_models()
+    """
+    오디오 파일을 입력받아 장르를 예측하는 엔드포인트입니다.
+    """
+    _load_genre_classification_models() # 모델 로드
 
     if 'audio' not in request.files:
         logging.warning("파일이 업로드되지 않았습니다.")
         return jsonify({'error': 'No file uploaded'}), 400
 
     audio_file = request.files['audio']
+
     filename = audio_file.filename.lower()
     temp_input_name = 'temp_input_' + str(os.getpid())
-    temp_wav_path = os.path.join(MODEL_DIR, temp_input_name + '.wav')
+    temp_wav_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), temp_input_name + '.wav')
 
     try:
         from pydub import AudioSegment
-        import sklearn.preprocessing
+        import sklearn.preprocessing # StandardScaler가 이 모듈에 있습니다.
 
         if filename.endswith('.mp3'):
-            temp_mp3_path = os.path.join(MODEL_DIR, temp_input_name + '.mp3')
+            temp_mp3_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), temp_input_name + '.mp3')
             audio_file.save(temp_mp3_path)
             audio = AudioSegment.from_mp3(temp_mp3_path)
             audio.export(temp_wav_path, format='wav')
@@ -155,21 +173,44 @@ def predict_genre_endpoint():
 
         features = extract_features_from_audio(temp_wav_path)
 
-        if train_cols != list(features.columns):
+        app_cols = list(features.columns)
+        if train_cols == app_cols:
+            logging.info("피처 컬럼 이름과 순서가 정확히 일치합니다.")
+        else:
             logging.warning("피처 컬럼이 일치하지 않습니다!")
+            logging.warning(f"학습에 있었으나 현재 없음: {list(set(train_cols) - set(app_cols))}")
+            logging.warning(f"현재에 있으나 학습에는 없음: {list(set(app_cols) - set(train_cols))}")
+            for i, (tc, ac) in enumerate(zip(train_cols, app_cols)):
+                if tc != ac:
+                    logging.warning(f"{i}번째 컬럼 불일치: 학습 시 '{tc}' vs 현재 '{ac}'")
 
         if features['tempo'].dtype == object:
-            features['tempo'] = features['tempo'].astype(float)
+            try:
+                features['tempo'] = features['tempo'].astype(float)
+                logging.info("'tempo' 컬럼을 float 타입으로 변환했습니다.")
+            except Exception as e:
+                logging.error(f"'tempo'를 float으로 변환하는 데 실패했습니다: {e}")
 
-        features_scaled = scaler.transform(features[train_cols])
+        logging.debug(f"학습 시 사용된 피처 개수: {len(train_cols)}")
+        logging.debug(f"현재 추출된 피처 개수: {len(app_cols)}")
+        logging.debug(f"현재 피처 데이터 타입:\n{features.dtypes}")
+        logging.debug(f"스케일링 전 피처:\n{features}")
+
         interpreter.set_tensor(input_details[0]['index'], features_scaled.astype(input_details[0]['dtype']))
         interpreter.invoke()
         preds = interpreter.get_tensor(output_details[0]['index'])
+
+        logging.debug(f"모델 예측값:\n{preds}")
+
         label_idx = np.argmax(preds)
         label = genre_labels[label_idx]
+        probability = float(preds[0][label_idx]) * 100 # 확률 계산
 
-        logging.info(f"예측된 장르: {label}")
-        return jsonify({'label': label})
+        logging.info(f"예측된 장르: {label}, 확률: {probability:.2f}%")
+        
+        # 결과 페이지로 리다이렉트
+        return redirect(url_for('show_genre_result', genre=label, probability=f"{probability:.2f}"))
+
     except Exception as e:
         logging.error(f'장르 예측 중 오류 발생: {str(e)}')
         logging.error(traceback.format_exc())
@@ -177,9 +218,98 @@ def predict_genre_endpoint():
     finally:
         if os.path.exists(temp_wav_path):
             os.remove(temp_wav_path)
-        temp_mp3_path = os.path.join(MODEL_DIR, temp_input_name + '.mp3')
+            logging.info(f"임시 파일 삭제: {temp_wav_path}")
+        temp_mp3_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), temp_input_name + '.mp3')
         if os.path.exists(temp_mp3_path):
             os.remove(temp_mp3_path)
+            logging.info(f"임시 MP3 파일 삭제: {temp_mp3_path}")
+
+# 장르별 상세 정보를 담은 딕셔너리
+GENRE_DETAILS = {
+    "blues": {
+        "title": "블루스 (Blues)",
+        "origin": "19세기 말 미국 남부 아프리카계 미국인 공동체에서 시작된 음악 장르입니다.",
+        "features": "주요 특징은 블루 노트, 콜 앤 리스폰스(Call and Response) 형식, 서정적이고 감성적인 가사입니다.",
+        "bpm_range": "BPM은 대개 60-90 사이로 느린 편입니다."
+    },
+    "classical": {
+        "title": "클래식 (Classical)",
+        "origin": "서양 예술 음악의 한 장르로, 주로 18세기 중반부터 19세기 초까지의 시대를 지칭합니다.",
+        "features": "정교한 형식과 구조, 조화로운 선율과 화성, 풍부한 오케스트레이션이 특징입니다.",
+        "bpm_range": "BPM은 곡에 따라 매우 다양하나, 대체로 템포 변화가 큽니다."
+    },
+    "country": {
+        "title": "컨트리 (Country)",
+        "origin": "1920년대 미국 남부의 민속 음악과 서부 카우보이 음악에서 유래했습니다.",
+        "features": "단순하고 서정적인 멜로디, 어쿠스틱 기타, 밴조, 피들 등의 악기 사용, 일상생활과 자연에 대한 가사가 특징입니다.",
+        "bpm_range": "BPM은 대개 80-120 사이입니다."
+    },
+    "disco": {
+        "title": "디스코 (Disco)",
+        "origin": "1970년대 뉴욕 클럽 문화에서 시작된 댄스 음악 장르입니다.",
+        "features": "강렬한 4/4박자 비트, 신시사이저, 스트링, 혼 섹션 사용, 춤추기 좋은 리듬이 특징입니다.",
+        "bpm_range": "BPM은 대개 110-130 사이입니다."
+    },
+    "hiphop": {
+        "title": "힙합 (Hip-Hop)",
+        "origin": "1970년대 뉴욕 브롱스에서 시작된 문화 운동의 일부입니다.",
+        "features": "랩(Rapping), 디제잉(DJing), 샘플링, 강력한 비트와 리듬, 사회 비판적 또는 자전적 가사가 특징입니다.",
+        "bpm_range": "BPM은 대개 80-120 사이입니다."
+    },
+    "jazz": {
+        "title": "재즈 (Jazz)",
+        "origin": "19세기 말 미국 뉴올리언스의 흑인 문화에서 비롯되었습니다.",
+        "features": "즉흥 연주, 스윙 리듬, 4/4 박자, 고유한 코드 진행, 다양한 악기들의 상호작용이 특징입니다.",
+        "bpm_range": "BPM은 대개 128~185 사이로 다양합니다."
+    },
+    "metal": {
+        "title": "메탈 (Metal)",
+        "origin": "1960년대 후반 하드 록에서 파생된 장르입니다.",
+        "features": "강력한 기타 리프, 왜곡된 사운드, 빠른 드럼 비트, 공격적인 보컬, 복잡한 곡 구조가 특징입니다.",
+        "bpm_range": "BPM은 대개 120-200 이상으로 매우 빠를 수 있습니다."
+    },
+    "pop": {
+        "title": "팝 (Pop)",
+        "origin": "대중적인 인기를 얻기 위해 만들어진 상업적인 음악 장르입니다.",
+        "features": "쉽고 따라 부르기 쉬운 멜로디, 다양한 스타일의 혼합, 최신 트렌드 반영, 반복적인 후렴구가 특징입니다.",
+        "bpm_range": "BPM은 대개 90-140 사이입니다."
+    },
+    "reggae": {
+        "title": "레게 (Reggae)",
+        "origin": "1960년대 후반 자메이카에서 시작된 음악 장르입니다.",
+        "features": "오프비트(off-beat) 리듬, 베이스 기타와 드럼의 강조, 종교적 또는 사회적 메시지를 담은 가사가 특징입니다.",
+        "bpm_range": "BPM은 대개 60-90 사이로 느린 편입니다."
+    },
+    "rock": {
+        "title": "록 (Rock)",
+        "origin": "1950년대 미국에서 로큰롤에서 파생된 장르입니다.",
+        "features": "강렬한 기타 리프, 드럼 비트, 보컬이 특징이며, 다양한 하위 장르를 가집니다. 반항적이고 자유로운 정신을 표현합니다.",
+        "bpm_range": "BPM은 대개 100-180 사이입니다."
+    }
+}
+
+@app.route('/result')
+def show_genre_result():
+    """장르 분석 결과 페이지 렌더링."""
+    genre_key = request.args.get('genre', '기타').lower() # 소문자로 변환하여 키로 사용
+    probability = request.args.get('probability', '0%')
+
+    # GENRE_DETAILS 딕셔너리에서 해당 장르 정보 가져오기
+    # 키가 없는 경우 '기타' 장르 정보 사용
+    genre_info = GENRE_DETAILS.get(genre_key, {
+        "title": "기타 (Other)",
+        "origin": "이 음악은 특정 장르로 분류하기 어렵거나, 새로운 장르일 수 있습니다.",
+        "features": "특징적인 요소들을 파악하기 어렵습니다.",
+        "bpm_range": "BPM 정보는 알 수 없습니다."
+    })
+
+    return render_template('genre_result_page.html', 
+                           genre=genre_key, # 실제 장르 키 (예: 'jazz')
+                           genre_display_name=genre_info["title"], # 표시될 장르 이름 (예: '재즈 (Jazz)')
+                           probability=probability,
+                           genre_origin=genre_info["origin"],
+                           genre_features=genre_info["features"],
+                           genre_bpm_range=genre_info["bpm_range"])
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))

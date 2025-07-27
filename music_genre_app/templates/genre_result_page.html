@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>장르 분석 결과 | 음잘딱깔센</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(to bottom right, #a3c8f5, #4a90e2);
+      color: #333;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      padding: 1rem 2rem;
+    }
+
+    .logo-link {
+      text-decoration: none;
+    }
+
+    .logo-image {
+      height: 50px;
+    }
+
+    main {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2rem;
+    }
+
+    .result-box {
+      background-color: #ffffffcc;
+      padding: 3rem;
+      border-radius: 20px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+      max-width: 800px;
+      width: 90%;
+    }
+
+    .genre-title {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+    }
+
+    .genre-info {
+      font-size: 1.1rem;
+      line-height: 1.6;
+      margin-bottom: 2rem;
+      text-align: left;
+    }
+
+    .genre-info strong {
+        color: #0056b3; /* Highlight genre names */
+    }
+
+    .recommend-section { /* 이 섹션은 이제 사용하지 않으므로 제거 */
+      display: none;
+    }
+
+    .actions {
+      margin-top: 2rem;
+      display: flex;
+      gap: 1.5rem;
+      justify-content: center;
+    }
+
+    .action-button {
+      padding: 0.8rem 2rem;
+      font-size: 1rem;
+      background-color: #4a90e2;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .action-button:hover {
+      background-color: #357abd;
+    }
+
+    @media (max-width: 600px) {
+        .result-box {
+            padding: 1.5rem;
+        }
+        .genre-title {
+            font-size: 1.5rem;
+        }
+        .genre-info {
+            font-size: 1rem;
+        }
+        .actions {
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .action-button {
+            width: 100%;
+        }
+    }
+    footer {
+        margin-top: auto; /* Push footer to the bottom */
+        padding: 1rem;
+        text-align: center;
+        color: #777;
+        font-size: 0.9em;
+        width: 100%;
+        box-sizing: border-box; /* Include padding in width */
+    }
+    footer p {
+        margin: 0.5rem 0;
+    }
+    footer a {
+        color: #0056b3;
+        text-decoration: none;
+    }
+    footer a:hover {
+        text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <a href="/" class="logo-link">
+      <img src="{{ url_for('static', filename='logo.jpg') }}" alt="로고" class="logo-image" onerror="this.src='https://placehold.co/50x50/cccccc/000000?text=Logo'; this.alt='로고 (이미지 없음)';" />
+    </a>
+  </header>
+
+  <main>
+    <div class="result-box">
+      <div class="genre-title">해당 음악의 장르는 <strong>{{ genre_display_name }}</strong>일 확률이 <strong>{{ probability }}%</strong>입니다.</div>
+      <div class="genre-info">
+        <h3>{{ genre_display_name }} 음악이란?</h3>
+        <p>- 기원: {{ genre_origin }}</p>
+        <p>- 주요 특징: {{ genre_features }}</p>
+        <p>- BPM 범위: {{ genre_bpm_range }}</p>
+      </div>
+      <!-- 기존 recommend-section은 제거되었습니다. -->
+      <div class="actions">
+        <button class="action-button" onclick="location.href='/'">새로운 음악 분석하기</button>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+      <p>Powered by Music Intelligence System</p>
+      <p>&copy; 2023 Music Intelligence System</p>
+  </footer>
+
+  <script>
+    document.querySelector('.logo-image').onerror = function() {
+        this.src = 'https://placehold.co/50x50/cccccc/000000?text=Logo';
+        this.alt = '로고 (이미지 없음)';
+    };
+  </script>
+</body>
+</html>

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>장르 분석 중...</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(to bottom right, #a3c8f5, #4a90e2);
+      color: #ffffff;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      padding: 1rem 2rem;
+    }
+
+    .logo-link {
+      text-decoration: none;
+    }
+
+    .logo-image {
+      height: 50px;
+    }
+
+    main {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .loading-text {
+      font-size: 2rem;
+      font-weight: bold;
+      margin-top: 2rem;
+      animation: blink 1.5s infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .spinner {
+      width: 80px;
+      height: 80px;
+      border: 10px solid rgba(255, 255, 255, 0.3);
+      border-top: 10px solid white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    @media (max-width: 600px) {
+        .loading-text {
+            font-size: 1.5rem;
+        }
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border-width: 8px;
+        }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <a href="/" class="logo-link">
+      <img src="{{ url_for('static', filename='logo.jpg') }}" alt="로고" class="logo-image" onerror="this.src='https://placehold.co/50x50/cccccc/000000?text=Logo'; this.alt='로고 (이미지 없음)';" />
+    </a>
+  </header>
+
+  <main>
+    <div class="spinner"></div>
+    <div class="loading-text">인공지능 모델이 장르를 분석하고 있어요..!</div>
+  </main>
+</body>
+</html>

@@ -1,174 +1,242 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
-    <title>감정 기반 음악 추천 시스템</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
-        h1, h2 { color: #0056b3; }
-        .container {
-            display: flex;
-            gap: 40px;
-            margin-top: 30px;
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>음악 추천 | 음잘딱깔센</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(to bottom right, #a3c8f5, #4a90e2);
+      color: #333;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      padding: 1rem 2rem;
+    }
+
+    .logo-link {
+      text-decoration: none;
+    }
+
+    .logo-image {
+      height: 50px;
+    }
+
+    main {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2rem;
+    }
+
+    .chat-box {
+      background-color: #ffffffcc;
+      padding: 3rem;
+      border-radius: 20px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+      max-width: 600px;
+      width: 90%;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .chat-box h2 {
+      margin: 0;
+      font-size: 1.8rem;
+    }
+
+    textarea {
+      width: 100%;
+      height: 120px;
+      font-size: 1.2rem;
+      padding: 1rem;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      resize: none;
+    }
+
+    .send-button {
+      background-color: #4a90e2;
+      color: white;
+      font-size: 1.2rem;
+      padding: 1rem;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .send-button:hover {
+      background-color: #357abd;
+    }
+
+    #loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.7);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        z-index: 1000;
+        color: white;
+    }
+
+    .spinner {
+        width: 80px;
+        height: 80px;
+        border: 10px solid rgba(255, 255, 255, 0.3);
+        border-top: 10px solid white;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+        font-size: 2rem;
+        font-weight: bold;
+        margin-top: 2rem;
+        animation: blink 1.5s infinite;
+    }
+
+    @keyframes blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+
+    @media (max-width: 600px) {
+        .chat-box {
+            padding: 2rem;
+            gap: 1rem;
         }
-        .section {
-            background-color: #fff;
-            padding: 25px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            flex: 1;
-            min-width: 45%;
+        textarea {
+            font-size: 1rem;
+            height: 100px;
         }
-        form { margin-bottom: 20px; }
-        input[type="file"], input[type="text"], button {
-            padding: 10px 15px;
-            margin-right: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
+        .send-button {
+            font-size: 1rem;
+            padding: 0.8rem;
         }
-        button {
-            background-color: #007bff;
-            color: white;
-            border: none;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
+        .loading-text {
+            font-size: 1.5rem;
         }
-        button:hover { background-color: #0056b3; }
-        #progress-bar {
-            display: none;
-            width: 100%;
-            height: 20px;
-            background-color: #e0e0e0;
-            margin-top: 15px;
-            border-radius: 10px;
-            overflow: hidden;
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border-width: 8px;
         }
-        #progress-bar-inner {
-            height: 100%;
-            width: 0%;
-            background-color: #28a745;
-            transition: width 0.4s ease;
-            border-radius: 10px;
-        }
-        #loading-text {
-            display: none;
-            margin-top: 10px;
-            font-weight: bold;
-            color: #555;
-        }
-        #result, #recommendation-result {
-            margin-top: 20px;
-            font-size: 1.2em;
-            color: #333;
-            font-weight: bold;
-        }
-        #recommendation-list {
-            list-style: none;
-            padding: 0;
-        }
-        #recommendation-list li {
-            background-color: #e9ecef;
-            margin-bottom: 8px;
-            padding: 10px 15px;
-            border-radius: 5px;
-            border-left: 5px solid #007bff;
-        }
-        footer {
-            margin-top: 50px;
-            text-align: center;
-            color: #777;
-            font-size: 0.9em;
-        }
-    </style>
+    }
+    footer {
+        margin-top: auto; /* Push footer to the bottom */
+        padding: 1rem;
+        text-align: center;
+        color: #777;
+        font-size: 0.9em;
+        width: 100%;
+        box-sizing: border-box; /* Include padding in width */
+    }
+    footer p {
+        margin: 0.5rem 0;
+    }
+    footer a {
+        color: #0056b3;
+        text-decoration: none;
+    }
+    footer a:hover {
+        text-decoration: underline;
+    }
+  </style>
 </head>
 <body>
-    <h1>감정 기반 음악 추천 시스템</h1>
+  <header>
+    <a href="/" class="logo-link">
+      <img src="{{ url_for('static', filename='logo.jpg') }}" alt="로고" class="logo-image" onerror="this.src='https://placehold.co/50x50/cccccc/000000?text=Logo'; this.alt='로고 (이미지 없음)';" />
+    </a>
+  </header>
 
-    <div class="container">
-        <!-- 음악 장르 분류기 섹션 (이 앱에서는 사용하지 않으므로 제거됨) -->
-        <!-- <div class="section">
-            <h2>🎵 음악 장르 분류</h2>
-            <form id="upload-form">
-                <input type="file" name="audio" accept=".mp3,.wav" required />
-                <button type="submit">장르 예측 시작</button>
-            </form>
-
-            <div id="progress-bar">
-                <div id="progress-bar-inner"></div>
-            </div>
-            <div id="loading-text">음악 분석 중... 잠시만 기다려주세요.</div>
-
-            <h2 id="result"></h2>
-        </div> -->
-
-        <!-- 감정 기반 음악 추천기 섹션 -->
-        <div class="section">
-            <h2>🎶 감정 기반 음악 추천</h2>
-            <form id="recommend-form">
-                <input type="text" id="emotion-text" placeholder="오늘 기분은 어떠세요? (예: 행복해요, 슬퍼요)" style="width: 70%;" required />
-                <button type="submit">음악 추천받기</button>
-            </form>
-            <div id="recommendation-result"></div>
-            <ul id="recommendation-list"></ul>
-        </div>
+  <main>
+    <div class="chat-box">
+      <img src="{{ url_for('static', filename='music_recommendation.jpg') }}" alt="음악 추천 이미지" style="width: 100%; max-width: 300px; border-radius: 15px; margin-bottom: 1rem;">
+      <h2>준비되면 얘기해 주세요..!</h2>
+      <textarea id="emotion-text" placeholder="예: 신나는 음악 추천해줘"></textarea>
+      <button class="send-button" id="send-button">메시지 보내기</button>
     </div>
+  </main>
 
-    <script>
-        // 음악 장르 분류 기능 스크립트는 이 앱에서 사용하지 않으므로 제거됨
+  <div id="loading-overlay">
+      <div class="spinner"></div>
+      <div class="loading-text">요청하신 내용을 바탕으로 추천하고 있어요..!</div>
+  </div>
 
-        // --- 감정 기반 음악 추천 기능 스크립트 ---
-        const recommendForm = document.getElementById('recommend-form');
-        const emotionText = document.getElementById('emotion-text');
-        const recommendationResult = document.getElementById('recommendation-result');
-        const recommendationList = document.getElementById('recommendation-list');
+  <footer>
+      <p>Powered by <a href="https://getsongbpm.com" target="_blank">GetSongBPM</a></p>
+      <p>&copy; 2023 Music Intelligence System</p>
+  </footer>
 
-        recommendForm.addEventListener('submit', function (e) {
-            e.preventDefault();
-            const userEmotion = emotionText.value.trim();
+  <script>
+    const sendButton = document.getElementById('send-button');
+    const emotionText = document.getElementById('emotion-text');
+    const loadingOverlay = document.getElementById('loading-overlay');
 
-            if (!userEmotion) {
-                recommendationResult.innerText = '기분을 입력해주세요.';
-                return;
-            }
+    sendButton.addEventListener('click', async function () {
+        const userEmotion = emotionText.value.trim();
 
-            recommendationResult.innerText = '음악을 추천 중입니다...';
-            recommendationList.innerHTML = ''; // 기존 추천 리스트 초기화
+        if (!userEmotion) {
+            alert('기분을 입력해주세요.');
+            return;
+        }
 
-            fetch('/recommend', { // /recommend 엔드포인트는 이 앱의 Flask 앱에 있습니다.
+        loadingOverlay.style.display = 'flex';
+
+        try {
+            const response = await fetch('/recommend', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ text: userEmotion })
-            })
-            .then(response => {
-                if (!response.ok) {
-                    return response.json().then(err => { throw new Error(err.error || '알 수 없는 오류'); });
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.recommendations && data.recommendations.length > 0) {
-                    recommendationResult.innerText = `'${userEmotion}'에 대한 추천 음악:`;
-                    data.recommendations.forEach(song => {
-                        const listItem = document.createElement('li');
-                        listItem.textContent = `제목: ${song.title}, 아티스트: ${song.artist}, BPM: ${song.bpm}`;
-                        recommendationList.appendChild(listItem);
-                    });
-                } else {
-                    recommendationResult.innerText = `'${userEmotion}'에 대한 추천 음악을 찾을 수 없습니다.`;
-                }
-            })
-            .catch(error => {
-                console.error('음악 추천 요청 중 오류 발생:', error); // 콘솔에 오류 출력
-                recommendationResult.innerText = '요청 중 오류가 발생했습니다: ' + error.message;
             });
-        });
-    </script>
-    
-    <footer>
-        <p>Powered by <a href="https://getsongbpm.com" target="_blank">GetSongBPM</a></p>
-        <p>&copy; 2023 Music Intelligence System</p>
-    </footer>
-    
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || '알 수 없는 오류');
+            }
+
+            const data = await response.json();
+            
+            const recommendations = JSON.stringify(data.recommendations);
+            window.location.href = `/result?query=${encodeURIComponent(userEmotion)}&recommendations=${encodeURIComponent(recommendations)}`;
+
+        } catch (error) {
+            console.error('음악 추천 요청 중 오류 발생:', error);
+            alert('오류 발생: ' + error.message);
+        } finally {
+            loadingOverlay.style.display = 'none';
+        }
+    });
+
+    document.querySelector('.logo-image').onerror = function() {
+        this.src = 'https://placehold.co/50x50/cccccc/000000?text=Logo';
+        this.alt = '로고 (이미지 없음)';
+    };
+  </script>
 </body>
 </html>
