@@ -55,10 +55,11 @@ except ImportError as e:
                 "불안": {"bpm": (95, 125), "danceability": (30, 70), "acousticness": (20, 60)},
                 "neutral": {"bpm": (90, 120), "danceability": (40, 80), "acousticness": (20, 70)}
             }
-            logging.info("BPMMapper (with audio features) initialized.")
+            logging.info("MockBPMMapper initialized.")
 
+        # get_audio_feature_ranges 메서드 추가
         def get_audio_feature_ranges(self, emotion_label: str):
-            logging.debug(f"BPMMapper: Mapping audio features for '{emotion_label}'")
+            logging.debug(f"MockBPMMapper: Mapping audio features for '{emotion_label}'")
             return self.emotion_features_map.get(emotion_label, self.emotion_features_map["neutral"])
 
 
@@ -199,6 +200,16 @@ class MusicRecommender:
             if len(found_songs) < limit:
                 logging.info(f"Not enough songs found with audio features. Attempting fallback search with genre keywords.")
                 # 감정 기반 키워드 + 장르 키워드 조합으로 일반 검색 시도
+                emotion_keywords = { # 이전에 정의된 emotion_keywords를 다시 사용
+                    "긍정": ["happy", "upbeat", "energetic", "joyful", "party", "celebration"],
+                    "부정": ["sad", "melancholy", "downbeat", "gloomy", "depressed"],
+                    "공부": ["focus", "study", "concentration", "ambient", "instrumental"],
+                    "화가 나": ["angry", "rage", "intense", "aggressive"],
+                    "스트레스": ["relax", "calm", "chill", "soothing"],
+                    "편안": ["relax", "calm", "chill", "peaceful"],
+                    "불안": ["soothing", "calm", "meditation", "peaceful"],
+                    "neutral": ["easy listening", "background", "chill"]
+                }
                 combined_queries = set(emotion_keywords.get(emotion_label, emotion_keywords["neutral"]))
                 combined_queries.update(["pop", "dance", "rock", "electronic"]) # 주요 장르 추가
                 search_queries_list = list(combined_queries)
