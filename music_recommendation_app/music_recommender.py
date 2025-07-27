@@ -1,11 +1,50 @@
 import requests
 import random
 import os
-import sys # sys.path 조작을 위해 임포트
-import logging # 로깅 추가
+import sys
+import logging
+import time
 
-# 로깅 설정
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# Mock SentimentAnalyzer 및 BPMMapper 클래스 (실제 모듈이 없을 경우를 대비)
+# 이 클래스들은 natural-language-processing 디렉토리에 실제 파일로 존재해야 합니다.
+# 만약 해당 파일들이 없다면, 이 코드를 natural-language-processing/sentiment_analyzer.py
+# 및 natural-language-processing/bpm_mapper.py 에 각각 넣어주셔야 합니다.
+class MockSentimentAnalyzer:
+    def analyze_sentiment(self, text: str):
+        logging.debug(f"MockSentimentAnalyzer: Analyzing '{text}'")
+        # 간단한 텍스트 기반 감정 매핑 (예시)
+        if "신나" in text or "기분 좋" in text or "활기찬" in text:
+            return {"label": "happy", "score": 0.9}
+        elif "슬프" in text or "우울" in text:
+            return {"label": "sad", "score": 0.8}
+        elif "공부" in text or "집중" in text or "잔잔" in text:
+            return {"label": "calm", "score": 0.7}
+        elif "화가 나" in text or "분노" in text:
+            return {"label": "angry", "score": 0.85}
+        elif "스트레스" in text or "쉬고 싶" in text:
+            return {"label": "relaxed", "score": 0.75}
+        else:
+            return {"label": "neutral", "score": 0.5}
+
+class MockBPMMapper:
+    def __init__(self):
+        self.bpm_map = {
+            "happy": (120, 160),
+            "sad": (60, 90),
+            "calm": (80, 110),
+            "angry": (130, 180),
+            "relaxed": (70, 100),
+            "anxious": (95, 125),
+            "neutral": (90, 120)
+        }
+        logging.info("MockBPMMapper initialized.")
+
+    def get_bpm_range(self, emotion_label: str):
+        logging.debug(f"MockBPMMapper: Mapping BPM for '{emotion_label}'")
+        return self.bpm_map.get(emotion_label, self.bpm_map["neutral"])
+
 
 # 부모 디렉토리를 Python 경로에 추가하여 natural_language_processing 모듈을 임포트할 수 있도록 합니다.
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -16,13 +55,15 @@ if nlp_dir not in sys.path:
     logging.debug(f"Added {nlp_dir} to sys.path")
 
 try:
+    # 실제 SentimentAnalyzer 및 BPMMapper 임포트 시도
     from sentiment_analyzer import SentimentAnalyzer
     from bpm_mapper import BPMMapper
     logging.debug("SentimentAnalyzer and BPMMapper imported successfully.")
 except ImportError as e:
-    logging.error(f"Failed to import required modules: {e}")
-    logging.error("Please ensure the 'natural-language-processing' directory is correctly placed and accessible.")
-    sys.exit(1)
+    logging.warning(f"Failed to import actual NLP modules: {e}. Using Mock versions.")
+    # 실제 모듈 임포트 실패 시 Mock 버전 사용
+    SentimentAnalyzer = MockSentimentAnalyzer
+    BPMMapper = MockBPMMapper
 
 
 class MusicRecommender:
@@ -102,7 +143,7 @@ class MusicRecommender:
         ]
         
         if not filtered_songs:
-            logging.warning(f"No songs found in mock data for BPM range {min_bpm}~{max_bpm}. Returning random songs.")
+            logging.warning(f"No songs found in mock data for BPM range {min_bpm}~{max_bpm}. Returning random mock songs.")
             return random.sample(mock_songs_data, min(limit, len(mock_songs_data)))
             
         return random.sample(filtered_songs, min(limit, len(filtered_songs)))
@@ -145,6 +186,72 @@ class MusicRecommender:
             
         return recommended_songs
 
+# MockMusicRecommender 클래스를 MusicRecommender 클래스 외부로 이동
+class MockMusicRecommender(MusicRecommender):
+    """
+    API 키가 없거나 개발 시에 사용할 모의(Mock) 추천기입니다.
+    실제 API 호출 없이 미리 정의된 데이터를 반환합니다.
+    """
+    def __init__(self, getsongbpm_api_key: str = None): # api_key를 선택적으로 받도록 수정
+        # MockMusicRecommender는 실제 API 키가 필요 없으므로, getsongbpm_api_key를 None으로 설정
+        super().__init__(api_key) 
+        logging.info("--- Mock Music Recommender initialized ---")
+
+    def get_songs_by_bpm_range(self, min_bpm: int, max_bpm: int, limit: int = 5):
+        logging.info(f"Mock API call: Simulating search for songs in BPM {min_bpm}~{max_bpm} range...")
+        
+        mock_songs_data = [
+            {"title": "기분 좋은 아침", "artist": "김미소", "bpm": 130, "album_cover_url": "https://placehold.co/140x140/FFD700/000000?text=Happy"},
+            {"title": "고요한 숲길", "artist": "이평화", "bpm": 75, "album_cover_url": "https://placehold.co/140x140/ADD8E6/000000?text=Calm"},
+            {"title": "집중의 순간", "artist": "박몰입", "bpm": 100, "album_cover_url": "https://placehold.co/140x140/90EE90/000000?text=Focus"},
+            {"title": "파워 업!", "artist": "최에너지", "bpm": 155, "album_cover_url": "https://placehold.co/140x140/FF4500/FFFFFF?text=Power"},
+            {"title": "차분한 저녁", "artist": "정고요", "bpm": 60, "album_cover_url": "https://placehold.co/140x140/8A2BE2/FFFFFF?text=Evening"},
+            {"title": "활기찬 하루", "artist": "강다이나믹", "bpm": 120, "album_cover_url": "https://placehold.co/140x140/00CED1/FFFFFF?text=Dynamic"},
+            {"title": "생각의 흐름", "artist": "윤명상", "bpm": 90, "album_cover_url": "https://placehold.co/140x140/DDA0DD/000000?text=Thought"},
+            {"title": "분노의 질주", "artist": "서파워", "bpm": 140, "album_cover_url": "https://placehold.co/140x140/B22222/FFFFFF?text=Rage"},
+            {"title": "슬픈 빗소리", "artist": "오감성", "bpm": 70, "album_cover_url": "https://placehold.co/140x140/6A5ACD/FFFFFF?text=Sad"},
+            {"title": "새로운 도전", "artist": "조열정", "bpm": 115, "album_cover_url": "https://placehold.co/140x140/FF8C00/000000?text=Challenge"},
+        ]
+        
+        filtered_songs = [
+            song for song in mock_songs_data 
+            if min_bpm <= song["bpm"] <= max_bpm
+        ]
+        
+        if not filtered_songs:
+            logging.warning(f"No songs found in mock data for BPM range {min_bpm}~{max_bpm}. Returning random mock songs.")
+            return random.sample(mock_songs_data, min(limit, len(mock_songs_data)))
+            
+        return random.sample(filtered_songs, min(limit, len(filtered_songs)))
+
+    def recommend_music(self, user_text: str):
+        logging.debug(f"Mock 데이터로 음악 추천 요청: '{user_text}'")
+        time.sleep(1) # 모의 지연
+        
+        mock_data = [
+            {"title": "Mock Pop Song", "artist": "Mock Artist", "bpm": "120", "album_cover_url": "https://placehold.co/140x140/A3C8F5/000000?text=Pop"},
+            {"title": "Mock Jazz Tune", "artist": "Jazz Cat", "bpm": "90", "album_cover_url": "https://placehold.co/140x140/4A90E2/FFFFFF?text=Jazz"},
+            {"title": "Mock Rock Anthem", "artist": "Rock Band", "bpm": "150", "album_cover_url": "https://placehold.co/140x140/333333/FFFFFF?text=Rock"},
+            {"title": "Mock Chill Vibes", "artist": "Lo-Fi Beats", "bpm": "70", "album_cover_url": "https://placehold.co/140x140/6C7A89/FFFFFF?text=Chill"},
+            {"title": "Mock Upbeat Track", "artist": "Energetic Duo", "bpm": "135", "album_cover_url": "https://placehold.co/140x140/FF6B6B/FFFFFF?text=Upbeat"},
+        ]
+
+        if "신나는" in user_text:
+             return [
+                {"title": "Mock 신나는 곡 1", "artist": "신나는 아티스트", "bpm": "130", "album_cover_url": "https://placehold.co/140x140/FFD700/000000?text=Exciting1"},
+                {"title": "Mock 신나는 곡 2", "artist": "신나는 그룹", "bpm": "145", "album_cover_url": "https://placehold.co/140x140/FFA500/000000?text=Exciting2"},
+                {"title": "Mock 신나는 곡 3", "artist": "신나는 밴드", "bpm": "125", "album_cover_url": "https://placehold.co/140x140/FF4500/FFFFFF?text=Exciting3"},
+            ]
+        elif "조용한" in user_text or "공부" in user_text:
+            return [
+                {"title": "Mock 조용한 곡 1", "artist": "조용한 아티스트", "bpm": "60", "album_cover_url": "https://placehold.co/140x140/ADD8E6/000000?text=Quiet1"},
+                {"title": "Mock 조용한 곡 2", "artist": "조용한 그룹", "bpm": "75", "album_cover_url": "https://placehold.co/140x140/87CEEB/000000?text=Quiet2"},
+                {"title": "Mock 조용한 곡 3", "artist": "조용한 밴드", "bpm": "80", "album_cover_url": "https://placehold.co/140x140/6495ED/FFFFFF?text=Quiet3"},
+            ]
+        else:
+            return random.sample(mock_data, 3) # 3개 랜덤 선택
+
+
 # 이 파일이 직접 실행될 때만 실행되는 테스트 코드
 if __name__ == "__main__":
     getsongbpm_api_key = os.environ.get("GETSONGBPM_API_KEY", "YOUR_GETSONGBPM_API_KEY_HERE")
@@ -152,39 +259,6 @@ if __name__ == "__main__":
     if getsongbpm_api_key == "YOUR_GETSONGBPM_API_KEY_HERE":
         logging.warning("\n[WARNING]: getsongbpm API key is not set.")
         logging.info("Proceeding with mock data for testing instead of actual API calls.")
-        
-        class MockMusicRecommender(MusicRecommender):
-            def __init__(self, getsongbpm_api_key: str):
-                super().__init__(getsongbpm_api_key) 
-                logging.info("--- Mock Music Recommender initialized ---")
-
-            def get_songs_by_bpm_range(self, min_bpm: int, max_bpm: int, limit: int = 5):
-                logging.info(f"Mock API call: Simulating search for songs in BPM {min_bpm}~{max_bpm} range...")
-                
-                mock_songs_data = [
-                    {"title": "기분 좋은 아침", "artist": "김미소", "bpm": 130, "album_cover_url": "https://placehold.co/140x140/FFD700/000000?text=Happy"},
-                    {"title": "고요한 숲길", "artist": "이평화", "bpm": 75, "album_cover_url": "https://placehold.co/140x140/ADD8E6/000000?text=Calm"},
-                    {"title": "집중의 순간", "artist": "박몰입", "bpm": 100, "album_cover_url": "https://placehold.co/140x140/90EE90/000000?text=Focus"},
-                    {"title": "파워 업!", "artist": "최에너지", "bpm": 155, "album_cover_url": "https://placehold.co/140x140/FF4500/FFFFFF?text=Power"},
-                    {"title": "차분한 저녁", "artist": "정고요", "bpm": 60, "album_cover_url": "https://placehold.co/140x140/8A2BE2/FFFFFF?text=Evening"},
-                    {"title": "활기찬 하루", "artist": "강다이나믹", "bpm": 120, "album_cover_url": "https://placehold.co/140x140/00CED1/FFFFFF?text=Dynamic"},
-                    {"title": "생각의 흐름", "artist": "윤명상", "bpm": 90, "album_cover_url": "https://placehold.co/140x140/DDA0DD/000000?text=Thought"},
-                    {"title": "분노의 질주", "artist": "서파워", "bpm": 140, "album_cover_url": "https://placehold.co/140x140/B22222/FFFFFF?text=Rage"},
-                    {"title": "슬픈 빗소리", "artist": "오감성", "bpm": 70, "album_cover_url": "https://placehold.co/140x140/6A5ACD/FFFFFF?text=Sad"},
-                    {"title": "새로운 도전", "artist": "조열정", "bpm": 115, "album_cover_url": "https://placehold.co/140x140/FF8C00/000000?text=Challenge"},
-                ]
-                
-                filtered_songs = [
-                    song for song in mock_songs_data 
-                    if min_bpm <= song["bpm"] <= max_bpm
-                ]
-                
-                if not filtered_songs:
-                    logging.warning(f"No songs found in mock data for BPM range {min_bpm}~{max_bpm}. Returning random mock songs.")
-                    return random.sample(mock_songs_data, min(limit, len(mock_songs_data)))
-                    
-                return random.sample(filtered_songs, min(limit, len(filtered_songs)))
-
         recommender = MockMusicRecommender(getsongbpm_api_key) # Mock 클래스 사용
     else:
         recommender = MusicRecommender(getsongbpm_api_key) # 실제 API 키로 MusicRecommender 사용

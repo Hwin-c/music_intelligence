@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>음악 추천 결과 | 음잘딱깔센</title>
   <style>
@@ -49,64 +49,75 @@
     }
 
     .user-message {
-      font-size: 1.2rem;
+      font-size: 1.4rem;
       font-style: italic;
-      color: #333;
       margin-bottom: 1rem;
+      color: #555;
     }
 
     .response-text {
-      font-size: 1.4rem;
+      font-size: 1.6rem;
       font-weight: bold;
       margin-bottom: 2rem;
+      color: #0056b3;
     }
 
     .music-list {
       display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
+      flex-direction: column;
       gap: 1.5rem;
       margin-bottom: 2rem;
     }
 
     .music-item {
-      background: white;
-      border-radius: 10px;
-      width: 200px;
+      display: flex;
+      align-items: center;
+      background-color: #f9f9f9;
       padding: 1rem;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
       text-align: left;
     }
 
-    .cover {
-      width: 100%;
-      height: 140px;
-      background-color: #ddd;
-      border-radius: 10px;
-      margin-bottom: 0.5rem;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      color: #666;
-      font-size: 0.9em;
-      background-image: url('https://placehold.co/140x140/dddddd/666666?text=Cover');
-      background-size: cover;
-      background-position: center;
+    .music-item .rank-icon {
+        width: 30px;
+        height: 30px;
+        margin-right: 15px;
+        flex-shrink: 0;
     }
 
-    .title {
+    .music-item .cover {
+      width: 80px;
+      height: 80px;
+      border-radius: 8px;
+      background-color: #eee; /* Placeholder background */
+      margin-right: 15px;
+      flex-shrink: 0;
+      object-fit: cover; /* 이미지가 잘리지 않고 채워지도록 */
+    }
+
+    .music-item .details {
+      flex-grow: 1;
+    }
+
+    .music-item .title {
       font-weight: bold;
       font-size: 1.1rem;
       margin-bottom: 0.2rem;
     }
 
-    .artist, .bpm {
-        font-size: 0.9em;
-        color: #555;
+    .music-item .artist {
+      font-size: 0.95rem;
+      color: #666;
+      margin-bottom: 0.2rem;
+    }
+
+    .music-item .bpm {
+      font-size: 0.9rem;
+      color: #888;
     }
 
     .actions {
-      margin-top: 2rem;
       display: flex;
       gap: 1.5rem;
       justify-content: center;
@@ -131,11 +142,32 @@
         .result-box {
             padding: 1.5rem;
         }
-        .user-message, .response-text {
-            font-size: 1rem;
+        .user-message {
+            font-size: 1.2rem;
+        }
+        .response-text {
+            font-size: 1.4rem;
         }
         .music-item {
-            width: 100%;
+            flex-direction: row; /* 모바일에서도 가로 정렬 유지 */
+            align-items: center;
+            padding: 0.8rem;
+        }
+        .music-item .cover {
+            width: 60px;
+            height: 60px;
+            margin-right: 10px;
+        }
+        .music-item .rank-icon {
+            width: 25px;
+            height: 25px;
+            margin-right: 10px;
+        }
+        .music-item .title {
+            font-size: 1rem;
+        }
+        .music-item .artist, .music-item .bpm {
+            font-size: 0.85rem;
         }
         .actions {
             flex-direction: column;
@@ -146,13 +178,13 @@
         }
     }
     footer {
-        margin-top: auto; /* Push footer to the bottom */
+        margin-top: auto;
         padding: 1rem;
         text-align: center;
         color: #777;
         font-size: 0.9em;
         width: 100%;
-        box-sizing: border-box; /* Include padding in width */
+        box-sizing: border-box;
     }
     footer p {
         margin: 0.5rem 0;
@@ -169,75 +201,66 @@
 <body>
   <header>
     <a href="/" class="logo-link">
-      <img src="{{ url_for('static', filename='logo.jpg') }}" alt="로고" class="logo-image" onerror="this.src='https://placehold.co/50x50/cccccc/000000?text=Logo'; this.alt='로고 (이미지 없음)';" />
+      <img src="{{ url_for('static', filename='logo.png') }}" alt="로고" class="logo-image" />
     </a>
   </header>
 
   <main>
     <div class="result-box">
-      <div class="user-message" id="user-query-display"></div>
+      <div class="user-message">"{{ user_message }}"</div>
       <div class="response-text">요청하신 내용을 바탕으로 추천했어요…!</div>
-      <div class="music-list" id="music-list-container">
-        <!-- 음악 목록은 JavaScript로 동적으로 채워집니다. -->
+      <div class="music-list">
+        {% if recommendations %}
+          {% for song in recommendations %}
+            <div class="music-item">
+              {% if song.rank_icon %}
+                <img src="{{ song.rank_icon }}" alt="{{ loop.index }}위" class="rank-icon">
+              {% endif %}
+              <img src="{{ song.album_cover_url }}" alt="앨범 커버" class="cover" />
+              <div class="details">
+                <div class="title">{{ song.title }}</div>
+                <div class="artist">{{ song.artist }}</div>
+                <div class="bpm">BPM: {{ song.bpm }}</div>
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <p>추천할 음악을 찾을 수 없습니다. 다른 키워드로 시도해 주세요.</p>
+        {% endif %}
       </div>
       <div class="actions">
         <button class="action-button" onclick="location.href='/'">다시 해보기</button>
-        <button class="action-button" onclick="location.href='/'">홈으로 이동</button>
       </div>
     </div>
   </main>
 
   <footer>
-      <p>Powered by <a href="https://getsongbpm.com" target="_blank">GetSongBPM</a></p>
-      <p>&copy; 2023 Music Intelligence System</p>
+      <p>&copy; 2025 음잘딱깔센 Powered by getsongbpm.com</p>
   </footer>
 
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const userQuery = urlParams.get('query');
-        const recommendationsJson = urlParams.get('recommendations');
+        // Flask url_for로 생성된 정적 파일 경로를 JavaScript 변수로 저장
+        const logoPlaceholderUrl = "{{ url_for('static', filename='logo.png') }}";
+        const coverPlaceholderUrl = "{{ url_for('static', filename='placeholder_cover.png') }}";
 
-        const userQueryDisplay = document.getElementById('user-query-display');
-        const musicListContainer = document.getElementById('music-list-container');
-
-        if (userQuery) {
-            userQueryDisplay.textContent = `"${userQuery}"`;
-        } else {
-            userQueryDisplay.textContent = '사용자 요청 없음';
+        // 로고 이미지 로드 실패 시 대체 이미지 설정
+        const logoImage = document.querySelector('.logo-image');
+        if (logoImage) {
+            logoImage.onerror = function() {
+                this.src = logoPlaceholderUrl;
+                this.alt = '로고 (이미지 없음)';
+            };
         }
 
-        if (recommendationsJson) {
-            try {
-                const recommendations = JSON.parse(decodeURIComponent(recommendationsJson));
-                if (recommendations.length > 0) {
-                    recommendations.forEach((song, index) => {
-                        const musicItem = document.createElement('div');
-                        musicItem.className = 'music-item';
-                        musicItem.innerHTML = `
-                            <div class="cover" style="background-image: url('https://placehold.co/140x140/dddddd/666666?text=Cover+${index + 1}');"></div>
-                            <div class="title">${song.title}</div>
-                            <div class="artist">${song.artist}</div>
-                            <div class="bpm">BPM: ${song.bpm}</div>
-                        `;
-                        musicListContainer.appendChild(musicItem);
-                    });
-                } else {
-                    musicListContainer.innerHTML = '<p>추천 음악을 찾을 수 없습니다.</p>';
-                }
-            } catch (e) {
-                console.error('추천 데이터를 파싱하는 중 오류 발생:', e);
-                musicListContainer.innerHTML = '<p>추천 데이터를 불러오는 데 실패했습니다.</p>';
-            }
-        } else {
-            musicListContainer.innerHTML = '<p>추천 음악 데이터를 불러오지 못했습니다.</p>';
-        }
+        // 앨범 커버 이미지 로드 실패 시 대체 이미지 설정 (개별 아이템)
+        document.querySelectorAll('.music-item .cover').forEach(img => {
+            img.onerror = function() {
+                this.src = coverPlaceholderUrl;
+                this.alt = '앨범 커버 (없음)';
+            };
+        });
     });
-
-    document.querySelector('.logo-image').onerror = function() {
-        this.src = 'https://placehold.co/50x50/cccccc/000000?text=Logo';
-        this.alt = '로고 (이미지 없음)';
-    };
   </script>
 </body>
 </html>
