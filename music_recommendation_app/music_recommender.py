@@ -8,62 +8,53 @@ import traceback
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# Mock SentimentAnalyzer 및 BPMMapper 클래스 (실제 모듈이 없을 경우를 대비)
-class MockSentimentAnalyzer:
-    def analyze_sentiment(self, text: str):
-        logging.debug(f"MockSentimentAnalyzer: Analyzing '{text}'")
-        if "신나" in text or "기분 좋" in text or "활기찬" in text:
-            return {"label": "긍정", "score": 0.9} # Mock에서도 '긍정'/'부정' 반환
-        elif "슬프" in text or "우울" in text:
-            return {"label": "부정", "score": 0.8} # Mock에서도 '긍정'/'부정' 반환
-        elif "공부" in text or "집중" in text or "잔잔" in text:
-            return {"label": "긍정", "score": 0.7} # 집중도 긍정적인 상태로 간주
-        elif "화가 나" in text or "분노" in text:
-            return {"label": "부정", "score": 0.85}
-        elif "스트레스" in text or "쉬고 싶" in text:
-            return {"label": "부정", "score": 0.75}
-        else:
-            return {"label": "긍정", "score": 0.5} # 기본값도 '긍정'으로 설정하여 BPM 매핑되도록
-
-class MockBPMMapper:
-    def __init__(self):
-        self.bpm_map = {
-            "긍정": (110, 140), # SentimentAnalyzer의 '긍정'에 매핑
-            "부정": (60, 90),  # SentimentAnalyzer의 '부정'에 매핑
-            "happy": (120, 160), # 기존 매핑 유지 (혹시 모를 경우 대비)
-            "sad": (60, 90),
-            "calm": (80, 110),
-            "angry": (130, 180),
-            "relaxed": (70, 100),
-            "anxious": (95, 125),
-            "neutral": (90, 120)
-        }
-        logging.info("MockBPMMapper initialized.")
-
-    def get_bpm_range(self, emotion_label: str):
-        logging.debug(f"MockBPMMapper: Mapping BPM for '{emotion_label}'")
-        return self.bpm_map.get(emotion_label, self.bpm_map["neutral"])
-
-
-# 부모 디렉토리를 Python 경로에 추가하여 natural_language_processing 모듈을 임포트할 수 있도록 합니다.
-current_dir = os.path.dirname(os.path.abspath(__file__))
-nlp_dir = os.path.join(current_dir, 'natural-language-processing')
-
-# sys.path에 추가하는 로직을 임포트 시도 직전에 배치하여 Pylance 경고를 줄입니다.
-if nlp_dir not in sys.path:
-    sys.path.append(nlp_dir)
-    logging.debug(f"Added {nlp_dir} to sys.path")
+# music_recommendation_app 디렉토리와 natural-language-processing 디렉토리에
+# __init__.py 파일이 이미 존재하므로, 이들은 Python 패키지로 인식됩니다.
+# 따라서 sys.path를 동적으로 조작할 필요가 없습니다.
+# 모듈 임포트는 이제 상대 경로를 사용합니다.
 
 try:
-    # 실제 SentimentAnalyzer 및 BPMMapper 임포트 시도
-    from sentiment_analyzer import SentimentAnalyzer
-    from bpm_mapper import BPMMapper
+    # 실제 SentimentAnalyzer 및 BPMMapper 임포트 시도 (상대 경로 사용)
+    from .natural_language_processing.sentiment_analyzer import SentimentAnalyzer
+    from .natural_language_processing.bpm_mapper import BPMMapper
     logging.debug("SentimentAnalyzer and BPMMapper imported successfully.")
 except ImportError as e:
     logging.warning(f"Failed to import actual NLP modules: {e}. Using Mock versions.")
     # 실제 모듈 임포트 실패 시 Mock 버전 사용
-    SentimentAnalyzer = MockSentimentAnalyzer
-    BPMMapper = MockBPMMapper
+    class SentimentAnalyzer:
+        def analyze_sentiment(self, text: str):
+            logging.debug(f"MockSentimentAnalyzer: Analyzing '{text}'")
+            if "신나" in text or "기분 좋" in text or "활기찬" in text:
+                return {"label": "긍정", "score": 0.9}
+            elif "슬프" in text or "우울" in text:
+                return {"label": "부정", "score": 0.8}
+            elif "공부" in text or "집중" in text or "잔잔" in text:
+                return {"label": "긍정", "score": 0.7}
+            elif "화가 나" in text or "분노" in text:
+                return {"label": "부정", "score": 0.85}
+            elif "스트레스" in text or "쉬고 싶" in text:
+                return {"label": "부정", "score": 0.75}
+            else:
+                return {"label": "긍정", "score": 0.5}
+
+    class BPMMapper:
+        def __init__(self):
+            self.bpm_map = {
+                "긍정": (110, 140),
+                "부정": (60, 90),
+                "happy": (120, 160),
+                "sad": (60, 90),
+                "calm": (80, 110),
+                "angry": (130, 180),
+                "relaxed": (70, 100),
+                "anxious": (95, 125),
+                "neutral": (90, 120)
+            }
+            logging.info("MockBPMMapper initialized.")
+
+        def get_bpm_range(self, emotion_label: str):
+            logging.debug(f"MockBPMMapper: Mapping BPM for '{emotion_label}'")
+            return self.bpm_map.get(emotion_label, self.bpm_map["neutral"])
 
 
 class MusicRecommender:
@@ -80,37 +71,29 @@ class MusicRecommender:
         self.sentiment_analyzer = SentimentAnalyzer()
         self.bpm_mapper = BPMMapper()
         self.getsongbpm_api_key = getsongbpm_api_key
-        # getsong.co API Base URL로 변경
         self.getsongbpm_base_url = "https://api.getsong.co/" 
         logging.info(f"Music recommendation system initialized with API Base URL: {self.getsongbpm_base_url}")
-        # getsong.co API는 시간당 3000회 요청 제한이 있습니다.
-        # (If you exceed this number, your key will be blocked for one hour.)
 
     def _call_getsongbpm_api(self, endpoint: str, params: dict = None):
         """
         getsong.co API를 호출하는 내부 도우미 메서드입니다.
-        API Key는 X-API-KEY 헤더 또는 URL 파라미터로 전송 가능하며, 여기서는 URL 파라미터를 사용합니다.
+        API Key는 URL 파라미터로 전송합니다.
         """
-        # API 키를 URL 파라미터로 추가
         if params is None:
             params = {}
-        params["api_key"] = self.getsongbpm_api_key # api_key 파라미터 추가
+        params["api_key"] = self.getsongbpm_api_key 
         
-        # getsong.co API는 엔드포인트에 선행 슬래시가 필요할 수 있습니다.
-        # base_url이 이미 슬래시로 끝나므로 endpoint에 슬래시가 없도록 합니다.
         if endpoint.startswith('/'):
             endpoint = endpoint[1:]
         
         url = f"{self.getsongbpm_base_url}{endpoint}"
         
         try:
-            # headers는 더 이상 필요 없음 (API 키를 파라미터로 전송하므로)
             logging.debug(f"Calling getsong.co API: {url} with params {params}")
-            response = requests.get(url, params=params) # params 인자로 api_key 포함
-            response.raise_for_status() # Raise HTTPError for bad responses (4xx or 5xx)
+            response = requests.get(url, params=params)
+            response.raise_for_status() 
             return response.json()
         except requests.exceptions.HTTPError as http_err:
-            # 401 Unauthorized 에러 시 응답 텍스트를 명확히 로깅
             logging.error(f"HTTP error occurred: {http_err} - Response Status: {response.status_code if response else 'N/A'} - Response Text: {response.text if response else 'N/A'}")
         except requests.exceptions.ConnectionError as conn_err:
             logging.error(f"Network connection error: {conn_err}")
@@ -128,33 +111,37 @@ class MusicRecommender:
         logging.info(f"Attempting to search for songs in BPM range {min_bpm}~{max_bpm} using getsong.co API...")
         
         found_songs = []
-        api_call_successful = False # API 호출 성공 여부 플래그
+        api_call_successful = False 
 
         try:
-            # getsong.co API 문서에 따라 /search/ 엔드포인트와 type, lookup 파라미터 사용
             search_queries = ["pop", "dance", "rock", "electronic", "jazz", "hip hop", "ballad", "r&b"] 
             
             for query in search_queries:
-                # type="song"으로 설정하고 lookup에 검색어를 인코딩하여 전달
-                params = {"type": "song", "lookup": query, "limit": 20} # limit은 API 문서에 따라 20으로 설정
-                api_response = self._call_getsongbpm_api("search/", params) # 엔드포인트 수정
+                params = {"type": "song", "lookup": query, "limit": 20} 
+                api_response = self._call_getsongbpm_api("search/", params) 
 
-                if api_response and api_response.get("search"): # 응답 구조가 {"search": [...]} 형태
-                    api_call_successful = True # API 호출 성공
-                    for song_data in api_response["search"]: # "search" 배열 내의 각 노래 데이터
-                        # API 문서의 "Song Object"에 따라 데이터 추출
+                if api_response and api_response.get("search"): 
+                    api_call_successful = True 
+                    for song_data in api_response["search"]: 
                         song_title = song_data.get("title", "Unknown Title")
                         
-                        # artist 필드에 안전하게 접근: artist가 리스트이고 비어있지 않은지 확인
-                        artist_info = song_data.get("artist")
+                        # 아티스트 이름 추출 강화
                         artist_name = "Unknown Artist"
-                        if isinstance(artist_info, list) and artist_info: # artist_info가 리스트이고 비어있지 않다면
-                            first_artist = artist_info[0]
-                            if isinstance(first_artist, dict): # 첫 번째 요소가 딕셔너리인지 확인
+                        artist_info_list = song_data.get("artist")
+                        if isinstance(artist_info_list, list) and artist_info_list:
+                            # artist_info_list는 아티스트 객체들의 리스트이므로, 첫 번째 아티스트 객체에서 이름을 가져옵니다.
+                            first_artist = artist_info_list[0]
+                            if isinstance(first_artist, dict):
                                 artist_name = first_artist.get("name", "Unknown Artist")
                         
-                        song_bpm = song_data.get("tempo") # "tempo"는 Integrer 타입
-                        
+                        song_bpm = song_data.get("tempo") 
+
+                        # 앨범 커버 URL 추출 강화
+                        album_cover_url = "https://placehold.co/140x140/cccccc/000000?text=No+Cover"
+                        album_info = song_data.get("album")
+                        if isinstance(album_info, dict):
+                            album_cover_url = album_info.get("img", album_cover_url) # album.img 필드 사용
+
                         if song_bpm is not None:
                             try:
                                 song_bpm = int(song_bpm) 
@@ -163,8 +150,7 @@ class MusicRecommender:
                                         "title": song_title,
                                         "artist": artist_name,
                                         "bpm": song_bpm,
-                                        # getsong.co API 문서에 앨범 커버 이미지 URL 필드가 명시되어 있지 않으므로 플레이스홀더 사용
-                                        "album_cover_url": "https://placehold.co/140x140/cccccc/000000?text=No+Cover" 
+                                        "album_cover_url": album_cover_url 
                                     })
                                     if len(found_songs) >= limit: 
                                         break
@@ -176,9 +162,8 @@ class MusicRecommender:
         except Exception as e:
             logging.error(f"Error during getsong.co API search: {e}")
             logging.error(traceback.format_exc())
-            api_call_successful = False # 예외 발생 시 API 호출 실패로 간주
+            api_call_successful = False 
             
-        # API 호출이 성공했으나 결과가 없거나, API 호출 자체가 실패했을 경우 Mock 데이터 사용
         if not api_call_successful or not found_songs:
             logging.warning(f"API call failed or no relevant songs found from getsong.co API for BPM range {min_bpm}~{max_bpm}. Falling back to mock data.")
             mock_songs_data = [
@@ -198,11 +183,45 @@ class MusicRecommender:
             ]
             return random.sample(mock_songs_data, min(limit, len(mock_songs_data)))
         
-        return random.sample(filtered_by_bpm_and_text, min(limit, len(filtered_by_bpm_and_text)))
+        return random.sample(found_songs, min(limit, len(found_songs)))
+
+    def recommend_music(self, user_text: str):
+        """
+        사용자 텍스트를 기반으로 음악을 추천합니다.
+
+        Args:
+            user_text (str): 사용자의 감정 표현 텍스트.
+
+        Returns:
+            list: 추천된 음악 리스트 (제목, 아티스트, BPM, 앨범 커버 URL 포함).
+        """
+        logging.info(f"\n--- Starting music recommendation for '{user_text}' ---")
+        
+        # 1. 감정 분석
+        sentiment_result = self.sentiment_analyzer.analyze_sentiment(user_text)
+        emotion_label = sentiment_result["label"]
+        sentiment_score = sentiment_result["score"]
+        
+        logging.info(f"Sentiment analysis result: '{emotion_label}' (score: {sentiment_score:.4f})")
+
+        # 2. 감정에 따른 BPM 범위 매핑
+        min_bpm, max_bpm = self.bpm_mapper.get_bpm_range(emotion_label)
+        logging.info(f"Recommended BPM range for '{emotion_label}' emotion: {min_bpm}-{max_bpm}")
+
+        # 3. getsong.co API를 통해 노래 검색 (또는 시뮬레이션 데이터 사용)
+        recommended_songs = self.get_songs_by_bpm_range(min_bpm, max_bpm, limit=3) 
+        
+        if recommended_songs:
+            logging.info("\n--- Recommended Music List ---")
+            for i, song in enumerate(recommended_songs):
+                logging.info(f"{i+1}. Title: {song['title']}, Artist: {song['artist']}, BPM: {song['bpm']}, Cover: {song.get('album_cover_url', 'N/A')}")
+        else:
+            logging.info("\nSorry, no music found for the current BPM range.")
+            logging.info("Please try another emotion or try again later.")
+            
+        return recommended_songs
 
 
-# MockMusicRecommender 클래스를 MusicRecommender 클래스 바로 아래로 이동
-# Pylance 경고 해결: MockMusicRecommender가 정의되기 전에 사용될 수 있다는 경고 방지
 class MockMusicRecommender(MusicRecommender):
     """
     API 키가 없거나 개발 시에 사용할 모의(Mock) 추천기입니다.
