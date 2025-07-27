@@ -88,12 +88,12 @@ class MusicRecommender:
     def _call_getsongbpm_api(self, endpoint: str, params: dict = None):
         """
         getsong.co API를 호출하는 내부 도우미 메서드입니다.
-        API Key는 X-API-KEY 헤더 또는 URL 파라미터로 전송 가능하며, 여기서는 X-API-KEY 헤더를 사용합니다.
+        API Key는 X-API-KEY 헤더 또는 URL 파라미터로 전송 가능하며, 여기서는 URL 파라미터를 사용합니다.
         """
-        headers = {
-            "x-api-key": self.getsongbpm_api_key,
-            "Content-Type": "application/json"
-        }
+        # API 키를 URL 파라미터로 추가
+        if params is None:
+            params = {}
+        params["api_key"] = self.getsongbpm_api_key # api_key 파라미터 추가
         
         # getsong.co API는 엔드포인트에 선행 슬래시가 필요할 수 있습니다.
         # base_url이 이미 슬래시로 끝나므로 endpoint에 슬래시가 없도록 합니다.
@@ -103,8 +103,9 @@ class MusicRecommender:
         url = f"{self.getsongbpm_base_url}{endpoint}"
         
         try:
+            # headers는 더 이상 필요 없음 (API 키를 파라미터로 전송하므로)
             logging.debug(f"Calling getsong.co API: {url} with params {params}")
-            response = requests.get(url, headers=headers, params=params)
+            response = requests.get(url, params=params) # params 인자로 api_key 포함
             response.raise_for_status() # Raise HTTPError for bad responses (4xx or 5xx)
             return response.json()
         except requests.exceptions.HTTPError as http_err:
@@ -142,7 +143,8 @@ class MusicRecommender:
                     for song_data in api_response["search"]: # "search" 배열 내의 각 노래 데이터
                         # API 문서의 "Song Object"에 따라 데이터 추출
                         song_title = song_data.get("title", "Unknown Title")
-                        artist_name = song_data.get("artist", [{}])[0].get("name", "Unknown Artist") # artist는 배열일 수 있음
+                        # artist는 배열일 수 있으므로 첫 번째 아티스트의 이름을 가져옴
+                        artist_name = song_data.get("artist", [{}])[0].get("name", "Unknown Artist") 
                         song_bpm = song_data.get("tempo") # "tempo"는 Integrer 타입
                         
                         if song_bpm is not None:
