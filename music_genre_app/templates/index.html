@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>음악 인텔리전스 시스템</title>
+    <title>음악 장르 분류 시스템</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
         h1, h2 { color: #0056b3; }
@@ -81,7 +81,7 @@
     </style>
 </head>
 <body>
-    <h1>통합 음악 인텔리전스 시스템</h1>
+    <h1>음악 장르 분류 시스템</h1>
 
     <div class="container">
         <!-- 음악 장르 분류기 섹션 -->
@@ -100,8 +100,8 @@
             <h2 id="result"></h2>
         </div>
 
-        <!-- 감정 기반 음악 추천기 섹션 -->
-        <div class="section">
+        <!-- 감정 기반 음악 추천기 섹션 (이 앱에서는 사용하지 않으므로 제거됨) -->
+        <!-- <div class="section">
             <h2>🎶 감정 기반 음악 추천</h2>
             <form id="recommend-form">
                 <input type="text" id="emotion-text" placeholder="오늘 기분은 어떠세요? (예: 행복해요, 슬퍼요)" style="width: 70%;" required />
@@ -109,7 +109,7 @@
             </form>
             <div id="recommendation-result"></div>
             <ul id="recommendation-list"></ul>
-        </div>
+        </div> -->
     </div>
 
     <script>
@@ -130,7 +130,7 @@
             loadingText.style.display = 'block';
             result.innerText = ''; // 이전 결과 초기화
 
-            fetch('/predict', {
+            fetch('/predict', { // /predict 엔드포인트는 이 앱의 Flask 앱에 있습니다.
                 method: 'POST',
                 body: formData
             })
@@ -145,7 +145,6 @@
                 progressBarInner.style.width = '100%';
                 loadingText.style.display = 'none';
 
-                // 장르 분류 기능의 응답 처리 로직만 남김
                 if (data.label) {
                     result.innerText = '예측된 장르: ' + data.label;
                 } else if (data.error) {
@@ -168,59 +167,11 @@
             });
         });
 
-        // --- 감정 기반 음악 추천 기능 스크립트 ---
-        const recommendForm = document.getElementById('recommend-form');
-        const emotionText = document.getElementById('emotion-text');
-        const recommendationResult = document.getElementById('recommendation-result');
-        const recommendationList = document.getElementById('recommendation-list');
-
-        recommendForm.addEventListener('submit', function (e) {
-            e.preventDefault();
-            const userEmotion = emotionText.value.trim();
-
-            if (!userEmotion) {
-                recommendationResult.innerText = '기분을 입력해주세요.';
-                return;
-            }
-
-            recommendationResult.innerText = '음악을 추천 중입니다...';
-            recommendationList.innerHTML = ''; // 기존 추천 리스트 초기화
-
-            fetch('/recommend', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ text: userEmotion })
-            })
-            .then(response => {
-                if (!response.ok) {
-                    return response.json().then(err => { throw new Error(err.error || '알 수 없는 오류'); });
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.recommendations && data.recommendations.length > 0) {
-                    recommendationResult.innerText = `'${userEmotion}'에 대한 추천 음악:`;
-                    data.recommendations.forEach(song => {
-                        const listItem = document.createElement('li');
-                        // 이 부분을 수정합니다: song.제목 -> song.title, song.아티스트 -> song.artist, song.BPM -> song.bpm
-                        listItem.textContent = `제목: ${song.title}, 아티스트: ${song.artist}, BPM: ${song.bpm}`;
-                        recommendationList.appendChild(listItem);
-                    });
-                } else {
-                    recommendationResult.innerText = `'${userEmotion}'에 대한 추천 음악을 찾을 수 없습니다.`;
-                }
-            })
-            .catch(error => {
-                console.error('음악 추천 요청 중 오류 발생:', error); // 콘솔에 오류 출력
-                recommendationResult.innerText = '요청 중 오류가 발생했습니다: ' + error.message;
-            });
-        });
+        // 감정 기반 음악 추천 기능 스크립트는 이 앱에서 사용하지 않으므로 제거됨
     </script>
     
     <footer>
-        <p>Powered by <a href="https://getsongbpm.com" target="_blank">GetSongBPM</a></p>
+        <p>Powered by Music Intelligence System</p>
         <p>&copy; 2023 Music Intelligence System</p>
     </footer>
     
