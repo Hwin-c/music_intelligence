@@ -1,9 +1,11 @@
+# app.py
 from flask import Flask, request, jsonify, render_template, redirect, url_for
 import os
 import logging
 import traceback
 import sys
 import threading # 모델 로딩을 위한 스레딩 모듈 추가
+import time # 시간 측정을 위한 time 모듈 추가
 
 # Flask 앱 인스턴스 생성 시 static_folder와 template_folder를 명시적으로 설정
 app = Flask(__name__,
@@ -96,64 +98,93 @@ def extract_features_from_audio(file_path):
     
     try:
         logging.debug(f"오디오 파일 로드 시도: {file_path}")
+        start_time = time.time()
         y, sr = librosa.load(file_path, sr=44100)
-        logging.info(f"Audio loaded: duration={len(y)/sr:.2f} seconds, sr={sr}")
+        end_time = time.time()
+        logging.info(f"Audio loaded: duration={len(y)/sr:.2f} seconds, sr={sr}. Load time: {end_time - start_time:.2f}s")
 
         if np.isnan(y).any():
             raise ValueError("오디오 신호가 유효하지 않습니다. NaN 값이 포함되어 있습니다.")
         
-        logging.debug("크로마 STFT 특징 추출 중...")
+        features = {}
+
+        # 각 특징 추출 단계에 시간 측정 및 로깅 추가
+        start_feature_time = time.time()
+        logging.debug("크로마 STFT 특징 추출 시작...")
         chroma_stft = librosa.feature.chroma_stft(y=y, sr=sr)
-        logging.debug("RMS 특징 추출 중...")
+        features['chroma_stft_mean'] = np.mean(chroma_stft)
+        features['chroma_stft_var'] = np.var(chroma_stft)
+        logging.debug(f"크로마 STFT 특징 추출 완료. ({time.time() - start_feature_time:.4f}s)")
+
+        start_feature_time = time.time()
+        logging.debug("RMS 특징 추출 시작...")
         rms = librosa.feature.rms(y=y)
-        logging.debug("스펙트럼 센트로이드 특징 추출 중...")
+        features['rms_mean'] = np.mean(rms)
+        features['rms_var'] = np.var(rms)
+        logging.debug(f"RMS 특징 추출 완료. ({time.time() - start_feature_time:.4f}s)")
+
+        start_feature_time = time.time()
+        logging.debug("스펙트럼 센트로이드 특징 추출 시작...")
         spec_centroid = librosa.feature.spectral_centroid(y=y, sr=sr)
-        logging.debug("스펙트럼 대역폭 특징 추출 중...")
+        features['spectral_centroid_mean'] = np.mean(spec_centroid)
+        features['spectral_centroid_var'] = np.var(spec_centroid)
+        logging.debug(f"스펙트럼 센트로이드 특징 추출 완료. ({time.time() - start_feature_time:.4f}s)")
+
+        start_feature_time = time.time()
+        logging.debug("스펙트럼 대역폭 특징 추출 시작...")
         spec_bandwidth = librosa.feature.spectral_bandwidth(y=y, sr=sr)
-        logging.debug("롤오프 특징 추출 중...")
+        features['spectral_bandwidth_mean'] = np.mean(spec_bandwidth)
+        features['spectral_bandwidth_var'] = np.var(spec_bandwidth)
+        logging.debug(f"스펙트럼 대역폭 특징 추출 완료. ({time.time() - start_feature_time:.4f}s)")
+
+        start_feature_time = time.time()
+        logging.debug("롤오프 특징 추출 시작...")
         rolloff = librosa.feature.spectral_rolloff(y=y, sr=sr)
-        logging.debug("제로 크로싱 레이트 특징 추출 중...")
+        features['rolloff_mean'] = np.mean(rolloff)
+        features['rolloff_var'] = np.var(rolloff)
+        logging.debug(f"롤오프 특징 추출 완료. ({time.time() - start_feature_time:.4f}s)")
+
+        start_feature_time = time.time()
+        logging.debug("제로 크로싱 레이트 특징 추출 시작...")
         zcr = librosa.feature.zero_crossing_rate(y)
-        logging.debug("하모니 특징 추출 중...")
+        features['zero_crossing_rate_mean'] = np.mean(zcr)
+        features['zero_crossing_rate_var'] = np.var(zcr)
+        logging.debug(f"제로 크로싱 레이트 특징 추출 완료. ({time.time() - start_feature_time:.4f}s)")
+
+        start_feature_time = time.time()
+        logging.debug("하모니 특징 추출 시작...")
         harmony = librosa.effects.harmonic(y)
-        logging.debug("퍼셉트럴 특징 추출 중...")
+        features['harmony_mean'] = np.mean(harmony)
+        features['harmony_var'] = np.var(harmony)
+        logging.debug(f"하모니 특징 추출 완료. ({time.time() - start_feature_time:.4f}s)")
+
+        start_feature_time = time.time()
+        logging.debug("퍼셉트럴 특징 추출 시작...")
         perceptr = librosa.feature.spectral_flatness(y=y)
+        features['perceptr_mean'] = np.mean(perceptr)
+        features['perceptr_var'] = np.var(perceptr)
+        logging.debug(f"퍼셉트럴 특징 추출 완료. ({time.time() - start_feature_time:.4f}s)")
         
-        logging.debug("템포 특징 추출 중...")
-        # tempo는 librosa.beat.beat_track이 튜플을 반환하므로 첫 번째 요소만 사용
+        start_feature_time = time.time()
+        logging.debug("템포 특징 추출 시작...")
         tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
-        logging.debug(f"템포 추출 완료: {tempo}")
+        features['tempo'] = tempo
+        logging.debug(f"템포 추출 완료: {tempo}. ({time.time() - start_feature_time:.4f}s)")
         
-        logging.debug("MFCC 특징 추출 중...")
+        start_feature_time = time.time()
+        logging.debug("MFCC 특징 추출 시작...")
         mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=20)
-        logging.debug("MFCC 특징 추출 완료.")
-
-        features = {
-            'chroma_stft_mean': np.mean(chroma_stft),
-            'chroma_stft_var': np.var(chroma_stft),
-            'rms_mean': np.mean(rms),
-            'rms_var': np.var(rms),
-            'spectral_centroid_mean': np.mean(spec_centroid),
-            'spectral_centroid_var': np.var(spec_centroid),
-            'spectral_bandwidth_mean': np.mean(spec_bandwidth),
-            'spectral_bandwidth_var': np.var(spec_bandwidth),
-            'rolloff_mean': np.mean(rolloff),
-            'rolloff_var': np.var(rolloff),
-            'zero_crossing_rate_mean': np.mean(zcr),
-            'zero_crossing_rate_var': np.var(zcr),
-            'harmony_mean': np.mean(harmony),
-            'harmony_var': np.var(harmony),
-            'perceptr_mean': np.mean(perceptr),
-            'perceptr_var': np.var(perceptr),
-            'tempo': tempo, # tempo는 스칼라 값으로 바로 할당
-        }
-
         for i in range(20):
             features[f'mfcc{i+1}_mean'] = np.mean(mfcc[i])
             features[f'mfcc{i+1}_var'] = np.var(mfcc[i])
+        logging.debug(f"MFCC 특징 추출 완료. ({time.time() - start_feature_time:.4f}s)")
 
-        logging.debug("모든 특징 추출 완료.")
-        return pd.DataFrame([features])
+        logging.debug("모든 특징 추출 완료. DataFrame 생성 중...")
+        start_df_time = time.time()
+        features_df = pd.DataFrame([features])
+        logging.debug(f"DataFrame 생성 완료. ({time.time() - start_df_time:.4f}s)")
+
+        return features_df
     except Exception as e:
         logging.error(f"오디오 특징 추출 중 오류 발생: {e}")
         logging.error(traceback.format_exc())
@@ -200,15 +231,19 @@ def predict_genre_endpoint():
         import numpy as np
 
         logging.debug(f"업로드된 파일: {filename}")
+        file_processing_start_time = time.time()
+
         if filename.endswith('.mp3'):
             temp_mp3_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), temp_input_name + '.mp3')
             audio_file.save(temp_mp3_path)
             logging.info(f"MP3 파일 '{filename}' 임시 저장 완료: {temp_mp3_path}")
             
             try:
+                logging.debug("MP3 to WAV 변환 시작...")
                 audio = AudioSegment.from_mp3(temp_mp3_path)
                 audio.export(temp_wav_path, format='wav')
                 logging.info(f"MP3 파일 '{filename}'을 WAV로 변환 후 임시 저장: {temp_wav_path}")
+                logging.debug(f"MP3 to WAV 변환 완료. ({time.time() - file_processing_start_time:.2f}s)")
             except Exception as e:
                 logging.error(f"MP3 to WAV 변환 중 오류 발생: {e}")
                 logging.error(traceback.format_exc())
@@ -221,17 +256,18 @@ def predict_genre_endpoint():
         elif filename.endswith('.wav'):
             audio_file.save(temp_wav_path)
             logging.info(f"WAV 파일 '{filename}' 임시 저장: {temp_wav_path}")
+            logging.debug(f"WAV 파일 저장 완료. ({time.time() - file_processing_start_time:.2f}s)")
         else:
             logging.warning(f"지원하지 않는 파일 형식: {filename}")
             return jsonify({'error': 'Unsupported file format. Please upload mp3 or wav.'}), 400
 
         logging.debug("오디오 특징 추출 시작...")
+        features_extraction_start_time = time.time()
         features_df = extract_features_from_audio(temp_wav_path) # DataFrame으로 반환됨
-        logging.debug("오디오 특징 추출 완료.")
+        logging.debug(f"오디오 특징 추출 완료. ({time.time() - features_extraction_start_time:.2f}s)")
 
-        # train_cols와 features_df의 컬럼 순서 및 일치 여부 확인
-        # train_cols에 없는 컬럼이 features_df에 있다면 제거
-        # features_df에 없는 컬럼이 train_cols에 있다면 0으로 채우기
+        logging.debug("피처 데이터프레임 전처리 시작...")
+        preprocessing_start_time = time.time()
         processed_features = pd.DataFrame(columns=train_cols)
         for col in train_cols:
             if col in features_df.columns:
@@ -250,6 +286,7 @@ def predict_genre_endpoint():
                 except Exception as e:
                     logging.error(f"'{col}' 컬럼을 숫자 타입으로 변환하는 데 실패했습니다: {e}. 기본값으로 설정합니다.")
                     processed_features[col] = 0.0 # 변환 실패 시 기본값 설정
+        logging.debug(f"피처 데이터프레임 전처리 완료. ({time.time() - preprocessing_start_time:.2f}s)")
 
         # 스케일링 전 데이터 로깅
         logging.debug(f"스케일링 전 피처 (processed_features):\n{processed_features.head()}")
@@ -257,16 +294,18 @@ def predict_genre_endpoint():
         
         # 스케일링
         logging.debug("피처 스케일링 시작...")
+        scaling_start_time = time.time()
         features_scaled = scaler.transform(processed_features)
-        logging.debug("피처 스케일링 완료.")
+        logging.debug(f"피처 스케일링 완료. ({time.time() - scaling_start_time:.2f}s)")
         logging.debug(f"스케일링 후 피처 (features_scaled):\n{features_scaled}")
 
         # TFLite 모델 예측
         logging.debug("TFLite 모델 예측 시작...")
+        inference_start_time = time.time()
         interpreter.set_tensor(input_details[0]['index'], features_scaled.astype(input_details[0]['dtype']))
         interpreter.invoke()
         preds = interpreter.get_tensor(output_details[0]['index'])
-        logging.debug("TFLite 모델 예측 완료.")
+        logging.debug(f"TFLite 모델 예측 완료. ({time.time() - inference_start_time:.2f}s)")
 
         logging.debug(f"모델 예측값:\n{preds}")
 
@@ -287,11 +326,8 @@ def predict_genre_endpoint():
         # 임시 파일 정리
         if os.path.exists(temp_wav_path):
             os.remove(temp_wav_path)
-            logging.info(f"임시 파일 삭제: {temp_wav_path}")
+            logging.info(f"임시 WAV 파일 삭제: {temp_wav_path}")
         # MP3 변환 시 생성될 수 있는 임시 MP3 파일도 확실히 삭제
-        # temp_mp3_path는 try 블록 내에서 정의되므로, finally에서 접근하려면 전역 또는 함수 스코프에 정의 필요
-        # 아니면 try 블록 내에서만 temp_mp3_path를 사용하고, finally에서 특정 패턴으로 삭제
-        # 여기서는 temp_input_name을 사용하여 경로를 다시 구성하여 삭제 시도
         temp_mp3_path_check = os.path.join(os.path.dirname(os.path.abspath(__file__)), temp_input_name + '.mp3')
         if os.path.exists(temp_mp3_path_check):
             os.remove(temp_mp3_path_check)
