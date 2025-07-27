@@ -34,7 +34,7 @@ def _load_genre_classification_models():
     # 필요한 라이브러리들을 함수 내부에서 임포트 (극단적인 지연 로딩)
     import tensorflow.lite as tflite
     import librosa
-    import pandas as pd
+    import pandas as pd # pandas 임포트 유지
     import numpy as np
     import pickle
     import json
@@ -82,8 +82,8 @@ def _load_genre_classification_models():
 def extract_features_from_audio(file_path):
     import librosa
     import numpy as np
-    import pandas as pd
-
+    import pandas as pd # <-- 여기에 pandas 임포트 추가
+    
     try:
         y, sr = librosa.load(file_path, sr=44100)
 
@@ -125,10 +125,6 @@ def extract_features_from_audio(file_path):
             'perceptr_var': np.var(perceptr),
             'tempo': tempo, # tempo는 스칼라 값으로 바로 할당
         }
-
-        for i in range(20):
-            features[f'mfcc{i+1}_mean'] = np.mean(mfcc[i])
-            features[f'mfcc{i+1}_var'] = np.var(mfcc[i])
 
         return pd.DataFrame([features])
     except Exception as e:
