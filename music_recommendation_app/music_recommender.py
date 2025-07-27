@@ -143,8 +143,15 @@ class MusicRecommender:
                     for song_data in api_response["search"]: # "search" 배열 내의 각 노래 데이터
                         # API 문서의 "Song Object"에 따라 데이터 추출
                         song_title = song_data.get("title", "Unknown Title")
-                        # artist는 배열일 수 있으므로 첫 번째 아티스트의 이름을 가져옴
-                        artist_name = song_data.get("artist", [{}])[0].get("name", "Unknown Artist") 
+                        
+                        # artist 필드에 안전하게 접근: artist가 리스트이고 비어있지 않은지 확인
+                        artist_info = song_data.get("artist")
+                        artist_name = "Unknown Artist"
+                        if isinstance(artist_info, list) and artist_info: # artist_info가 리스트이고 비어있지 않다면
+                            first_artist = artist_info[0]
+                            if isinstance(first_artist, dict): # 첫 번째 요소가 딕셔너리인지 확인
+                                artist_name = first_artist.get("name", "Unknown Artist")
+                        
                         song_bpm = song_data.get("tempo") # "tempo"는 Integrer 타입
                         
                         if song_bpm is not None:
@@ -190,86 +197,6 @@ class MusicRecommender:
             ]
             return random.sample(mock_songs_data, min(limit, len(mock_songs_data)))
         
-        return random.sample(found_songs, min(limit, len(found_songs)))
-
-
-    def recommend_music(self, user_text: str):
-        """
-        사용자 텍스트를 기반으로 음악을 추천합니다.
-
-        Args:
-            user_text (str): 사용자의 감정 표현 텍스트.
-
-        Returns:
-            list: 추천된 음악 리스트 (제목, 아티스트, BPM, 앨범 커버 URL 포함).
-        """
-        logging.info(f"\n--- Starting music recommendation for '{user_text}' ---")
-        
-        # 1. 감정 분석
-        sentiment_result = self.sentiment_analyzer.analyze_sentiment(user_text)
-        emotion_label = sentiment_result["label"]
-        sentiment_score = sentiment_result["score"]
-        
-        logging.info(f"Sentiment analysis result: '{emotion_label}' (score: {sentiment_score:.4f})")
-
-        # 2. 감정에 따른 BPM 범위 매핑
-        min_bpm, max_bpm = self.bpm_mapper.get_bpm_range(emotion_label)
-        logging.info(f"Recommended BPM range for '{emotion_label}' emotion: {min_bpm}-{max_bpm}")
-
-        # 3. getsong.co API를 통해 노래 검색 (또는 시뮬레이션 데이터 사용)
-        recommended_songs = self.get_songs_by_bpm_range(min_bpm, max_bpm, limit=3) 
-        
-        if recommended_songs:
-            logging.info("\n--- Recommended Music List ---")
-            for i, song in enumerate(recommended_songs):
-                logging.info(f"{i+1}. Title: {song['title']}, Artist: {song['artist']}, BPM: {song['bpm']}, Cover: {song.get('album_cover_url', 'N/A')}")
-        else:
-            logging.info("\nSorry, no music found for the current BPM range.")
-            logging.info("Please try another emotion or try again later.")
-            
-        return recommended_songs
-
-# MockMusicRecommender 클래스를 MusicRecommender 클래스 외부로 이동
-class MockMusicRecommender(MusicRecommender):
-    """
-    API 키가 없거나 개발 시에 사용할 모의(Mock) 추천기입니다.
-    실제 API 호출 없이 미리 정의된 데이터를 반환합니다.
-    """
-    def __init__(self, getsongbpm_api_key: str = None):
-        super().__init__(getsongbpm_api_key) 
-        logging.info("--- Mock Music Recommender initialized (using mock data only) ---")
-
-    def get_songs_by_bpm_range(self, min_bpm: int, max_bpm: int, limit: int = 5): # Mock 클래스도 limit 파라미터 받도록
-        logging.info(f"Mock API call: Simulating search for songs in BPM {min_bpm}~{max_bpm} range with limit {limit}...")
-        time.sleep(1) # 모의 지연
-        
-        # Mock 데이터셋을 더 다양하게 구성하고 "(Mock)" 접미사 추가
-        mock_data = [
-            {"title": "Mock Pop Song (Upbeat)", "artist": "Mock Artist", "bpm": 120, "album_cover_url": "https://placehold.co/140x140/A3C8F5/000000?text=MockPop"},
-            {"title": "Mock Jazz Tune (Relaxed)", "artist": "Jazz Cat", "bpm": 90, "album_cover_url": "https://placehold.co/140x140/4A90E2/FFFFFF?text=MockJazz"},
-            {"title": "Mock Rock Anthem (Energetic)", "artist": "Rock Band", "bpm": 150, "album_cover_url": "https://placehold.co/140x140/333333/FFFFFF?text=MockRock"},
-            {"title": "Mock Chill Vibes (Calm)", "artist": "Lo-Fi Beats", "bpm": 70, "album_cover_url": "https://placehold.co/140x140/6C7A89/FFFFFF?text=MockChill"},
-            {"title": "Mock Upbeat Track (Happy)", "artist": "Energetic Duo", "bpm": 135, "album_cover_url": "https://placehold.co/140x140/FF6B6B/FFFFFF?text=MockUpbeat"},
-            {"title": "Mock Summer Hit (Joyful)", "artist": "Sunshine Band", "bpm": 128, "album_cover_url": "https://placehold.co/140x140/FFD700/000000?text=MockSummer"},
-            {"title": "Mock Rainy Day (Sad)", "artist": "Blue Mood", "bpm": 65, "album_cover_url": "https://placehold.co/140x140/87CEEB/000000?text=MockRain"},
-            {"title": "Mock Workout Jam (Intense)", "artist": "Fitness Crew", "bpm": 140, "album_cover_url": "https://placehold.co/140x140/FF4500/FFFFFF?text=MockGym"},
-        ]
-
-        # 사용자 입력에 따라 다른 mock 데이터를 반환하는 간단한 로직 (예시)
-        filtered_by_bpm_and_text = []
-        for song in mock_data:
-            if min_bpm <= song["bpm"] <= max_bpm:
-                if "긍정" in self.sentiment_analyzer.analyze_sentiment("긍정적인 음악 추천해줘!")['label'] and song["bpm"] > 110:
-                    filtered_by_bpm_and_text.append(song)
-                elif "부정" in self.sentiment_analyzer.analyze_sentiment("슬픈 음악 추천해줘!")['label'] and song["bpm"] < 90:
-                    filtered_by_bpm_and_text.append(song)
-                else:
-                    filtered_by_bpm_and_text.append(song)
-
-        if not filtered_by_bpm_and_text:
-            logging.warning(f"No specific mock songs found for BPM range {min_bpm}~{max_bpm}. Returning random mock songs.")
-            return random.sample(mock_data, min(limit, len(mock_data)))
-            
         return random.sample(filtered_by_bpm_and_text, min(limit, len(filtered_by_bpm_and_text)))
 
 
