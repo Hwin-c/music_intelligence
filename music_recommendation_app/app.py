@@ -29,7 +29,12 @@ def _load_recommendation_models():
 
     logging.debug("음악 추천 모델 지연 로드 시작.")
     try:
-        # music_recommender 모듈을 임포트합니다.
+        # music_recommender.py가 있는 디렉토리를 sys.path에 추가하여 임포트 가능하게 함
+        recommender_dir = os.path.dirname(os.path.abspath(__file__))
+        if recommender_dir not in sys.path:
+            sys.path.append(recommender_dir)
+            logging.debug(f"Added {recommender_dir} to sys.path for music_recommender.py")
+
         from music_recommender import MusicRecommender, MockMusicRecommender 
 
         if getsongbpm_api_key == "YOUR_GETSONGBPM_API_KEY_HERE":

@@ -133,6 +133,16 @@
         50% { opacity: 0.5; }
     }
 
+    /* 이미지 중앙 정렬을 위한 스타일 추가 */
+    .chat-box img {
+        margin: 0 auto; /* 좌우 마진을 자동으로 설정하여 가운데 정렬 */
+        display: block; /* 블록 레벨 요소로 만들어 margin: auto가 작동하도록 함 */
+        width: 100%; 
+        max-width: 300px; 
+        border-radius: 15px; 
+        margin-bottom: 1rem;
+    }
+
     @media (max-width: 600px) {
         main {
             padding: 1rem;
@@ -193,7 +203,7 @@
   <main>
     <h1 class="main-heading">음악 추천</h1>
     <div class="chat-box">
-      <img src="{{ url_for('static', filename='music_recommendation.png') }}" alt="음악 추천 이미지" style="width: 100%; max-width: 300px; border-radius: 15px; margin-bottom: 1rem;" />
+      <img src="{{ url_for('static', filename='music_recommendation.png') }}" alt="음악 추천 이미지" />
       <h2>어떤 음악을 추천해 드릴까요?</h2>
       <form id="recommend-form">
         <textarea id="user-text" placeholder="예: '신나는 음악 추천해줘!', '공부할 때 들을 조용한 노래', '기분 전환할 때 좋은 노래'"></textarea>
