@@ -17,12 +17,16 @@ if nlp_dir not in sys.path:
     sys.path.insert(0, nlp_dir)
     logging.debug(f"Added {nlp_dir} to sys.path for NLP modules.")
 
+# SentimentAnalyzer와 BPMMapper를 임포트합니다.
+# 이 임포트는 이제 try-except 블록 외부에 위치하여 항상 시도됩니다.
+# 만약 NLP 모듈이 없으면 ImportError가 발생하므로, 아래 Mock 클래스들을 정의하여 사용합니다.
 try:
     from sentiment_analyzer import SentimentAnalyzer
     from bpm_mapper import BPMMapper
     logging.debug("SentimentAnalyzer and BPMMapper imported successfully.")
 except ImportError as e:
-    logging.warning(f"Failed to import actual NLP modules: {e}. Using Mock versions.")
+    logging.warning(f"Failed to import actual NLP modules: {e}. Using fallback Mock versions for SentimentAnalyzer and BPMMapper.")
+    # 실제 모듈 임포트 실패 시 사용할 Mock 버전 정의
     class SentimentAnalyzer:
         def analyze_sentiment(self, text: str):
             logging.debug(f"MockSentimentAnalyzer: Analyzing '{text}'")
@@ -357,7 +361,7 @@ class MusicRecommender:
             unique_mock_songs = []
             mock_seen_titles = set()
             
-            for song in mock_data:
+            for song in mock_songs_data:
                 is_mock_title_a_genre = False
                 if song.get("genres") and song["title"].lower() in [g.lower() for g in song["genres"]]:
                     is_mock_title_a_genre = True
