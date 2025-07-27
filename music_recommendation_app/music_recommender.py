@@ -12,22 +12,24 @@ class MockSentimentAnalyzer:
     def analyze_sentiment(self, text: str):
         logging.debug(f"MockSentimentAnalyzer: Analyzing '{text}'")
         if "신나" in text or "기분 좋" in text or "활기찬" in text:
-            return {"label": "happy", "score": 0.9}
+            return {"label": "긍정", "score": 0.9} # Mock에서도 '긍정'/'부정' 반환
         elif "슬프" in text or "우울" in text:
-            return {"label": "sad", "score": 0.8}
+            return {"label": "부정", "score": 0.8} # Mock에서도 '긍정'/'부정' 반환
         elif "공부" in text or "집중" in text or "잔잔" in text:
-            return {"label": "calm", "score": 0.7}
+            return {"label": "긍정", "score": 0.7} # 집중도 긍정적인 상태로 간주
         elif "화가 나" in text or "분노" in text:
-            return {"label": "angry", "score": 0.85}
+            return {"label": "부정", "score": 0.85}
         elif "스트레스" in text or "쉬고 싶" in text:
-            return {"label": "relaxed", "score": 0.75}
+            return {"label": "부정", "score": 0.75}
         else:
-            return {"label": "neutral", "score": 0.5}
+            return {"label": "긍정", "score": 0.5} # 기본값도 '긍정'으로 설정하여 BPM 매핑되도록
 
 class MockBPMMapper:
     def __init__(self):
         self.bpm_map = {
-            "happy": (120, 160),
+            "긍정": (110, 140), # SentimentAnalyzer의 '긍정'에 매핑
+            "부정": (60, 90),  # SentimentAnalyzer의 '부정'에 매핑
+            "happy": (120, 160), # 기존 매핑 유지 (혹시 모를 경우 대비)
             "sad": (60, 90),
             "calm": (80, 110),
             "angry": (130, 180),
@@ -95,7 +97,7 @@ class MusicRecommender:
             response.raise_for_status() # Raise HTTPError for bad responses (4xx or 5xx)
             return response.json()
         except requests.exceptions.HTTPError as http_err:
-            logging.error(f"HTTP error occurred: {http_err} - Response: {response.text}")
+            logging.error(f"HTTP error occurred: {http_err} - Response Text: {response.text if response else 'N/A'}")
         except requests.exceptions.ConnectionError as conn_err:
             logging.error(f"Network connection error: {conn_err}")
         except requests.exceptions.Timeout as timeout_err:
@@ -107,48 +109,69 @@ class MusicRecommender:
     def get_songs_by_bpm_range(self, min_bpm: int, max_bpm: int, limit: int = 5):
         """
         getsongbpm API를 사용하여 특정 BPM 범위 내의 노래를 검색합니다.
-        
-        **주의:** getsongbpm API는 직접적인 'BPM 범위 검색' 기능을 명시적으로 제공하지 않을 수 있습니다.
-        이 함수는 해당 API가 트랙 검색 결과를 반환하고, 그 결과에 BPM 정보와 앨범 커버 URL이 포함되어 있음을
-        가정하여 클라이언트 측에서 BPM으로 필터링하는 방식으로 구현됩니다.
-        실제 API 문서를 확인하여 가장 효율적인 검색 방식과 앨범 커버 URL 필드명을 적용해야 합니다.
-        (예: 장르 또는 인기곡 검색 후 BPM 필터링 및 앨범 커버 URL 추출)
+        실제 API 호출을 시도하고, 실패 시 Mock 데이터로 대체합니다.
         """
-        logging.info(f"Attempting to search for songs in BPM range {min_bpm}~{max_bpm} from getsongbpm API...")
+        logging.info(f"Attempting to search for songs in BPM range {min_bpm}~{max_bpm} using getsongbpm API...")
         
-        logging.warning("Direct BPM range search on getsongbpm API might be limited.")
-        logging.info("Simulating with mock data that includes album cover URLs.")
-        
-        # 모의 데이터에 앨범 커버 URL 추가 및 다양화
-        mock_songs_data = [
-            {"title": "기분 좋은 아침", "artist": "김미소", "bpm": 130, "album_cover_url": "https://placehold.co/140x140/FFD700/000000?text=Happy"},
-            {"title": "고요한 숲길", "artist": "이평화", "bpm": 75, "album_cover_url": "https://placehold.co/140x140/ADD8E6/000000?text=Calm"},
-            {"title": "집중의 순간", "artist": "박몰입", "bpm": 100, "album_cover_url": "https://placehold.co/140x140/90EE90/000000?text=Focus"},
-            {"title": "파워 업!", "artist": "최에너지", "bpm": 155, "album_cover_url": "https://placehold.co/140x140/FF4500/FFFFFF?text=Power"},
-            {"title": "차분한 저녁", "artist": "정고요", "bpm": 60, "album_cover_url": "https://placehold.co/140x140/8A2BE2/FFFFFF?text=Evening"},
-            {"title": "활기찬 하루", "artist": "강다이나믹", "bpm": 120, "album_cover_url": "https://placehold.co/140x140/00CED1/FFFFFF?text=Dynamic"},
-            {"title": "생각의 흐름", "artist": "윤명상", "bpm": 90, "album_cover_url": "https://placehold.co/140x140/DDA0DD/000000?text=Thought"},
-            {"title": "분노의 질주", "artist": "서파워", "bpm": 140, "album_cover_url": "https://placehold.co/140x140/B22222/FFFFFF?text=Rage"},
-            {"title": "슬픈 빗소리", "artist": "오감성", "bpm": 70, "album_cover_url": "https://placehold.co/140x140/6A5ACD/FFFFFF?text=Sad"},
-            {"title": "새로운 도전", "artist": "조열정", "bpm": 115, "album_cover_url": "https://placehold.co/140x140/FF8C00/000000?text=Challenge"},
-            {"title": "행복한 발걸음", "artist": "김행복", "bpm": 125, "album_cover_url": "https://placehold.co/140x140/FFC0CB/000000?text=Walk"},
-            {"title": "꿈꾸는 밤", "artist": "이몽환", "bpm": 85, "album_cover_url": "https://placehold.co/140x140/4682B4/FFFFFF?text=Dream"},
-            {"title": "에너지 폭발", "artist": "박다이나믹", "bpm": 160, "album_cover_url": "https://placehold.co/140x140/FF6347/FFFFFF?text=Blast"},
-        ]
-        
-        filtered_songs = [
-            song for song in mock_songs_data 
-            if min_bpm <= song["bpm"] <= max_bpm
-        ]
-        
-        # 필터링된 곡이 없거나, 요청된 limit보다 적을 경우 무작위로 채워 넣기
-        if not filtered_songs or len(filtered_songs) < limit:
-            logging.warning(f"Not enough songs found in mock data for BPM range {min_bpm}~{max_bpm}. Filling with random songs.")
-            # 전체 모의 데이터에서 랜덤으로 limit 개수만큼 선택
+        found_songs = []
+        try:
+            # getsongbpm API의 /search/tracks 엔드포인트를 사용합니다.
+            # 직접적인 BPM 범위 검색은 지원하지 않으므로, 일반적인 검색어(예: "pop", "dance")로 검색 후 클라이언트 측에서 필터링합니다.
+            # 더 많은 결과를 얻기 위해 여러 일반적인 장르/키워드를 시도할 수 있습니다.
+            search_queries = ["pop", "dance", "rock", "electronic", "jazz", "hip hop"]
+            
+            for query in search_queries:
+                params = {"q": query, "per_page": 20} # 페이지당 더 많은 결과 요청
+                api_response = self._call_getsongbpm_api("/search/tracks", params)
+
+                if api_response and api_response.get("tracks"):
+                    for track in api_response["tracks"]:
+                        track_bpm = track.get("bpm")
+                        if track_bpm is not None:
+                            try:
+                                track_bpm = int(track_bpm) # BPM이 문자열일 수 있으므로 int로 변환
+                                if min_bpm <= track_bpm <= max_bpm:
+                                    found_songs.append({
+                                        "title": track.get("title", "Unknown Title"),
+                                        "artist": track.get("artist", {}).get("name", "Unknown Artist"),
+                                        "bpm": track_bpm,
+                                        "album_cover_url": track.get("album", {}).get("image", "https://placehold.co/140x140/cccccc/000000?text=No+Cover") # 기본 이미지 제공
+                                    })
+                                    if len(found_songs) >= limit: # 필요한 개수만큼 찾으면 중단
+                                        break
+                            except ValueError:
+                                logging.warning(f"Invalid BPM value received for track {track.get('title')}: {track_bpm}")
+                if len(found_songs) >= limit:
+                    break
+
+        except Exception as e:
+            logging.error(f"Error during getsongbpm API search: {e}")
+            logging.error(traceback.format_exc())
+            # API 호출 중 오류가 발생하면 Mock 데이터로 대체
+            pass # 아래 로직에서 Mock 데이터로 대체될 것임
+
+        if not found_songs:
+            logging.warning(f"No relevant songs found from getsongbpm API for BPM range {min_bpm}~{max_bpm}. Falling back to mock data.")
+            # API에서 결과를 찾지 못했을 때만 Mock 데이터로 대체
+            mock_songs_data = [
+                {"title": "기분 좋은 아침 (Mock)", "artist": "김미소 (Mock)", "bpm": 130, "album_cover_url": "https://placehold.co/140x140/FFD700/000000?text=Happy"},
+                {"title": "고요한 숲길 (Mock)", "artist": "이평화 (Mock)", "bpm": 75, "album_cover_url": "https://placehold.co/140x140/ADD8E6/000000?text=Calm"},
+                {"title": "집중의 순간 (Mock)", "artist": "박몰입 (Mock)", "bpm": 100, "album_cover_url": "https://placehold.co/140x140/90EE90/000000?text=Focus"},
+                {"title": "파워 업! (Mock)", "artist": "최에너지 (Mock)", "bpm": 155, "album_cover_url": "https://placehold.co/140x140/FF4500/FFFFFF?text=Power"},
+                {"title": "차분한 저녁 (Mock)", "artist": "정고요 (Mock)", "bpm": 60, "album_cover_url": "https://placehold.co/140x140/8A2BE2/FFFFFF?text=Evening"},
+                {"title": "활기찬 하루 (Mock)", "artist": "강다이나믹 (Mock)", "bpm": 120, "album_cover_url": "https://placehold.co/140x140/00CED1/FFFFFF?text=Dynamic"},
+                {"title": "생각의 흐름 (Mock)", "artist": "윤명상 (Mock)", "bpm": 90, "album_cover_url": "https://placehold.co/140x140/DDA0DD/000000?text=Thought"},
+                {"title": "분노의 질주 (Mock)", "artist": "서파워 (Mock)", "bpm": 140, "album_cover_url": "https://placehold.co/140x140/B22222/FFFFFF?text=Rage"},
+                {"title": "슬픈 빗소리 (Mock)", "artist": "오감성 (Mock)", "bpm": 70, "album_cover_url": "https://placehold.co/140x140/6A5ACD/FFFFFF?text=Sad"},
+                {"title": "새로운 도전 (Mock)", "artist": "조열정 (Mock)", "bpm": 115, "album_cover_url": "https://placehold.co/140x140/FF8C00/000000?text=Challenge"},
+                {"title": "행복한 발걸음 (Mock)", "artist": "김행복 (Mock)", "bpm": 125, "album_cover_url": "https://placehold.co/140x140/FFC0CB/000000?text=Walk"},
+                {"title": "꿈꾸는 밤 (Mock)", "artist": "이몽환 (Mock)", "bpm": 85, "album_cover_url": "https://placehold.co/140x140/4682B4/FFFFFF?text=Dream"},
+                {"title": "에너지 폭발 (Mock)", "artist": "박다이나믹 (Mock)", "bpm": 160, "album_cover_url": "https://placehold.co/140x140/FF6347/FFFFFF?text=Blast"},
+            ]
             return random.sample(mock_songs_data, min(limit, len(mock_songs_data)))
         
-        # 필터링된 곡이 충분하면 그 중에서 랜덤으로 limit 개수만큼 선택
-        return random.sample(filtered_songs, limit)
+        # API에서 찾은 곡이 있다면 그 중에서 랜덤으로 limit 개수만큼 선택
+        return random.sample(found_songs, min(limit, len(found_songs)))
 
 
     def recommend_music(self, user_text: str):
@@ -175,8 +198,7 @@ class MusicRecommender:
         logging.info(f"Recommended BPM range for '{emotion_label}' emotion: {min_bpm}-{max_bpm}")
 
         # 3. getsongbpm API를 통해 노래 검색 (또는 시뮬레이션 데이터 사용)
-        # 이 함수가 앨범 커버 URL을 포함한 데이터를 반환하도록 수정되었습니다.
-        recommended_songs = self.get_songs_by_bpm_range(min_bpm, max_bpm, limit=3) # <-- limit=3으로 명시
+        recommended_songs = self.get_songs_by_bpm_range(min_bpm, max_bpm, limit=3) # <-- limit=3 유지
         
         if recommended_songs:
             logging.info("\n--- Recommended Music List ---")
@@ -196,43 +218,43 @@ class MockMusicRecommender(MusicRecommender):
     """
     def __init__(self, getsongbpm_api_key: str = None):
         super().__init__(getsongbpm_api_key) 
-        logging.info("--- Mock Music Recommender initialized ---")
+        logging.info("--- Mock Music Recommender initialized (using mock data only) ---")
 
     def get_songs_by_bpm_range(self, min_bpm: int, max_bpm: int, limit: int = 5): # Mock 클래스도 limit 파라미터 받도록
         logging.info(f"Mock API call: Simulating search for songs in BPM {min_bpm}~{max_bpm} range with limit {limit}...")
         time.sleep(1) # 모의 지연
         
+        # Mock 데이터셋을 더 다양하게 구성하고 "(Mock)" 접미사 추가
         mock_data = [
-            {"title": "Mock Pop Song", "artist": "Mock Artist", "bpm": 120, "album_cover_url": "https://placehold.co/140x140/A3C8F5/000000?text=Pop"},
-            {"title": "Mock Jazz Tune", "artist": "Jazz Cat", "bpm": 90, "album_cover_url": "https://placehold.co/140x140/4A90E2/FFFFFF?text=Jazz"},
-            {"title": "Mock Rock Anthem", "artist": "Rock Band", "bpm": 150, "album_cover_url": "https://placehold.co/140x140/333333/FFFFFF?text=Rock"},
-            {"title": "Mock Chill Vibes", "artist": "Lo-Fi Beats", "bpm": 70, "album_cover_url": "https://placehold.co/140x140/6C7A89/FFFFFF?text=Chill"},
-            {"title": "Mock Upbeat Track", "artist": "Energetic Duo", "bpm": 135, "album_cover_url": "https://placehold.co/140x140/FF6B6B/FFFFFF?text=Upbeat"},
-            {"title": "Mock Summer Hit", "artist": "Sunshine Band", "bpm": 128, "album_cover_url": "https://placehold.co/140x140/FFD700/000000?text=Summer"},
-            {"title": "Mock Rainy Day", "artist": "Blue Mood", "bpm": 65, "album_cover_url": "https://placehold.co/140x140/87CEEB/000000?text=Rain"},
-            {"title": "Mock Workout Jam", "artist": "Fitness Crew", "bpm": 140, "album_cover_url": "https://placehold.co/140x140/FF4500/FFFFFF?text=Gym"},
+            {"title": "Mock Pop Song (Upbeat)", "artist": "Mock Artist", "bpm": 120, "album_cover_url": "https://placehold.co/140x140/A3C8F5/000000?text=MockPop"},
+            {"title": "Mock Jazz Tune (Relaxed)", "artist": "Jazz Cat", "bpm": 90, "album_cover_url": "https://placehold.co/140x140/4A90E2/FFFFFF?text=MockJazz"},
+            {"title": "Mock Rock Anthem (Energetic)", "artist": "Rock Band", "bpm": 150, "album_cover_url": "https://placehold.co/140x140/333333/FFFFFF?text=MockRock"},
+            {"title": "Mock Chill Vibes (Calm)", "artist": "Lo-Fi Beats", "bpm": 70, "album_cover_url": "https://placehold.co/140x140/6C7A89/FFFFFF?text=MockChill"},
+            {"title": "Mock Upbeat Track (Happy)", "artist": "Energetic Duo", "bpm": 135, "album_cover_url": "https://placehold.co/140x140/FF6B6B/FFFFFF?text=MockUpbeat"},
+            {"title": "Mock Summer Hit (Joyful)", "artist": "Sunshine Band", "bpm": 128, "album_cover_url": "https://placehold.co/140x140/FFD700/000000?text=MockSummer"},
+            {"title": "Mock Rainy Day (Sad)", "artist": "Blue Mood", "bpm": 65, "album_cover_url": "https://placehold.co/140x140/87CEEB/000000?text=MockRain"},
+            {"title": "Mock Workout Jam (Intense)", "artist": "Fitness Crew", "bpm": 140, "album_cover_url": "https://placehold.co/140x140/FF4500/FFFFFF?text=MockGym"},
         ]
 
         # 사용자 입력에 따라 다른 mock 데이터를 반환하는 간단한 로직 (예시)
-        if "신나는" in user_text:
-             filtered_by_text = [
-                {"title": "Mock 신나는 곡 1", "artist": "신나는 아티스트", "bpm": 130, "album_cover_url": "https://placehold.co/140x140/FFD700/000000?text=Exciting1"},
-                {"title": "Mock 신나는 곡 2", "artist": "신나는 그룹", "bpm": 145, "album_cover_url": "https://placehold.co/140x140/FFA500/000000?text=Exciting2"},
-                {"title": "Mock 신나는 곡 3", "artist": "신나는 밴드", "bpm": 125, "album_cover_url": "https://placehold.co/140x140/FF4500/FFFFFF?text=Exciting3"},
-                {"title": "Mock 신나는 곡 4", "artist": "파워풀 보컬", "bpm": 150, "album_cover_url": "https://placehold.co/140x140/FF8C00/000000?text=Exciting4"},
-            ]
-             return random.sample(filtered_by_text, min(limit, len(filtered_by_text)))
-        elif "조용한" in user_text or "공부" in user_text:
-            filtered_by_text = [
-                {"title": "Mock 조용한 곡 1", "artist": "조용한 아티스트", "bpm": 60, "album_cover_url": "https://placehold.co/140x140/ADD8E6/000000?text=Quiet1"},
-                {"title": "Mock 조용한 곡 2", "artist": "조용한 그룹", "bpm": 75, "album_cover_url": "https://placehold.co/140x140/87CEEB/000000?text=Quiet2"},
-                {"title": "Mock 조용한 곡 3", "artist": "조용한 밴드", "bpm": 80, "album_cover_url": "https://placehold.co/140x140/6495ED/FFFFFF?text=Quiet3"},
-                {"title": "Mock 조용한 곡 4", "artist": "명상 음악가", "bpm": 70, "album_cover_url": "https://placehold.co/140x140/B0E0E6/000000?text=Quiet4"},
-            ]
-            return random.sample(filtered_by_text, min(limit, len(filtered_by_text)))
-        else:
-            # 기본적으로 전체 Mock 데이터에서 limit 개수만큼 랜덤 선택
+        # 이 부분은 실제 API 호출이 아니므로, BPM 범위 필터링은 Mock 데이터 내에서만 이루어집니다.
+        filtered_by_bpm_and_text = []
+        for song in mock_data:
+            if min_bpm <= song["bpm"] <= max_bpm:
+                # '신나는' 감정일 경우 더 활기찬 Mock 데이터를 선호
+                if "신나는" in self.sentiment_analyzer.analyze_sentiment("신나는 음악 추천해줘!")['label'] and song["bpm"] > 110:
+                    filtered_by_bpm_and_text.append(song)
+                # '조용한' 감정일 경우 더 차분한 Mock 데이터를 선호
+                elif "조용한" in self.sentiment_analyzer.analyze_sentiment("조용한 음악 추천해줘!")['label'] and song["bpm"] < 90:
+                    filtered_by_bpm_and_text.append(song)
+                else:
+                    filtered_by_bpm_and_text.append(song)
+
+        if not filtered_by_bpm_and_text:
+            logging.warning(f"No specific mock songs found for BPM range {min_bpm}~{max_bpm}. Returning random mock songs.")
             return random.sample(mock_data, min(limit, len(mock_data)))
+            
+        return random.sample(filtered_by_bpm_and_text, min(limit, len(filtered_by_bpm_and_text)))
 
 
 # 이 파일이 직접 실행될 때만 실행되는 테스트 코드
@@ -240,10 +262,10 @@ if __name__ == "__main__":
     getsongbpm_api_key = os.environ.get("GETSONGBPM_API_KEY", "YOUR_GETSONGBPM_API_KEY_HERE")
 
     if getsongbpm_api_key == "YOUR_GETSONGBPM_API_KEY_HERE":
-        logging.warning("\n[WARNING]: getsongbpm API key is not set.")
-        logging.info("Proceeding with mock data for testing instead of actual API calls.")
+        logging.warning("\n[WARNING]: getsongbpm API key is not set. Proceeding with mock data for testing.")
         recommender = MockMusicRecommender(getsongbpm_api_key) # Mock 클래스 사용
     else:
+        logging.info("GETSONGBPM_API_KEY is set. Proceeding with actual API calls.")
         recommender = MusicRecommender(getsongbpm_api_key) # 실제 API 키로 MusicRecommender 사용
 
     logging.info("\n==== Music Recommendation System Demo Start ====")

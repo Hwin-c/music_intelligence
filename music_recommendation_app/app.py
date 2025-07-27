@@ -28,6 +28,9 @@ def _load_recommendation_models():
         return
 
     logging.debug("음악 추천 모델 지연 로드 시작.")
+    # 현재 getsongbpm_api_key 값 로깅 (디버깅용)
+    logging.info(f"GETSONGBPM_API_KEY 환경 변수 값: '{getsongbpm_api_key}'")
+
     try:
         # music_recommender.py가 있는 디렉토리를 sys.path에 추가하여 임포트 가능하게 함
         recommender_dir = os.path.dirname(os.path.abspath(__file__))
@@ -41,6 +44,7 @@ def _load_recommendation_models():
             logging.warning("[WARNING]: getsongbpm API 키가 설정되지 않았습니다. 모의(Mock) 데이터를 사용하여 테스트를 진행합니다.")
             recommender = MockMusicRecommender(getsongbpm_api_key) # MockMusicRecommender 사용
         else:
+            logging.info("GETSONGBPM_API_KEY가 설정되어 실제 API를 사용합니다.")
             recommender = MusicRecommender(getsongbpm_api_key) # MusicRecommender 사용
         
         logging.info("음악 추천 모델 및 도구 지연 로드 성공.")

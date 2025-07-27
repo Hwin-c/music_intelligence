@@ -12,9 +12,11 @@ class BPMMapper:
         감정 레이블과 BPM 범위 간의 매핑 규칙을 초기화합니다.
         이 매핑은 모델의 60가지 세분화된 감정 레이블과
         일반적인 음악 분위기 및 BPM 상관관계를 기반으로 정의되었습니다.
+        여기에 '긍정'과 '부정'과 같은 더 넓은 범주의 감정 매핑을 추가합니다.
         """
         self.emotion_to_bpm_map = {
             # --- 긍정적/활기찬 감정 (높은 BPM: 120-160+) ---
+            "긍정": (110, 140), # 새로 추가된 넓은 범주의 긍정 감정
             "기쁨": (120, 140),       # 보편적으로 활기찬 느낌
             "신이 난": (130, 160),     # 매우 활동적이고 빠른 음악
             "흥분": (140, 170),       # 최고조의 활기, 댄스/EDM 등에 적합
@@ -27,6 +29,7 @@ class BPMMapper:
             "자신하는": (100, 125),    # 자신감 있는, 약간의 활기
 
             # --- 부정적/차분한 감정 (낮은 BPM: 50-90) ---
+            "부정": (60, 90), # 새로 추가된 넓은 범주의 부정 감정
             "슬픔": (60, 80),         # 발라드, 잔잔한 곡
             "우울한": (50, 70),        # 매우 침체된, 느린 곡
             "비통한": (40, 60),        # 깊은 슬픔, 매우 느린 곡
@@ -87,7 +90,6 @@ class BPMMapper:
         }
         
         # 매핑되지 않은 감정에 대한 기본 BPM 범위 설정
-        # (sentiment_analyzer에서 낮은 스코어로 예측되었거나, 매핑되지 않은 감정)
         self.default_bpm_range = (90, 120) # 일반적인 팝 음악 BPM
         logging.info(f"BPM 매퍼 초기화 완료. 기본 BPM 범위: {self.default_bpm_range}")
 
@@ -97,7 +99,7 @@ class BPMMapper:
         매핑되지 않은 감정 레이블의 경우 기본 BPM 범위를 반환합니다.
 
         Args:
-            emotion_label (str): hun3359/klue-bert-base-sentiment 모델이 예측한 감정 레이블.
+            emotion_label (str): SentimentAnalyzer에서 예측한 감정 레이블.
 
         Returns:
             tuple: (min_bpm, max_bpm) 형태의 BPM 범위 튜플.
@@ -107,7 +109,6 @@ class BPMMapper:
         if bpm_range:
             return bpm_range
         else:
-            # 매핑되지 않은 감정에 대한 경고 (디버깅용)
             logging.warning(f"'{emotion_label}' 감정에 대한 BPM 매핑이 정의되지 않았습니다. 기본 BPM 범위 {self.default_bpm_range}를 사용합니다.")
             return self.default_bpm_range
 
@@ -118,11 +119,13 @@ if __name__ == "__main__":
     logging.info("\n--- BPM 매핑 테스트 ---")
     
     # 긍정적/활기찬 감정 테스트
+    logging.info(f"감정: '긍정' -> BPM: {mapper.get_bpm_range('긍정')}")
     logging.info(f"감정: '신이 난' -> BPM: {mapper.get_bpm_range('신이 난')}")
     logging.info(f"감정: '기쁨' -> BPM: {mapper.get_bpm_range('기쁨')}")
     logging.info(f"감정: '편안한' -> BPM: {mapper.get_bpm_range('편안한')}")
 
     # 부정적/차분한 감정 테스트
+    logging.info(f"감정: '부정' -> BPM: {mapper.get_bpm_range('부정')}")
     logging.info(f"감정: '우울한' -> BPM: {mapper.get_bpm_range('우울한')}")
     logging.info(f"감정: '슬픔' -> BPM: {mapper.get_bpm_range('슬픔')}")
     logging.info(f"감정: '비통한' -> BPM: {mapper.get_bpm_range('비통한')}")
