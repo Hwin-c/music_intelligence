@@ -55,11 +55,11 @@ except ImportError as e:
                 "불안": {"bpm": (95, 125), "danceability": (30, 70), "acousticness": (20, 60)},
                 "neutral": {"bpm": (90, 120), "danceability": (40, 80), "acousticness": (20, 70)}
             }
-            logging.info("BPMMapper (with audio features) initialized.")
+            logging.info("MockBPMMapper initialized.")
 
         # get_audio_feature_ranges 메서드 추가
         def get_audio_feature_ranges(self, emotion_label: str):
-            logging.debug(f"BPMMapper: Mapping audio features for '{emotion_label}'")
+            logging.debug(f"MockBPMMapper: Mapping audio features for '{emotion_label}'")
             return self.emotion_features_map.get(emotion_label, self.emotion_features_map["neutral"])
 
 
@@ -81,10 +81,11 @@ class MusicRecommender:
         self.getsongbpm_base_url = "https://api.getsong.co/" 
         logging.info(f"Music recommendation system initialized with API Base URL: {self.getsongbpm_base_url}")
 
-    def _call_getsongbpm_api(self, endpoint: str, params: dict = None):
+    def _call_getsongbpm_api(self, endpoint: str, params: dict = None, delay_seconds: int = 1):
         """
         getsong.co API를 호출하는 내부 도우미 메서드입니다.
         API Key는 URL 파라미터로 전송합니다.
+        Rate Limit를 피하기 위해 호출 사이에 지연을 추가합니다.
         """
         if params is None:
             params = {}
@@ -113,130 +114,227 @@ class MusicRecommender:
             logging.error(f"Request timeout error: {timeout_err}")
         except requests.exceptions.RequestException as req_err:
             logging.error(f"Request error: {req_err}")
+        finally:
+            # API 호출 후 지연 추가
+            time.sleep(delay_seconds)
         return None
 
-    def get_songs_by_keywords_and_bpm(self, emotion_label: str, min_bpm: int, max_bpm: int, limit: int = 5):
+    def _calculate_relevance_score(self, song_data: dict, target_features: dict) -> float:
         """
-        getsong.co API를 사용하여 키워드 및 BPM 범위 내의 노래를 검색합니다.
-        '/search' 엔드포인트를 활용하여 더 다양한 제목을 얻도록 시도합니다.
+        노래의 오디오 특성이 목표 범위에 얼마나 잘 부합하는지 점수를 계산합니다.
+        점수는 0에서 3 사이의 값을 가집니다 (각 특성별 0~1점).
         """
-        logging.info(f"Attempting to search for songs using keywords and BPM range {min_bpm}~{max_bpm} for '{emotion_label}' emotion via getsong.co API...")
+        score = 0.0
+
+        # BPM 점수
+        song_bpm = song_data.get("tempo")
+        min_bpm, max_bpm = target_features["bpm"]
+        if song_bpm is not None:
+            try:
+                song_bpm = int(song_bpm)
+                if min_bpm <= song_bpm <= max_bpm:
+                    # 범위 중앙에 가까울수록 높은 점수 (0.5 ~ 1.0)
+                    center_bpm = (min_bpm + max_bpm) / 2
+                    range_half = (max_bpm - min_bpm) / 2
+                    if range_half > 0:
+                        score += (1 - abs(song_bpm - center_bpm) / range_half) * 0.5 + 0.5
+                    else: # 범위가 0일 경우 (min=max)
+                        score += 1.0 if song_bpm == min_bpm else 0.0
+                else:
+                    score += 0.0 # 범위 밖이면 0점
+            except ValueError:
+                pass # BPM이 유효하지 않으면 점수 없음
+
+        # Danceability 점수
+        song_danceability = song_data.get("danceability")
+        min_dance, max_dance = target_features["danceability"]
+        if song_danceability is not None:
+            try:
+                song_danceability = int(song_danceability)
+                if min_dance <= song_danceability <= max_dance:
+                    center_dance = (min_dance + max_dance) / 2
+                    range_half = (max_dance - min_dance) / 2
+                    if range_half > 0:
+                        score += (1 - abs(song_danceability - center_dance) / range_half) * 0.5 + 0.5
+                    else:
+                        score += 1.0 if song_danceability == min_dance else 0.0
+                else:
+                    score += 0.0
+            except ValueError:
+                pass
+
+        # Acousticness 점수
+        song_acousticness = song_data.get("acousticness")
+        min_acoustic, max_acoustic = target_features["acousticness"]
+        if song_acousticness is not None:
+            try:
+                song_acousticness = int(song_acousticness)
+                if min_acoustic <= song_acousticness <= max_acoustic:
+                    center_acoustic = (min_acoustic + max_acoustic) / 2
+                    range_half = (max_acoustic - min_acoustic) / 2
+                    if range_half > 0:
+                        score += (1 - abs(song_acousticness - center_acoustic) / range_half) * 0.5 + 0.5
+                    else:
+                        score += 1.0 if song_acousticness == min_acoustic else 0.0
+                else:
+                    score += 0.0
+            except ValueError:
+                pass
         
-        found_songs = []
+        return score
+
+    def get_ranked_songs_by_audio_features(self, emotion_label: str, limit: int = 3):
+        """
+        사용자의 감정에 따라 오디오 특성 기반으로 노래를 검색하고 랭킹을 매겨 반환합니다.
+        '/search' 엔드포인트를 사용하여 더 다양한 제목을 얻도록 시도합니다.
+        """
+        logging.info(f"Attempting to search and rank songs based on audio features for '{emotion_label}' emotion via getsong.co API...")
+        
+        target_features = self.bpm_mapper.get_audio_feature_ranges(emotion_label)
+        min_bpm, max_bpm = target_features["bpm"]
+
+        candidate_songs = []
         seen_titles = set() # 중복 제목을 추적하기 위한 셋
-        api_call_successful = False 
 
         # 감정 기반 검색 키워드 매핑 (더 다양하고 구체적인 키워드 추가)
-        emotion_keywords = {
-            "긍정": ["happy", "upbeat", "energetic", "joyful", "party", "celebration", "optimistic", "bright", "good vibes", "dancing", "fun"],
-            "부정": ["sad", "melancholy", "downbeat", "gloomy", "depressed", "lonely", "heartbreak", "somber", "blue"],
-            "공부": ["focus", "study", "concentration", "ambient", "instrumental", "classical", "lo-fi", "calm", "relaxing"],
-            "화가 나": ["angry", "rage", "intense", "aggressive", "metal", "punk", "hard rock", "rebellion"],
-            "스트레스": ["relax", "calm", "chill", "soothing", "meditation", "peaceful", "unwind"],
-            "편안": ["relax", "calm", "chill", "peaceful", "smooth", "mellow", "serene"],
-            "불안": ["soothing", "calm", "meditation", "peaceful", "gentle", "comforting"],
-            "neutral": ["easy listening", "background music", "chill out", "acoustic", "mellow"]
+        # 이제 더 일반적인 음악 관련 키워드도 추가하여 검색 다양성을 높입니다.
+        emotion_keywords_for_search = {
+            "긍정": ["happy", "upbeat", "energetic", "joyful", "party", "celebration", "optimistic", "bright", "good vibes", "dancing", "fun", "pop", "dance"],
+            "부정": ["sad", "melancholy", "downbeat", "gloomy", "depressed", "lonely", "heartbreak", "somber", "blue", "ballad", "acoustic"],
+            "공부": ["focus", "study", "concentration", "ambient", "instrumental", "classical", "lo-fi", "calm", "relaxing", "jazz"],
+            "화가 나": ["angry", "rage", "intense", "aggressive", "metal", "punk", "hard rock", "rebellion", "rock"],
+            "스트레스": ["relax", "calm", "chill", "soothing", "meditation", "peaceful", "unwind", "ambient", "instrumental"],
+            "편안": ["relax", "calm", "chill", "peaceful", "smooth", "mellow", "serene", "jazz", "soul"],
+            "불안": ["soothing", "calm", "meditation", "peaceful", "gentle", "comforting", "ambient"],
+            "neutral": ["easy listening", "background music", "chill out", "acoustic", "mellow", "pop", "soft rock"]
         }
         
-        # 기본 장르 키워드 (fallback 및 추가 다양성)
-        genre_keywords = ["pop", "dance", "rock", "electronic", "jazz", "hip hop", "ballad", "r&b", "k-pop", "indie", "soul", "funk", "classical"]
+        # 일반적인 음악 검색 키워드 (fallback 용도 또는 추가 다양성)
+        general_music_keywords = ["song", "track", "music", "hit", "tune", "sound"]
 
-        # 감정 기반 키워드를 우선 사용하고, 장르 키워드를 추가합니다.
+        # 감정 기반 키워드를 우선 사용하고, 일반 음악 키워드를 추가합니다.
         # 중복을 피하기 위해 set을 사용합니다.
-        combined_queries = set(emotion_keywords.get(emotion_label, emotion_keywords["neutral"]))
-        combined_queries.update(genre_keywords)
+        combined_queries = set(emotion_keywords_for_search.get(emotion_label, emotion_keywords_for_search["neutral"]))
+        combined_queries.update(general_music_keywords)
         
         # 검색 쿼리 순서를 무작위로 섞어서 다양한 결과를 시도
         search_queries_list = list(combined_queries)
         random.shuffle(search_queries_list)
 
-        try:
-            for query in search_queries_list:
-                params = {"type": "song", "lookup": query, "limit": 20} # limit 늘려서 더 많은 결과 시도
-                api_response = self._call_getsongbpm_api("search/", params) 
+        # 여러 쿼리를 통해 충분한 후보 노래를 수집
+        max_api_calls = 5 # 최대 API 호출 횟수 제한 (rate limit 고려)
+        calls_made = 0
 
-                if api_response and api_response.get("search"): 
-                    api_call_successful = True 
-                    for song_data in api_response["search"]: 
-                        song_title = song_data.get("title", "Unknown Title")
-                        song_uri = song_data.get("uri", "#") 
-                        
-                        # 아티스트 이름 추출
-                        artist_name = "Unknown Artist"
-                        artist_info = song_data.get("artist") 
-                        if isinstance(artist_info, dict): 
-                            artist_name = artist_info.get("name", "Unknown Artist")
-                        
-                        # 장르 추출
-                        genres = []
-                        if isinstance(artist_info, dict):
-                            artist_genres = artist_info.get("genres")
-                            if isinstance(artist_genres, list):
-                                genres = artist_genres
-                        
-                        # 노래 제목이 장르 이름과 동일한지 확인하여 필터링
-                        # 예: 제목이 "Pop"이고 장르에 "pop"이 있다면 제외
-                        is_title_a_genre = False
-                        for g in genres:
-                            if song_title.lower() == g.lower():
-                                is_title_a_genre = True
-                                break
-                        
-                        # 이미 추가된 제목이거나 장르 이름과 동일한 제목이면 건너뛰기
-                        if song_title in seen_titles or is_title_a_genre:
-                            continue 
+        for query in search_queries_list:
+            if len(candidate_songs) >= limit * 5 and calls_made >= max_api_calls: # 충분한 후보가 모였거나 최대 호출 횟수 도달 시 중단
+                break
 
-                        song_bpm = song_data.get("tempo") 
+            params = {"type": "song", "lookup": query, "limit": 50} # 더 많은 결과를 가져와서 필터링할 여유를 줍니다.
+            api_response = self._call_getsongbpm_api("search/", params, delay_seconds=1.5) # API 호출 간 지연 추가
+            calls_made += 1
 
-                        if song_bpm is not None:
-                            try:
-                                song_bpm = int(song_bpm) 
-                                if min_bpm <= song_bpm <= max_bpm: # 클라이언트 측 BPM 필터링
-                                    found_songs.append({
-                                        "title": song_title,
-                                        "artist": artist_name,
-                                        "bpm": song_bpm,
-                                        "uri": song_uri, 
-                                        "genres": genres 
-                                    })
-                                    seen_titles.add(song_title) # 제목을 셋에 추가
-                                    if len(found_songs) >= limit: 
-                                        break
-                            except ValueError:
-                                logging.warning(f"Invalid BPM value received for song {song_title}: {song_bpm}")
-                if len(found_songs) >= limit:
-                    break # 현재 쿼리에서 충분한 노래를 찾았으면 다음 쿼리로 넘어가지 않음
+            if api_response and api_response.get("search"): 
+                for song_data in api_response["search"]: 
+                    song_title = song_data.get("title", "Unknown Title")
+                    song_uri = song_data.get("uri", "#") 
+                    
+                    # 아티스트 이름 추출
+                    artist_name = "Unknown Artist"
+                    artist_info = song_data.get("artist") 
+                    if isinstance(artist_info, dict): 
+                        artist_name = artist_info.get("name", "Unknown Artist")
+                    
+                    # 장르 추출
+                    genres = []
+                    if isinstance(artist_info, dict):
+                        artist_genres = artist_info.get("genres")
+                        # genres가 None일 경우 빈 리스트로 초기화하여 TypeError 방지
+                        if isinstance(artist_genres, list):
+                            genres = artist_genres
+                        else:
+                            genres = [] # None인 경우 빈 리스트로
+                    else:
+                        genres = [] # artist_info가 dict가 아닌 경우 빈 리스트로
 
-        except Exception as e:
-            logging.error(f"Error during getsong.co API search: {e}")
-            logging.error(traceback.format_exc())
-            api_call_successful = False 
+                    # 노래 제목이 장르 이름과 동일한지 확인하여 필터링
+                    # 예: 제목이 "Pop"이고 장르에 "pop"이 있다면 제외
+                    is_title_a_genre = False
+                    for g in genres:
+                        if song_title.lower() == g.lower():
+                            is_title_a_genre = True
+                            break
+                    
+                    # 이미 추가된 제목이거나 장르 이름과 동일한 제목이면 건너뛰기
+                    if song_title in seen_titles or is_title_a_genre:
+                        continue 
+
+                    song_bpm = song_data.get("tempo") 
+                    song_danceability = song_data.get("danceability")
+                    song_acousticness = song_data.get("acousticness")
+
+                    # 모든 필수 오디오 특성 값이 유효한지 확인
+                    if song_bpm is not None and song_danceability is not None and song_acousticness is not None:
+                        try:
+                            # 문자열로 된 숫자 값을 int로 변환
+                            song_bpm = int(song_bpm)
+                            song_danceability = int(song_danceability)
+                            song_acousticness = int(song_acousticness)
+
+                            # 관련성 점수 계산
+                            relevance_score = self._calculate_relevance_score(
+                                {"tempo": song_bpm, "danceability": song_danceability, "acousticness": song_acousticness},
+                                target_features
+                            )
+
+                            if relevance_score > 0: # 점수가 0보다 큰 노래만 후보로 추가
+                                candidate_songs.append({
+                                    "title": song_title,
+                                    "artist": artist_name,
+                                    "bpm": song_bpm,
+                                    "uri": song_uri, 
+                                    "genres": genres,
+                                    "relevance_score": relevance_score # 점수 저장
+                                })
+                                seen_titles.add(song_title) # 제목을 셋에 추가
+                        except ValueError:
+                            logging.warning(f"Invalid numeric value for audio feature in song {song_title}. Skipping.")
+                    else:
+                        logging.debug(f"Missing audio features for song {song_title}. Skipping for ranking.")
             
-        if not api_call_successful or not found_songs:
-            logging.warning(f"API call failed or no relevant songs found from getsong.co API. Falling back to mock data.")
+            if len(candidate_songs) >= limit * 5: # 충분한 후보가 모였으면 더 이상 검색하지 않음
+                break
+
+        # 후보 노래들을 관련성 점수 기준으로 내림차순 정렬
+        candidate_songs.sort(key=lambda x: x.get("relevance_score", 0), reverse=True)
+
+        # 상위 N개 노래만 반환
+        recommended_songs = candidate_songs[:limit]
+
+        if not recommended_songs:
+            logging.warning(f"No relevant songs found from getsong.co API after filtering and ranking. Falling back to mock data.")
             mock_songs_data = [
-                {"title": "Dancing Monkey (Mock)", "artist": "Tones And I (Mock)", "bpm": 98, "uri": "#", "genres": ["Pop", "Indie"]},
-                {"title": "Shape of You (Mock)", "artist": "Ed Sheeran (Mock)", "bpm": 96, "uri": "#", "genres": ["Pop", "R&B"]},
-                {"title": "Blinding Lights (Mock)", "artist": "The Weeknd (Mock)", "bpm": 171, "uri": "#", "genres": ["Pop", "Synth-pop"]},
-                {"title": "Dynamite (Mock)", "artist": "BTS (Mock)", "bpm": 114, "uri": "#", "genres": ["K-Pop", "Disco-Pop"]},
-                {"title": "Bad Guy (Mock)", "artist": "Billie Eilish (Mock)", "bpm": 135, "uri": "#", "genres": ["Pop", "Electropop"]},
-                {"title": "Old Town Road (Mock)", "artist": "Lil Nas X (Mock)", "bpm": 136, "uri": "#", "genres": ["Country Rap"]},
-                {"title": "Someone You Loved (Mock)", "artist": "Lewis Capaldi (Mock)", "bpm": 109, "uri": "#", "genres": ["Pop", "Ballad"]},
-                {"title": "Happy (Mock)", "artist": "Pharrell Williams (Mock)", "bpm": 160, "uri": "#", "genres": ["Pop", "Soul"]},
-                {"title": "Uptown Funk (Mock)", "artist": "Mark Ronson (Mock)", "bpm": 115, "uri": "#", "genres": ["Funk", "Pop"]},
-                {"title": "Bohemian Rhapsody (Mock)", "artist": "Queen (Mock)", "bpm": 144, "uri": "#", "genres": ["Rock", "Classic Rock"]},
-                {"title": "Lose Yourself (Mock)", "artist": "Eminem (Mock)", "bpm": 171, "uri": "#", "genres": ["Hip Hop", "Rap"]},
-                {"title": "Imagine (Mock)", "artist": "John Lennon (Mock)", "bpm": 75, "uri": "#", "genres": ["Pop", "Soft Rock"]},
-                {"title": "What a Wonderful World (Mock)", "artist": "Louis Armstrong (Mock)", "bpm": 82, "uri": "#", "genres": ["Jazz", "Vocal"]},
-                {"title": "Stairway to Heaven (Mock)", "artist": "Led Zeppelin (Mock)", "bpm": 82, "uri": "#", "genres": ["Rock", "Hard Rock"]},
-                {"title": "Hotel California (Mock)", "artist": "Eagles (Mock)", "bpm": 147, "uri": "#", "genres": ["Rock", "Classic Rock"]},
-                {"title": "Yesterday (Mock)", "artist": "The Beatles (Mock)", "bpm": 94, "uri": "#", "genres": ["Pop", "Rock"]},
-                {"title": "Smells Like Teen Spirit (Mock)", "artist": "Nirvana (Mock)", "bpm": 117, "uri": "#", "genres": ["Grunge", "Rock"]},
-                {"title": "Billie Jean (Mock)", "artist": "Michael Jackson (Mock)", "bpm": 117, "uri": "#", "genres": ["Pop", "Funk"]},
-                {"title": "Like a Rolling Stone (Mock)", "artist": "Bob Dylan (Mock)", "bpm": 95, "uri": "#", "genres": ["Folk Rock"]},
-                {"title": "One (Mock)", "artist": "U2 (Mock)", "bpm": 91, "uri": "#", "genres": ["Rock"]},
+                {"title": "Dancing Monkey (Mock)", "artist": "Tones And I (Mock)", "bpm": 98, "uri": "#", "genres": ["Pop", "Indie"], "danceability": 80, "acousticness": 10},
+                {"title": "Shape of You (Mock)", "artist": "Ed Sheeran (Mock)", "bpm": 96, "uri": "#", "genres": ["Pop", "R&B"], "danceability": 85, "acousticness": 5},
+                {"title": "Blinding Lights (Mock)", "artist": "The Weeknd (Mock)", "bpm": 171, "uri": "#", "genres": ["Pop", "Synth-pop"], "danceability": 75, "acousticness": 2},
+                {"title": "Dynamite (Mock)", "artist": "BTS (Mock)", "bpm": 114, "uri": "#", "genres": ["K-Pop", "Disco-Pop"], "danceability": 90, "acousticness": 1},
+                {"title": "Bad Guy (Mock)", "artist": "Billie Eilish (Mock)", "bpm": 135, "uri": "#", "genres": ["Pop", "Electropop"], "danceability": 70, "acousticness": 15},
+                {"title": "Old Town Road (Mock)", "artist": "Lil Nas X (Mock)", "bpm": 136, "uri": "#", "genres": ["Country Rap"], "danceability": 65, "acousticness": 20},
+                {"title": "Someone You Loved (Mock)", "artist": "Lewis Capaldi (Mock)", "bpm": 109, "uri": "#", "genres": ["Pop", "Ballad"], "danceability": 30, "acousticness": 80},
+                {"title": "Happy (Mock)", "artist": "Pharrell Williams (Mock)", "bpm": 160, "uri": "#", "genres": ["Pop", "Soul"], "danceability": 95, "acousticness": 5},
+                {"title": "Uptown Funk (Mock)", "artist": "Mark Ronson (Mock)", "bpm": 115, "uri": "#", "genres": ["Funk", "Pop"], "danceability": 88, "acousticness": 8},
+                {"title": "Bohemian Rhapsody (Mock)", "artist": "Queen (Mock)", "bpm": 144, "uri": "#", "genres": ["Rock", "Classic Rock"], "danceability": 40, "acousticness": 30},
+                {"title": "Lose Yourself (Mock)", "artist": "Eminem (Mock)", "bpm": 171, "uri": "#", "genres": ["Hip Hop", "Rap"], "danceability": 60, "acousticness": 10},
+                {"title": "Imagine (Mock)", "artist": "John Lennon (Mock)", "bpm": 75, "uri": "#", "genres": ["Pop", "Soft Rock"], "danceability": 20, "acousticness": 90},
+                {"title": "What a Wonderful World (Mock)", "artist": "Louis Armstrong (Mock)", "bpm": 82, "uri": "#", "genres": ["Jazz", "Vocal"], "danceability": 35, "acousticness": 70},
+                {"title": "Stairway to Heaven (Mock)", "artist": "Led Zeppelin (Mock)", "bpm": 82, "uri": "#", "genres": ["Rock", "Hard Rock"], "danceability": 25, "acousticness": 60},
+                {"title": "Hotel California (Mock)", "artist": "Eagles (Mock)", "bpm": 147, "uri": "#", "genres": ["Rock", "Classic Rock"], "danceability": 50, "acousticness": 40},
+                {"title": "Yesterday (Mock)", "artist": "The Beatles (Mock)", "bpm": 94, "uri": "#", "genres": ["Pop", "Rock"], "danceability": 45, "acousticness": 50},
+                {"title": "Smells Like Teen Spirit (Mock)", "artist": "Nirvana (Mock)", "bpm": 117, "uri": "#", "genres": ["Grunge", "Rock"], "danceability": 60, "acousticness": 10},
+                {"title": "Billie Jean (Mock)", "artist": "Michael Jackson (Mock)", "bpm": 117, "uri": "#", "genres": ["Pop", "Funk"], "danceability": 90, "acousticness": 5},
+                {"title": "Like a Rolling Stone (Mock)", "artist": "Bob Dylan (Mock)", "bpm": 95, "uri": "#", "genres": ["Folk Rock"], "danceability": 40, "acousticness": 70},
+                {"title": "One (Mock)", "artist": "U2 (Mock)", "bpm": 91, "uri": "#", "genres": ["Rock"], "danceability": 35, "acousticness": 60},
             ]
-            # Mock 데이터에서도 중복 제목과 장르 이름과 동일한 제목을 제거하도록 필터링
+            # Mock 데이터에서도 중복 제목과 장르 이름과 동일한 제목을 제거하고 랭킹
             unique_mock_songs = []
             mock_seen_titles = set()
             for song in mock_songs_data:
@@ -245,18 +343,20 @@ class MusicRecommender:
                     is_mock_title_a_genre = True
 
                 if song["title"] not in mock_seen_titles and not is_mock_title_a_genre:
+                    # Mock 데이터에도 relevance_score를 계산하여 추가
+                    relevance_score = self._calculate_relevance_score(
+                        {"tempo": song["bpm"], "danceability": song["danceability"], "acousticness": song["acousticness"]},
+                        target_features
+                    )
+                    song["relevance_score"] = relevance_score
                     unique_mock_songs.append(song)
                     mock_seen_titles.add(song["title"])
-            return random.sample(unique_mock_songs, min(limit, len(unique_mock_songs)))
+            
+            # Mock 데이터도 점수 기준으로 정렬
+            unique_mock_songs.sort(key=lambda x: x.get("relevance_score", 0), reverse=True)
+            return unique_mock_songs[:limit]
         
-        # 실제 API 결과에서도 중복 제거 후 샘플링
-        unique_found_songs = []
-        found_seen_titles = set()
-        for song in found_songs:
-            if song["title"] not in found_seen_titles:
-                unique_found_songs.append(song)
-                found_seen_titles.add(song["title"])
-        return random.sample(unique_found_songs, min(limit, len(unique_found_songs)))
+        return recommended_songs
 
     def recommend_music(self, user_text: str):
         """
@@ -277,21 +377,15 @@ class MusicRecommender:
         
         logging.info(f"Sentiment analysis result: '{emotion_label}' (score: {sentiment_score:.4f})")
 
-        # 2. 감정에 따른 BPM 범위 매핑 (BPMMapper에서 오디오 특성 범위 가져오기)
-        feature_ranges = self.bpm_mapper.get_audio_feature_ranges(emotion_label)
-        min_bpm, max_bpm = feature_ranges["bpm"]
-        
-        logging.info(f"Recommended BPM range for '{emotion_label}' emotion: {min_bpm}-{max_bpm}")
-
-        # 3. getsong.co API를 통해 노래 검색 (이제 /search/ 엔드포인트만 사용)
-        recommended_songs = self.get_songs_by_keywords_and_bpm(emotion_label, min_bpm, max_bpm, limit=3) 
+        # 2. 감정에 따른 음악 특성 범위 매핑 및 노래 검색 및 랭킹
+        recommended_songs = self.get_ranked_songs_by_audio_features(emotion_label, limit=3) 
         
         if recommended_songs:
             logging.info("\n--- Recommended Music List ---")
             for i, song in enumerate(recommended_songs):
                 # 로깅 메시지에 URI와 장르 추가
                 genres_str = ", ".join(song.get('genres', [])) if song.get('genres') else "N/A"
-                logging.info(f"{i+1}. Title: {song['title']}, Artist: {song['artist']}, BPM: {song['bpm']}, Genres: {genres_str}, URI: {song['uri']}")
+                logging.info(f"{i+1}. Title: {song['title']}, Artist: {song['artist']}, BPM: {song['bpm']}, Genres: {genres_str}, URI: {song['uri']}, Score: {song.get('relevance_score', 'N/A'):.2f}")
         else:
             logging.info("\nSorry, no music found for the current BPM range.")
             logging.info("Please try another emotion or try again later.")
@@ -308,75 +402,58 @@ class MockMusicRecommender(MusicRecommender):
         super().__init__(getsongbpm_api_key) 
         logging.info("--- Mock Music Recommender initialized (using mock data only) ---")
 
-    def get_songs_by_keywords_and_bpm(self, emotion_label: str, min_bpm: int, max_bpm: int, limit: int = 5): # emotion_label 파라미터 추가
-        logging.info(f"Mock API call: Simulating search for songs with keywords and BPM range {min_bpm}~{max_bpm} for '{emotion_label}' emotion with limit {limit}...")
+    def get_ranked_songs_by_audio_features(self, emotion_label: str, limit: int = 3): # emotion_label 파라미터 추가
+        logging.info(f"Mock API call: Simulating search and ranking for songs with audio features for '{emotion_label}' emotion with limit {limit}...")
         time.sleep(1) # 모의 지연
         
-        # Pylance 경고 해결: 변수 초기화
-        filtered_by_features = [] 
+        target_features = self.bpm_mapper.get_audio_feature_ranges(emotion_label)
 
         # Mock 데이터셋을 더 다양하게 구성하고 "(Mock)" 접미사 추가
         # 이제 Mock 데이터도 더 다양한 제목을 가집니다.
         mock_data = [
-            {"title": "Dancing Monkey (Mock)", "artist": "Tones And I (Mock)", "bpm": 98, "uri": "#", "genres": ["Pop", "Indie"]},
-            {"title": "Shape of You (Mock)", "artist": "Ed Sheeran (Mock)", "bpm": 96, "uri": "#", "genres": ["Pop", "R&B"]},
-            {"title": "Blinding Lights (Mock)", "artist": "The Weeknd (Mock)", "bpm": 171, "uri": "#", "genres": ["Pop", "Synth-pop"]},
-            {"title": "Dynamite (Mock)", "artist": "BTS (Mock)", "bpm": 114, "uri": "#", "genres": ["K-Pop", "Disco-Pop"]},
-            {"title": "Bad Guy (Mock)", "artist": "Billie Eilish (Mock)", "bpm": 135, "uri": "#", "genres": ["Pop", "Electropop"]},
-            {"title": "Old Town Road (Mock)", "artist": "Lil Nas X (Mock)", "bpm": 136, "uri": "#", "genres": ["Country Rap"]},
-            {"title": "Someone You Loved (Mock)", "artist": "Lewis Capaldi (Mock)", "bpm": 109, "uri": "#", "genres": ["Pop", "Ballad"]},
-            {"title": "Happy (Mock)", "artist": "Pharrell Williams (Mock)", "bpm": 160, "uri": "#", "genres": ["Pop", "Soul"]},
-            {"title": "Uptown Funk (Mock)", "artist": "Mark Ronson (Mock)", "bpm": 115, "uri": "#", "genres": ["Funk", "Pop"]},
-            {"title": "Bohemian Rhapsody (Mock)", "artist": "Queen (Mock)", "bpm": 144, "uri": "#", "genres": ["Rock", "Classic Rock"]},
-            {"title": "Lose Yourself (Mock)", "artist": "Eminem (Mock)", "bpm": 171, "uri": "#", "genres": ["Hip Hop", "Rap"]},
-            {"title": "Imagine (Mock)", "artist": "John Lennon (Mock)", "bpm": 75, "uri": "#", "genres": ["Pop", "Soft Rock"]},
-            {"title": "What a Wonderful World (Mock)", "artist": "Louis Armstrong (Mock)", "bpm": 82, "uri": "#", "genres": ["Jazz", "Vocal"]},
-            {"title": "Stairway to Heaven (Mock)", "artist": "Led Zeppelin (Mock)", "bpm": 82, "uri": "#", "genres": ["Rock", "Hard Rock"]},
-            {"title": "Hotel California (Mock)", "artist": "Eagles (Mock)", "bpm": 147, "uri": "#", "genres": ["Rock", "Classic Rock"]},
-            {"title": "Yesterday (Mock)", "artist": "The Beatles (Mock)", "bpm": 94, "uri": "#", "genres": ["Pop", "Rock"]},
-            {"title": "Smells Like Teen Spirit (Mock)", "artist": "Nirvana (Mock)", "bpm": 117, "uri": "#", "genres": ["Grunge", "Rock"]},
-            {"title": "Billie Jean (Mock)", "artist": "Michael Jackson (Mock)", "bpm": 117, "uri": "#", "genres": ["Pop", "Funk"]},
-            {"title": "Like a Rolling Stone (Mock)", "artist": "Bob Dylan (Mock)", "bpm": 95, "uri": "#", "genres": ["Folk Rock"]},
-            {"title": "One (Mock)", "artist": "U2 (Mock)", "bpm": 91, "uri": "#", "genres": ["Rock"]},
+            {"title": "Dancing Monkey (Mock)", "artist": "Tones And I (Mock)", "bpm": 98, "uri": "#", "genres": ["Pop", "Indie"], "danceability": 80, "acousticness": 10},
+            {"title": "Shape of You (Mock)", "artist": "Ed Sheeran (Mock)", "bpm": 96, "uri": "#", "genres": ["Pop", "R&B"], "danceability": 85, "acousticness": 5},
+            {"title": "Blinding Lights (Mock)", "artist": "The Weeknd (Mock)", "bpm": 171, "uri": "#", "genres": ["Pop", "Synth-pop"], "danceability": 75, "acousticness": 2},
+            {"title": "Dynamite (Mock)", "artist": "BTS (Mock)", "bpm": 114, "uri": "#", "genres": ["K-Pop", "Disco-Pop"], "danceability": 90, "acousticness": 1},
+            {"title": "Bad Guy (Mock)", "artist": "Billie Eilish (Mock)", "bpm": 135, "uri": "#", "genres": ["Pop", "Electropop"], "danceability": 70, "acousticness": 15},
+            {"title": "Old Town Road (Mock)", "artist": "Lil Nas X (Mock)", "bpm": 136, "uri": "#", "genres": ["Country Rap"], "danceability": 65, "acousticness": 20},
+            {"title": "Someone You Loved (Mock)", "artist": "Lewis Capaldi (Mock)", "bpm": 109, "uri": "#", "genres": ["Pop", "Ballad"], "danceability": 30, "acousticness": 80},
+            {"title": "Happy (Mock)", "artist": "Pharrell Williams (Mock)", "bpm": 160, "uri": "#", "genres": ["Pop", "Soul"], "danceability": 95, "acousticness": 5},
+            {"title": "Uptown Funk (Mock)", "artist": "Mark Ronson (Mock)", "bpm": 115, "uri": "#", "genres": ["Funk", "Pop"], "danceability": 88, "acousticness": 8},
+            {"title": "Bohemian Rhapsody (Mock)", "artist": "Queen (Mock)", "bpm": 144, "uri": "#", "genres": ["Rock", "Classic Rock"], "danceability": 40, "acousticness": 30},
+            {"title": "Lose Yourself (Mock)", "artist": "Eminem (Mock)", "bpm": 171, "uri": "#", "genres": ["Hip Hop", "Rap"], "danceability": 60, "acousticness": 10},
+            {"title": "Imagine (Mock)", "artist": "John Lennon (Mock)", "bpm": 75, "uri": "#", "genres": ["Pop", "Soft Rock"], "danceability": 20, "acousticness": 90},
+            {"title": "What a Wonderful World (Mock)", "artist": "Louis Armstrong (Mock)", "bpm": 82, "uri": "#", "genres": ["Jazz", "Vocal"], "danceability": 35, "acousticness": 70},
+            {"title": "Stairway to Heaven (Mock)", "artist": "Led Zeppelin (Mock)", "bpm": 82, "uri": "#", "genres": ["Rock", "Hard Rock"], "danceability": 25, "acousticness": 60},
+            {"title": "Hotel California (Mock)", "artist": "Eagles (Mock)", "bpm": 147, "uri": "#", "genres": ["Rock", "Classic Rock"], "danceability": 50, "acousticness": 40},
+            {"title": "Yesterday (Mock)", "artist": "The Beatles (Mock)", "bpm": 94, "uri": "#", "genres": ["Pop", "Rock"], "danceability": 45, "acousticness": 50},
+            {"title": "Smells Like Teen Spirit (Mock)", "artist": "Nirvana (Mock)", "bpm": 117, "uri": "#", "genres": ["Grunge", "Rock"], "danceability": 60, "acousticness": 10},
+            {"title": "Billie Jean (Mock)", "artist": "Michael Jackson (Mock)", "bpm": 117, "uri": "#", "genres": ["Pop", "Funk"], "danceability": 90, "acousticness": 5},
+            {"title": "Like a Rolling Stone (Mock)", "artist": "Bob Dylan (Mock)", "bpm": 95, "uri": "#", "genres": ["Folk Rock"], "danceability": 40, "acousticness": 70},
+            {"title": "One (Mock)", "artist": "U2 (Mock)", "bpm": 91, "uri": "#", "genres": ["Rock"], "danceability": 35, "acousticness": 60},
         ]
 
-        # 감정 레이블에 따라 Mock 데이터 필터링 (간단한 예시)
-        feature_ranges = self.bpm_mapper.get_audio_feature_ranges(emotion_label)
-        min_bpm, max_bpm = feature_ranges["bpm"]
-        # Mock 데이터에는 danceability, acousticness가 없으므로 BPM만으로 필터링
-        
+        # Mock 데이터 필터링, 중복 제거 및 랭킹
+        unique_mock_songs = []
+        mock_seen_titles = set()
         for song in mock_data:
-            if min_bpm <= song["bpm"] <= max_bpm:
-                filtered_by_features.append(song)
-
-        if not filtered_by_features:
-            logging.warning(f"No specific mock songs found for BPM range {min_bpm}~{max_bpm}. Returning random mock songs.")
-            # Mock 데이터에서도 중복 제목과 장르 이름과 동일한 제목을 제거하도록 필터링
-            unique_mock_songs = []
-            mock_seen_titles = set()
-            for song in mock_data:
-                is_mock_title_a_genre = False
-                if song["title"].lower() in [g.lower() for g in song.get("genres", [])]:
-                    is_mock_title_a_genre = True
-
-                if song["title"] not in mock_seen_titles and not is_mock_title_a_genre:
-                    unique_mock_songs.append(song)
-                    mock_seen_titles.add(song["title"])
-            return random.sample(unique_mock_songs, min(limit, len(unique_mock_songs)))
-            
-        # filtered_by_features에서 중복 제거 후 샘플링
-        unique_filtered_songs = []
-        filtered_seen_titles = set()
-        for song in filtered_by_features:
-            is_title_a_genre = False
+            is_mock_title_a_genre = False
             if song["title"].lower() in [g.lower() for g in song.get("genres", [])]:
-                is_title_a_genre = True
-            
-            if song["title"] not in filtered_seen_titles and not is_title_a_genre:
-                unique_filtered_songs.append(song)
-                filtered_seen_titles.add(song["title"])
+                is_mock_title_a_genre = True
+
+            if song["title"] not in mock_seen_titles and not is_mock_title_a_genre:
+                # Mock 데이터에도 relevance_score를 계산하여 추가
+                relevance_score = self._calculate_relevance_score(
+                    {"tempo": song["bpm"], "danceability": song["danceability"], "acousticness": song["acousticness"]},
+                    target_features
+                )
+                song["relevance_score"] = relevance_score
+                unique_mock_songs.append(song)
+                mock_seen_titles.add(song["title"])
         
-        return random.sample(unique_filtered_songs, min(limit, len(unique_filtered_songs)))
+        # Mock 데이터도 점수 기준으로 정렬
+        unique_mock_songs.sort(key=lambda x: x.get("relevance_score", 0), reverse=True)
+        return unique_mock_songs[:limit]
 
 
 # 이 파일이 직접 실행될 때만 실행되는 테스트 코드
