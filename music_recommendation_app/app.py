@@ -13,14 +13,14 @@ app = Flask(__name__,
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 logging.debug("Music Recommendation App 초기화 시작.")
 
-# --- 음악 추천 기능 관련 모듈 로드 (지연 로딩을 위해 전역 변수로 선언) ---
+# --- 음악 추천 기능 관련 모듈 로드 (전역 변수로 선언) ---
 recommender = None
 getsongbpm_api_key = os.environ.get("GETSONGBPM_API_KEY", "YOUR_GETSONGBPM_API_KEY_HERE")
 
 def _load_recommendation_models():
     """
-    음악 추천 모델과 관련 도구들을 지연 로드하는 내부 함수.
-    모델 로드 실패 시 앱이 종료되지 않고, 오류를 반환하도록 수정.
+    음악 추천 모델과 관련 도구들을 로드하는 내부 함수.
+    이 함수는 애플리케이션 시작 시점에 한 번만 호출됩니다.
     """
     global recommender
     
@@ -28,8 +28,7 @@ def _load_recommendation_models():
         logging.debug("음악 추천 모델이 이미 로드되어 있습니다. 다시 로드하지 않습니다.")
         return True # 성공적으로 로드되었음을 알림
 
-    logging.debug("음악 추천 모델 지연 로드 시작.")
-    # 현재 getsongbpm_api_key 값 로깅 (디버깅용)
+    logging.info("음악 추천 모델 로드 시작.")
     logging.info(f"GETSONGBPM_API_KEY 환경 변수 값: '{getsongbpm_api_key}'")
 
     try:
@@ -42,13 +41,13 @@ def _load_recommendation_models():
         from music_recommender import MusicRecommender, MockMusicRecommender 
 
         if getsongbpm_api_key == "YOUR_GETSONGBPM_API_KEY_HERE":
-            logging.warning("[WARNING]: getsongbpm API 키가 설정되지 않았습니다. 모의(Mock) 데이터를 사용하여 테스트를 진행합니다.")
+            logging.warning("[WARNING]: getsong.co API 키가 설정되지 않았습니다. 모의(Mock) 데이터를 사용하여 테스트를 진행합니다.")
             recommender = MockMusicRecommender(getsongbpm_api_key) # MockMusicRecommender 사용
         else:
             logging.info("GETSONGBPM_API_KEY가 설정되어 실제 API를 사용합니다.")
             recommender = MusicRecommender(getsongbpm_api_key) # MusicRecommender 사용
         
-        logging.info("음악 추천 모델 및 도구 지연 로드 성공.")
+        logging.info("음악 추천 모델 및 도구 로드 성공.")
         return True # 성공적으로 로드되었음을 알림
     except ImportError as e:
         logging.error(f"필수 모듈 임포트 실패: {e}")
@@ -56,10 +55,19 @@ def _load_recommendation_models():
         recommender = None # 로드 실패 시 recommender를 None으로 설정
         return False # 로드 실패
     except Exception as e:
-        logging.error(f"음악 추천 모델 지연 로드 중 오류 발생: {e}")
+        logging.error(f"음악 추천 모델 로드 중 오류 발생: {e}")
         logging.error(traceback.format_exc())
         recommender = None # 로드 실패 시 recommender를 None으로 설정
         return False # 로드 실패
+
+# 애플리케이션 시작 시 모델 로드 시도
+# Gunicorn 환경에서는 이 부분이 워커 프로세스별로 실행될 수 있습니다.
+# 따라서, 모델 로딩이 완료될 때까지 시간이 걸릴 수 있습니다.
+# Render의 헬스 체크가 충분히 기다려주거나, 모델 크기가 너무 크지 않아야 합니다.
+if not _load_recommendation_models():
+    logging.critical("CRITICAL: 음악 추천 시스템 초기 로드에 실패했습니다. 애플리케이션이 제대로 작동하지 않을 수 있습니다.")
+    # 실제 배포 환경에서는 이 시점에서 앱이 종료되거나 헬스 체크 실패를 반환해야 합니다.
+    # 하지만 개발 편의를 위해 일단 계속 진행하도록 합니다.
 
 @app.route('/')
 def index():
@@ -69,16 +77,21 @@ def index():
 def health_check():
     """Render 헬스 체크를 위한 엔드포인트."""
     logging.debug("Health check 요청 수신.")
-    return "OK", 200
+    if recommender is not None:
+        return "OK", 200
+    else:
+        # 모델 로드 실패 시 헬스 체크 실패 반환
+        return "Service Unavailable: Models not loaded", 503
 
 @app.route('/recommend', methods=['POST'])
 def recommend_music_endpoint():
     """
     사용자 텍스트를 입력받아 음악을 추천하는 엔드포인트입니다.
     """
-    # 모델 로드 시도 및 실패 처리
-    if not _load_recommendation_models():
-        return jsonify({'error': '음악 추천 시스템 초기화에 실패했습니다. 서버 로그를 확인하세요.'}), 500
+    # 모델이 성공적으로 로드되었는지 다시 확인 (초기 로드 실패에 대비)
+    if recommender is None:
+        logging.error("음악 추천 시스템이 초기화되지 않았습니다. 요청을 처리할 수 없습니다.")
+        return jsonify({'error': '음악 추천 시스템이 준비되지 않았습니다. 잠시 후 다시 시도해주세요.'}), 503
 
     user_text = request.form.get('user_text')
     if not user_text:
@@ -126,7 +139,6 @@ def recommend_result():
     for i, song in enumerate(recommendations):
         song['rank_icon'] = rank_icons.get(i + 1, '') # 1, 2, 3위만 아이콘 적용
 
-    # recommend_result.html 대신 recommend_result_page.html을 렌더링하도록 수정
     return render_template('recommend_result_page.html', 
                            user_message=user_message, 
                            recommendations=recommendations)

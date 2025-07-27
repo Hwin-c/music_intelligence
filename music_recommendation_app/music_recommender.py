@@ -108,7 +108,7 @@ class MusicRecommender:
             response.raise_for_status() # Raise HTTPError for bad responses (4xx or 5xx)
             return response.json()
         except requests.exceptions.HTTPError as http_err:
-            # 403 Forbidden 에러 시 응답 텍스트를 명확히 로깅
+            # 401 Unauthorized 에러 시 응답 텍스트를 명확히 로깅
             logging.error(f"HTTP error occurred: {http_err} - Response Status: {response.status_code if response else 'N/A'} - Response Text: {response.text if response else 'N/A'}")
         except requests.exceptions.ConnectionError as conn_err:
             logging.error(f"Network connection error: {conn_err}")
@@ -129,33 +129,37 @@ class MusicRecommender:
         api_call_successful = False # API 호출 성공 여부 플래그
 
         try:
+            # getsong.co API 문서에 따라 /search/ 엔드포인트와 type, lookup 파라미터 사용
             search_queries = ["pop", "dance", "rock", "electronic", "jazz", "hip hop", "ballad", "r&b"] 
             
             for query in search_queries:
-                params = {"q": query, "per_page": 20} 
-                api_response = self._call_getsongbpm_api("search/tracks", params) 
+                # type="song"으로 설정하고 lookup에 검색어를 인코딩하여 전달
+                params = {"type": "song", "lookup": query, "limit": 20} # limit은 API 문서에 따라 20으로 설정
+                api_response = self._call_getsongbpm_api("search/", params) # 엔드포인트 수정
 
-                if api_response and api_response.get("tracks"):
+                if api_response and api_response.get("search"): # 응답 구조가 {"search": [...]} 형태
                     api_call_successful = True # API 호출 성공
-                    for track in api_response["tracks"]:
-                        track_bpm = track.get("bpm")
-                        if track_bpm is not None:
+                    for song_data in api_response["search"]: # "search" 배열 내의 각 노래 데이터
+                        # API 문서의 "Song Object"에 따라 데이터 추출
+                        song_title = song_data.get("title", "Unknown Title")
+                        artist_name = song_data.get("artist", [{}])[0].get("name", "Unknown Artist") # artist는 배열일 수 있음
+                        song_bpm = song_data.get("tempo") # "tempo"는 Integrer 타입
+                        
+                        if song_bpm is not None:
                             try:
-                                track_bpm = int(track_bpm) 
-                                if min_bpm <= track_bpm <= max_bpm:
-                                    song_title = track.get("title", "Unknown Title")
-                                    artist_name = track.get("artist", {}).get("name", "Unknown Artist")
-                                    
+                                song_bpm = int(song_bpm) 
+                                if min_bpm <= song_bpm <= max_bpm:
                                     found_songs.append({
                                         "title": song_title,
                                         "artist": artist_name,
-                                        "bpm": track_bpm,
-                                        "album_cover_url": track.get("album", {}).get("image", "https://placehold.co/140x140/cccccc/000000?text=No+Cover")
+                                        "bpm": song_bpm,
+                                        # getsong.co API 문서에 앨범 커버 이미지 URL 필드가 명시되어 있지 않으므로 플레이스홀더 사용
+                                        "album_cover_url": "https://placehold.co/140x140/cccccc/000000?text=No+Cover" 
                                     })
                                     if len(found_songs) >= limit: 
                                         break
                             except ValueError:
-                                logging.warning(f"Invalid BPM value received for track {track.get('title', 'N/A')}: {track_bpm}")
+                                logging.warning(f"Invalid BPM value received for song {song_title}: {song_bpm}")
                 if len(found_songs) >= limit:
                     break
 
