@@ -115,7 +115,8 @@ def recommend_result():
     for i, song in enumerate(recommendations):
         song['rank_icon'] = rank_icons.get(i + 1, '') # 1, 2, 3위만 아이콘 적용
 
-    return render_template('recommend_result.html', 
+    # recommend_result.html 대신 recommend_result_page.html을 렌더링하도록 수정
+    return render_template('recommend_result_page.html', 
                            user_message=user_message, 
                            recommendations=recommendations)
 
