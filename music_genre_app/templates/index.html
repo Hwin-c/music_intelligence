@@ -40,6 +40,16 @@
       text-align: center;
     }
 
+    /* 새로 추가된 메인 제목 스타일 */
+    .main-heading {
+        font-size: 3rem; /* 더 큰 글씨 크기 */
+        font-weight: bold;
+        color: #333; /* 어두운 색상으로 대비 */
+        margin-bottom: 2rem; /* 제목 아래 여백 */
+        text-align: center; /* 가운데 정렬 */
+        text-shadow: 0 2px 4px rgba(0,0,0,0.2); /* 은은한 그림자 */
+    }
+
     .upload-box {
       background-color: #ffffffcc;
       padding: 3rem;
@@ -140,6 +150,11 @@
         main {
             padding: 1rem;
         }
+        /* 미디어 쿼리 내에서 메인 제목 스타일 조정 */
+        .main-heading {
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+        }
         .upload-box {
             padding: 2rem;
             gap: 1.5rem;
@@ -189,6 +204,7 @@
   </header>
 
   <main>
+    <h1 class="main-heading">음악 장르 분석</h1>
     <div class="upload-box">
       <img src="{{ url_for('static', filename='music_genre_classification.png') }}" alt="음악 장르 분류 이미지" style="width: 100%; max-width: 300px; border-radius: 15px; margin-bottom: 1rem;" onerror="this.src='https://placehold.co/300x200/cccccc/000000?text=Genre+Image'; this.alt='음악 장르 분류 이미지 (없음)';">
       <h2>음악 파일을 업로드하세요</h2>

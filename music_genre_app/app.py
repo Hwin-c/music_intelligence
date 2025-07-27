@@ -82,7 +82,7 @@ def _load_genre_classification_models():
 def extract_features_from_audio(file_path):
     import librosa
     import numpy as np
-    import pandas as pd # <-- 여기에 pandas 임포트 추가
+    import pandas as pd
     
     try:
         y, sr = librosa.load(file_path, sr=44100)
@@ -125,6 +125,10 @@ def extract_features_from_audio(file_path):
             'perceptr_var': np.var(perceptr),
             'tempo': tempo, # tempo는 스칼라 값으로 바로 할당
         }
+
+        for i in range(20):
+            features[f'mfcc{i+1}_mean'] = np.mean(mfcc[i])
+            features[f'mfcc{i+1}_var'] = np.var(mfcc[i])
 
         return pd.DataFrame([features])
     except Exception as e:
@@ -221,8 +225,8 @@ def predict_genre_endpoint():
 
         logging.info(f"예측된 장르: {label}, 확률: {probability:.2f}%")
         
-        # 결과 페이지로 리다이렉트
-        return redirect(url_for('show_genre_result', genre=label, probability=f"{probability:.2f}"))
+        # JSON 응답으로 변경
+        return jsonify({'label': label, 'probability': f"{probability:.2f}"}), 200
 
     except Exception as e:
         logging.error(f'장르 예측 중 오류 발생: {str(e)}')
