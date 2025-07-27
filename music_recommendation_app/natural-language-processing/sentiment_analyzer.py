@@ -1,6 +1,7 @@
 import logging
-# transformers, torch, numpy 임포트는 이제 _load_model_and_tokenizer 함수 내부로 이동합니다.
 import traceback
+import torch # <-- 이 줄을 추가했습니다.
+import numpy as np # numpy도 필요하므로 최상단에 추가
 
 # 로깅 설정 (app.py의 로깅 설정을 따르지만, 이 파일에서도 상세 로그를 위해 DEBUG 레벨 유지)
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -22,12 +23,11 @@ class SentimentAnalyzer:
         """
         모델과 토크나이저를 실제로 로드하는 내부 메서드입니다.
         이 메서드는 analyze_sentiment가 처음 호출될 때 한 번만 실행됩니다.
-        여기서 transformers와 torch를 임포트합니다.
+        여기서 transformers를 임포트합니다.
         """
         # 필요한 라이브러리들을 함수 내부에서 임포트 (극단적인 지연 로딩)
         from transformers import AutoTokenizer, AutoModelForSequenceClassification
-        import torch
-        import numpy as np # numpy도 필요
+        # torch와 numpy는 이제 최상단에서 임포트되므로 여기서 제거합니다.
 
         if self.model is not None: # 이미 로드되었다면 다시 로드하지 않음
             return
@@ -94,9 +94,9 @@ if __name__ == "__main__":
     try:
         # 테스트를 위해 필요한 라이브러리들을 여기서 임포트
         from transformers import pipeline
-        import torch
+        # torch는 이제 최상단에 임포트됩니다.
     except ImportError:
-        logging.error("transformers 및 torch 라이브러리가 설치되어 있지 않습니다. 'pip install transformers torch'를 실행해주세요.")
+        logging.error("transformers 라이브러리가 설치되어 있지 않습니다. 'pip install transformers'를 실행해주세요.")
         exit(1)
 
     try:
