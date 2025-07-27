@@ -5,18 +5,23 @@ import sys
 import logging
 import time
 import traceback
+import json # JSON 로깅을 위해 추가
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# music_recommendation_app 디렉토리와 natural-language-processing 디렉토리에
-# __init__.py 파일이 이미 존재하므로, 이들은 Python 패키지로 인식됩니다.
-# 따라서 sys.path를 동적으로 조작할 필요가 없습니다.
-# 모듈 임포트는 이제 상대 경로를 사용합니다.
+# natural-language-processing 디렉토리를 Python 경로에 추가하여 모듈을 임포트할 수 있도록 합니다.
+# flask run 환경에서 상대 경로 임포트 문제 해결을 위해 sys.path 조작 방식을 다시 사용합니다.
+current_dir = os.path.dirname(os.path.abspath(__file__))
+nlp_dir = os.path.join(current_dir, 'natural-language-processing')
+
+if nlp_dir not in sys.path:
+    sys.path.insert(0, nlp_dir) # sys.path의 맨 앞에 추가하여 우선순위를 높임
+    logging.debug(f"Added {nlp_dir} to sys.path for NLP modules.")
 
 try:
-    # 실제 SentimentAnalyzer 및 BPMMapper 임포트 시도 (상대 경로 사용)
-    from .natural_language_processing.sentiment_analyzer import SentimentAnalyzer
-    from .natural_language_processing.bpm_mapper import BPMMapper
+    # 실제 SentimentAnalyzer 및 BPMMapper 임포트 시도 (직접 모듈 이름 사용)
+    from sentiment_analyzer import SentimentAnalyzer
+    from bpm_mapper import BPMMapper
     logging.debug("SentimentAnalyzer and BPMMapper imported successfully.")
 except ImportError as e:
     logging.warning(f"Failed to import actual NLP modules: {e}. Using Mock versions.")
@@ -92,7 +97,12 @@ class MusicRecommender:
             logging.debug(f"Calling getsong.co API: {url} with params {params}")
             response = requests.get(url, params=params)
             response.raise_for_status() 
-            return response.json()
+            
+            # API 응답 본문을 로깅하여 실제 데이터를 확인
+            response_json = response.json()
+            logging.debug(f"getsong.co API response JSON: {json.dumps(response_json, indent=2, ensure_ascii=False)}")
+            
+            return response_json
         except requests.exceptions.HTTPError as http_err:
             logging.error(f"HTTP error occurred: {http_err} - Response Status: {response.status_code if response else 'N/A'} - Response Text: {response.text if response else 'N/A'}")
         except requests.exceptions.ConnectionError as conn_err:
@@ -114,7 +124,8 @@ class MusicRecommender:
         api_call_successful = False 
 
         try:
-            search_queries = ["pop", "dance", "rock", "electronic", "jazz", "hip hop", "ballad", "r&b"] 
+            # 다양한 검색 쿼리를 사용하되, 결과가 너무 일반적일 경우를 대비
+            search_queries = ["pop", "dance", "rock", "electronic", "jazz", "hip hop", "ballad", "r&b", "k-pop", "indie"] 
             
             for query in search_queries:
                 params = {"type": "song", "lookup": query, "limit": 20} 
@@ -140,7 +151,9 @@ class MusicRecommender:
                         album_cover_url = "https://placehold.co/140x140/cccccc/000000?text=No+Cover"
                         album_info = song_data.get("album")
                         if isinstance(album_info, dict):
-                            album_cover_url = album_info.get("img", album_cover_url) # album.img 필드 사용
+                            album_cover_url_from_api = album_info.get("img")
+                            if album_cover_url_from_api: # img 필드가 존재하고 값이 있을 경우에만 사용
+                                album_cover_url = album_cover_url_from_api
 
                         if song_bpm is not None:
                             try:
