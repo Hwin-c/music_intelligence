@@ -184,7 +184,7 @@
 <body>
   <header>
     <a href="/" class="logo-link">
-      <img src="{{ url_for('static', filename='logo.jpg') }}" alt="로고" class="logo-image" onerror="this.src='https://placehold.co/50x50/cccccc/000000?text=Logo'; this.alt='로고 (이미지 없음)';" />
+      <img src="{{ url_for('static', filename='logo.png') }}" alt="로고" class="logo-image" onerror="this.src='https://placehold.co/50x50/cccccc/000000?text=Logo'; this.alt='로고 (이미지 없음)';" />
     </a>
   </header>
 
@@ -225,10 +225,10 @@
             const file = this.files[0];
             const fileURL = URL.createObjectURL(file);
             audioPreview.src = fileURL;
-            audioPreviewSection.style.display = 'block'; // Show the audio player
+            audioPreviewSection.style.display = 'block';
         } else {
             audioPreview.src = '';
-            audioPreviewSection.style.display = 'none'; // Hide if no file selected
+            audioPreviewSection.style.display = 'none';
         }
     });
 

@@ -65,11 +65,11 @@
     }
 
     .recommend-section {
-      display: flex; /* 다시 표시 */
+      display: flex;
       flex-wrap: wrap;
       justify-content: center;
       gap: 1rem;
-      margin-top: 1.5rem; /* 간격 추가 */
+      margin-top: 1.5rem;
     }
 
     .recommend-item {
@@ -156,7 +156,7 @@
 <body>
   <header>
     <a href="/" class="logo-link">
-      <img src="{{ url_for('static', filename='logo.jpg') }}" alt="로고" class="logo-image" onerror="this.src='https://placehold.co/50x50/cccccc/000000?text=Logo'; this.alt='로고 (이미지 없음)';" />
+      <img src="{{ url_for('static', filename='logo.png') }}" alt="로고" class="logo-image" onerror="this.src='https://placehold.co/50x50/cccccc/000000?text=Logo'; this.alt='로고 (이미지 없음)';" />
     </a>
   </header>
 
@@ -300,10 +300,10 @@
                 `;
                 recommendSectionElement.appendChild(item);
             });
-            recommendSectionElement.style.display = 'flex'; // 대표곡 섹션 다시 표시
+            recommendSectionElement.style.display = 'flex';
         } else {
             recommendSectionElement.innerHTML = '<p>추천할 대표곡이 없습니다.</p>';
-            recommendSectionElement.style.display = 'block'; // 섹션 자체는 표시
+            recommendSectionElement.style.display = 'block';
         }
     });
 
