@@ -49,6 +49,7 @@ class MockBPMMapper:
 current_dir = os.path.dirname(os.path.abspath(__file__))
 nlp_dir = os.path.join(current_dir, 'natural-language-processing')
 
+# sys.path에 추가하는 로직을 임포트 시도 직전에 배치하여 Pylance 경고를 줄입니다.
 if nlp_dir not in sys.path:
     sys.path.append(nlp_dir)
     logging.debug(f"Added {nlp_dir} to sys.path")
@@ -197,6 +198,55 @@ class MusicRecommender:
             ]
             return random.sample(mock_songs_data, min(limit, len(mock_songs_data)))
         
+        return random.sample(filtered_by_bpm_and_text, min(limit, len(filtered_by_bpm_and_text)))
+
+
+# MockMusicRecommender 클래스를 MusicRecommender 클래스 바로 아래로 이동
+# Pylance 경고 해결: MockMusicRecommender가 정의되기 전에 사용될 수 있다는 경고 방지
+class MockMusicRecommender(MusicRecommender):
+    """
+    API 키가 없거나 개발 시에 사용할 모의(Mock) 추천기입니다.
+    실제 API 호출 없이 미리 정의된 데이터를 반환합니다.
+    """
+    def __init__(self, getsongbpm_api_key: str = None):
+        super().__init__(getsongbpm_api_key) 
+        logging.info("--- Mock Music Recommender initialized (using mock data only) ---")
+
+    def get_songs_by_bpm_range(self, min_bpm: int, max_bpm: int, limit: int = 5): # Mock 클래스도 limit 파라미터 받도록
+        logging.info(f"Mock API call: Simulating search for songs in BPM {min_bpm}~{max_bpm} range with limit {limit}...")
+        time.sleep(1) # 모의 지연
+        
+        # Pylance 경고 해결: 변수 초기화
+        filtered_by_bpm_and_text = [] 
+
+        # Mock 데이터셋을 더 다양하게 구성하고 "(Mock)" 접미사 추가
+        mock_data = [
+            {"title": "Mock Pop Song (Upbeat)", "artist": "Mock Artist", "bpm": 120, "album_cover_url": "https://placehold.co/140x140/A3C8F5/000000?text=MockPop"},
+            {"title": "Mock Jazz Tune (Relaxed)", "artist": "Jazz Cat", "bpm": 90, "album_cover_url": "https://placehold.co/140x140/4A90E2/FFFFFF?text=MockJazz"},
+            {"title": "Mock Rock Anthem (Energetic)", "artist": "Rock Band", "bpm": 150, "album_cover_url": "https://placehold.co/140x140/333333/FFFFFF?text=MockRock"},
+            {"title": "Mock Chill Vibes (Calm)", "artist": "Lo-Fi Beats", "bpm": 70, "album_cover_url": "https://placehold.co/140x140/6C7A89/FFFFFF?text=MockChill"},
+            {"title": "Mock Upbeat Track (Happy)", "artist": "Energetic Duo", "bpm": 135, "album_cover_url": "https://placehold.co/140x140/FF6B6B/FFFFFF?text=MockUpbeat"},
+            {"title": "Mock Summer Hit (Joyful)", "artist": "Sunshine Band", "bpm": 128, "album_cover_url": "https://placehold.co/140x140/FFD700/000000?text=MockSummer"},
+            {"title": "Mock Rainy Day (Sad)", "artist": "Blue Mood", "bpm": 65, "album_cover_url": "https://placehold.co/140x140/87CEEB/000000?text=MockRain"},
+            {"title": "Mock Workout Jam (Intense)", "artist": "Fitness Crew", "bpm": 140, "album_cover_url": "https://placehold.co/140x140/FF4500/FFFFFF?text=MockGym"},
+        ]
+
+        # 사용자 입력에 따라 다른 mock 데이터를 반환하는 간단한 로직 (예시)
+        for song in mock_data:
+            if min_bpm <= song["bpm"] <= max_bpm:
+                # self.sentiment_analyzer가 MockSentimentAnalyzer이므로 직접 호출
+                sentiment_label = self.sentiment_analyzer.analyze_sentiment("긍정적인 음악 추천해줘!")['label']
+                if "긍정" in sentiment_label and song["bpm"] > 110:
+                    filtered_by_bpm_and_text.append(song)
+                elif "부정" in sentiment_label and song["bpm"] < 90:
+                    filtered_by_bpm_and_text.append(song)
+                else:
+                    filtered_by_bpm_and_text.append(song)
+
+        if not filtered_by_bpm_and_text:
+            logging.warning(f"No specific mock songs found for BPM range {min_bpm}~{max_bpm}. Returning random mock songs.")
+            return random.sample(mock_data, min(limit, len(mock_data)))
+            
         return random.sample(filtered_by_bpm_and_text, min(limit, len(filtered_by_bpm_and_text)))
 
 
