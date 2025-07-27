@@ -35,7 +35,7 @@ def _load_genre_classification_models():
     import tensorflow.lite as tflite
     import librosa
     import pandas as pd # pandas 임포트 유지
-    import numpy as np
+    import numpy as np # numpy 임포트 유지
     import pickle
     import json
     
@@ -161,7 +161,9 @@ def predict_genre_endpoint():
 
     try:
         from pydub import AudioSegment
-        import sklearn.preprocessing # StandardScaler가 이 모듈에 있습니다.
+        import sklearn.preprocessing
+        import pandas as pd # <-- 여기에 pandas 임포트 추가
+        import numpy as np # <-- 여기에 numpy 임포트 추가
 
         if filename.endswith('.mp3'):
             temp_mp3_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), temp_input_name + '.mp3')
