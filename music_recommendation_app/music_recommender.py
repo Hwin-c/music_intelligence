@@ -121,6 +121,7 @@ class MusicRecommender:
         logging.info(f"Attempting to search for songs in BPM range {min_bpm}~{max_bpm} using getsong.co API...")
         
         found_songs = []
+        seen_titles = set() # 중복 제목을 추적하기 위한 셋
         api_call_successful = False 
 
         try:
@@ -135,6 +136,11 @@ class MusicRecommender:
                     api_call_successful = True 
                     for song_data in api_response["search"]: 
                         song_title = song_data.get("title", "Unknown Title")
+                        
+                        # 이미 추가된 제목인지 확인하여 중복 방지
+                        if song_title in seen_titles:
+                            continue # 이미 있는 제목이면 건너뛰기
+
                         song_uri = song_data.get("uri", "#") # song uri 추가
                         
                         # 아티스트 이름 추출 강화: 'artist' 필드가 객체임을 반영
@@ -163,6 +169,7 @@ class MusicRecommender:
                                         "uri": song_uri, # uri 추가
                                         "genres": genres # genres 추가
                                     })
+                                    seen_titles.add(song_title) # 제목을 셋에 추가
                                     if len(found_songs) >= limit: 
                                         break
                             except ValueError:
@@ -192,9 +199,23 @@ class MusicRecommender:
                 {"title": "꿈꾸는 밤 (Mock)", "artist": "이몽환 (Mock)", "bpm": 85, "uri": "#", "genres": ["Lullaby", "Dreamy"]},
                 {"title": "에너지 폭발 (Mock)", "artist": "박다이나믹 (Mock)", "bpm": 160, "uri": "#", "genres": ["Hip Hop", "Intense"]},
             ]
-            return random.sample(mock_songs_data, min(limit, len(mock_songs_data)))
+            # Mock 데이터에서도 중복 제목을 제거하도록 필터링
+            unique_mock_songs = []
+            mock_seen_titles = set()
+            for song in mock_songs_data:
+                if song["title"] not in mock_seen_titles:
+                    unique_mock_songs.append(song)
+                    mock_seen_titles.add(song["title"])
+            return random.sample(unique_mock_songs, min(limit, len(unique_mock_songs)))
         
-        return random.sample(found_songs, min(limit, len(found_songs)))
+        # 실제 API 결과에서도 중복 제거 후 샘플링
+        unique_found_songs = []
+        found_seen_titles = set()
+        for song in found_songs:
+            if song["title"] not in found_seen_titles:
+                unique_found_songs.append(song)
+                found_seen_titles.add(song["title"])
+        return random.sample(unique_found_songs, min(limit, len(unique_found_songs)))
 
     def recommend_music(self, user_text: str):
         """
@@ -277,34 +298,14 @@ class MockMusicRecommender(MusicRecommender):
 
         if not filtered_by_bpm_and_text:
             logging.warning(f"No specific mock songs found for BPM range {min_bpm}~{max_bpm}. Returning random mock songs.")
-            return random.sample(mock_data, min(limit, len(mock_data)))
+            # Mock 데이터에서도 중복 제목을 제거하도록 필터링
+            unique_mock_songs = []
+            mock_seen_titles = set()
+            for song in mock_data:
+                if song["title"] not in mock_seen_titles:
+                    unique_mock_songs.append(song)
+                    mock_seen_titles.add(song["title"])
+            return random.sample(unique_mock_songs, min(limit, len(unique_mock_songs)))
             
+        # filtered_by_bpm_and_text가 비어있지 않은 경우, 해당 리스트에서 샘플링하여 반환
         return random.sample(filtered_by_bpm_and_text, min(limit, len(filtered_by_bpm_and_text)))
-
-
-# 이 파일이 직접 실행될 때만 실행되는 테스트 코드
-if __name__ == "__main__":
-    getsongbpm_api_key = os.environ.get("GETSONGBPM_API_KEY", "YOUR_GETSONGBPM_API_KEY_HERE")
-
-    if getsongbpm_api_key == "YOUR_GETSONGBPM_API_KEY_HERE":
-        logging.warning("\n[WARNING]: getsongbpm API key is not set. Proceeding with mock data for testing.")
-        recommender = MockMusicRecommender(getsongbpm_api_key) # Mock 클래스 사용
-    else:
-        logging.info("GETSONGBPM_API_KEY is set. Proceeding with actual API calls.")
-        recommender = MusicRecommender(getsongbpm_api_key) # 실제 API 키로 MusicRecommender 사용
-
-    logging.info("\n==== Music Recommendation System Demo Start ====")
-
-    test_inputs = [
-        "오늘은 정말 기분이 좋고 신나!",
-        "요즘 너무 우울해서 슬픈 노래가 듣고 싶어.",
-        "공부해야 하는데 집중이 안 돼. 잔잔한 음악 틀어줘.",
-        "정말 화가 나서 아무것도 못 하겠어.",
-        "하루 종일 스트레스 받아서 쉬고 싶어.",
-        "너무 편안하고 기분이 좋아.",
-        "조금 불안하고 걱정이 되네."
-    ]
-
-    for user_text in test_inputs:
-        recommender.recommend_music(user_text)
-        logging.info("\n" + "="*70 + "\n")

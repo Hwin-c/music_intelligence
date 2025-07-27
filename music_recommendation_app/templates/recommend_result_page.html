@@ -89,12 +89,15 @@
         text-align: right;
     }
 
-    /* 기존 .rank-icon 및 .cover 관련 스타일 제거 */
-    /* .music-item .rank-icon { display: none; } */
-    /* .music-item .cover { display: none; } */
-
     .music-item .details {
       flex-grow: 1;
+    }
+
+    .music-item .title-label { /* "제목:" 라벨 스타일 */
+        font-weight: bold;
+        font-size: 1.5rem; /* 노래 제목과 동일한 크기 */
+        color: #333; /* 일반 텍스트 색상 */
+        margin-right: 0.5rem; /* 제목과 라벨 사이 간격 */
     }
 
     .music-item .title-link { /* 노래 제목 링크 스타일 */
@@ -102,13 +105,11 @@
       font-size: 1.5rem; /* 가장 크게 굵은 글씨 */
       color: #0056b3; /* 클릭 가능한 링크 색상 */
       text-decoration: none; /* 밑줄 제거 */
-      margin-bottom: 0.2rem;
-      display: block; /* 블록 요소로 만들어 줄바꿈 */
+      display: inline; /* 라벨 옆에 오도록 인라인으로 변경 */
     }
     .music-item .title-link:hover {
         text-decoration: underline; /* 호버 시 밑줄 */
     }
-
 
     .music-item .artist-name { /* 아티스트 이름 스타일 */
       font-size: 1.1rem; /* 약간 더 크게 */
@@ -168,6 +169,7 @@
             width: 30px;
             margin-right: 10px;
         }
+        .music-item .title-label,
         .music-item .title-link {
             font-size: 1.2rem;
         }
@@ -218,11 +220,13 @@
         {% if recommendations %}
           {% for song in recommendations %}
             <div class="music-item">
-              <div class="rank-number">{{ loop.index }}.</div> <!-- 랭크 번호로 대체 -->
-              <!-- 기존 앨범 커버 이미지 태그 제거 -->
+              <div class="rank-number">{{ loop.index }}.</div> <!-- 랭크 번호 -->
               <div class="details">
                 <!-- 노래 제목 (가장 크게 굵은 글씨, URI 링크) -->
-                <a href="{{ song.uri }}" target="_blank" class="title-link">{{ song.title }}</a>
+                <div class="flex items-baseline mb-1">
+                    <span class="title-label">제목:</span>
+                    <a href="{{ song.uri }}" target="_blank" class="title-link">{{ song.title }}</a>
+                </div>
                 <!-- 아티스트 -->
                 <p class="artist-name">아티스트: {{ song.artist }}</p>
                 <!-- 장르 (존재할 경우) -->
