@@ -4,21 +4,19 @@ import os
 import logging
 import traceback
 import sys
-import threading # 모델 로딩을 위한 스레딩 모듈 추가
-import time # 시간 측정을 위한 time 모듈 추가
+import threading
+import time
+import json
 
-# Flask 앱 인스턴스 생성 시 static_folder와 template_folder를 명시적으로 설정
 app = Flask(__name__,
             static_folder=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static'),
             template_folder=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates'))
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB 제한 설정
 
-# 로깅 설정
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 logging.debug("Music Genre App 초기화 시작.")
 
-# --- 음악 장르 분류 기능 관련 모델 및 도구 로드 (지연 로딩을 위해 전역 변수로 선언) ---
-MODEL_DIR = os.path.dirname(os.path.abspath(__file__)) # 현재 app.py가 있는 디렉토리
+MODEL_DIR = os.path.dirname(os.path.abspath(__file__))
 
 interpreter = None
 input_details = None
@@ -26,30 +24,23 @@ output_details = None
 scaler = None
 genre_labels = None
 train_cols = None
-model_loaded = False # 모델 로딩 완료 여부를 추적하는 플래그
+model_loaded = False
 
 def _load_genre_classification_models():
-    """
-    음악 장르 분류 모델과 관련 도구들을 지연 로드하는 내부 함수.
-    이 함수가 호출될 때 관련 라이브러리(tensorflow, librosa, pandas, numpy, pickle, json, pydub)를 임포트합니다.
-    """
     global interpreter, input_details, output_details, scaler, genre_labels, train_cols, model_loaded
     
-    if model_loaded: # 이미 로드되었다면 다시 로드하지 않음
+    if model_loaded:
         logging.debug("모델 및 도구가 이미 로드되어 있습니다. 다시 로드하지 않습니다.")
         return
 
     logging.info("음악 장르 분류 모델 및 도구 지연 로드 시작.")
     try:
-        # 필요한 라이브러리들을 함수 내부에서 임포트
         import tensorflow.lite as tflite
         import librosa
         import pandas as pd
         import numpy as np
         import pickle
-        import json
         
-        # 모델 파일 경로를 MODEL_DIR (music_genre_app 디렉토리) 바로 아래로 설정
         tflite_model_path = os.path.join(MODEL_DIR, 'quantized_model.tflite')
         scaler_path = os.path.join(MODEL_DIR, 'scaler.pkl')
         genre_labels_path = os.path.join(MODEL_DIR, 'genre_labels.json')
@@ -77,18 +68,27 @@ def _load_genre_classification_models():
             train_cols = json.load(f)
         logging.debug("피처 컬럼 로드 완료.")
 
-        model_loaded = True # 모델 로딩 성공 플래그 설정
+        model_loaded = True
         logging.info("음악 장르 분류 TFLite 모델 및 도구 로드 성공.")
     except Exception as e:
         logging.error(f"음악 장르 분류 모델 로드 중 오류 발생: {e}")
         logging.error(traceback.format_exc())
-        # 모델 로드 실패 시 앱이 정상적으로 시작되지 않도록 sys.exit(1) 유지
         sys.exit(1) 
 
-# 앱 시작 시 모델을 한 번만 로드하도록 설정
-# Render 환경에서는 이 부분이 앱 시작 시 실행됩니다.
 with app.app_context():
     _load_genre_classification_models()
+
+try:
+    from pydub import AudioSegment
+    if AudioSegment.converter:
+        logging.info(f"pydub (ffmpeg) is available and converter path is: {AudioSegment.converter}")
+    else:
+        logging.warning("pydub is loaded, but ffmpeg converter path is not set. MP3 conversion might fail.")
+except ImportError:
+    logging.error("pydub module not found. MP3 conversion will not work.")
+except Exception as e:
+    logging.error(f"Error checking pydub/ffmpeg availability: {e}")
+    logging.error(traceback.format_exc())
 
 
 def extract_features_from_audio(file_path):
@@ -99,16 +99,21 @@ def extract_features_from_audio(file_path):
     try:
         logging.debug(f"오디오 파일 로드 시도: {file_path}")
         start_time = time.time()
-        y, sr = librosa.load(file_path, sr=44100)
+        # 샘플링 레이트 조정: 44100 -> 22050 (처리량 감소)
+        y, sr = librosa.load(file_path, sr=22050) 
         end_time = time.time()
         logging.info(f"Audio loaded: duration={len(y)/sr:.2f} seconds, sr={sr}. Load time: {end_time - start_time:.2f}s")
+
+        # 오디오 길이 제한 추가: 30초 대신 15초로 제한
+        max_duration_seconds = 15 
+        if len(y) / sr > max_duration_seconds:
+            raise ValueError(f"오디오 파일 길이가 너무 깁니다. 최대 {max_duration_seconds}초까지 지원됩니다.")
 
         if np.isnan(y).any():
             raise ValueError("오디오 신호가 유효하지 않습니다. NaN 값이 포함되어 있습니다.")
         
         features = {}
 
-        # 각 특징 추출 단계에 시간 측정 및 로깅 추가
         start_feature_time = time.time()
         logging.debug("크로마 STFT 특징 추출 시작...")
         chroma_stft = librosa.feature.chroma_stft(y=y, sr=sr)
@@ -188,7 +193,7 @@ def extract_features_from_audio(file_path):
     except Exception as e:
         logging.error(f"오디오 특징 추출 중 오류 발생: {e}")
         logging.error(traceback.format_exc())
-        raise # 특징 추출 실패 시 예외를 다시 발생시킴
+        raise
 
 @app.route('/')
 def index():
@@ -198,12 +203,11 @@ def index():
 def health_check():
     """Render 헬스 체크를 위한 엔드포인트."""
     logging.debug("Health check 요청 수신.")
-    # 모델 로딩 상태를 헬스 체크에 포함
     if model_loaded:
         return "OK", 200
     else:
         logging.warning("Health check: 모델이 아직 로드되지 않았습니다.")
-        return "Model not loaded", 503 # Service Unavailable
+        return "Model not loaded", 503
 
 @app.route('/predict', methods=['POST'])
 def predict_genre_endpoint():
@@ -221,7 +225,7 @@ def predict_genre_endpoint():
     audio_file = request.files['audio']
 
     filename = audio_file.filename.lower()
-    temp_input_name = 'temp_input_' + str(os.getpid()) + '_' + str(threading.get_ident()) # 스레드 ID 추가
+    temp_input_name = 'temp_input_' + str(os.getpid()) + '_' + str(threading.get_ident())
     temp_wav_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), temp_input_name + '.wav')
 
     try:
@@ -250,7 +254,7 @@ def predict_genre_endpoint():
                 return jsonify({'error': f'오디오 변환 중 오류 발생: {str(e)}'}), 500
             finally:
                 if os.path.exists(temp_mp3_path):
-                    os.remove(temp_mp3_path) # 변환 후 MP3 원본 삭제
+                    os.remove(temp_mp3_path)
                     logging.info(f"임시 MP3 파일 삭제: {temp_mp3_path}")
 
         elif filename.endswith('.wav'):
@@ -263,7 +267,7 @@ def predict_genre_endpoint():
 
         logging.debug("오디오 특징 추출 시작...")
         features_extraction_start_time = time.time()
-        features_df = extract_features_from_audio(temp_wav_path) # DataFrame으로 반환됨
+        features_df = extract_features_from_audio(temp_wav_path)
         logging.debug(f"오디오 특징 추출 완료. ({time.time() - features_extraction_start_time:.2f}s)")
 
         logging.debug("피처 데이터프레임 전처리 시작...")
@@ -273,33 +277,28 @@ def predict_genre_endpoint():
             if col in features_df.columns:
                 processed_features[col] = features_df[col]
             else:
-                processed_features[col] = 0.0 # 없는 컬럼은 0으로 채움
+                processed_features[col] = 0.0
         
-        # 모든 컬럼이 숫자형인지 확인하고, 필요한 경우 변환
         for col in processed_features.columns:
             if processed_features[col].dtype == object:
                 try:
                     processed_features[col] = pd.to_numeric(processed_features[col], errors='coerce')
-                    # 변환 후에도 NaN이 남아있으면 0.0으로 채움
                     processed_features[col] = processed_features[col].fillna(0.0)
                     logging.info(f"'{col}' 컬럼을 숫자 타입으로 변환했습니다.")
                 except Exception as e:
                     logging.error(f"'{col}' 컬럼을 숫자 타입으로 변환하는 데 실패했습니다: {e}. 기본값으로 설정합니다.")
-                    processed_features[col] = 0.0 # 변환 실패 시 기본값 설정
+                    processed_features[col] = 0.0
         logging.debug(f"피처 데이터프레임 전처리 완료. ({time.time() - preprocessing_start_time:.2f}s)")
 
-        # 스케일링 전 데이터 로깅
         logging.debug(f"스케일링 전 피처 (processed_features):\n{processed_features.head()}")
         logging.debug(f"스케일링 전 피처 데이터 타입:\n{processed_features.dtypes}")
         
-        # 스케일링
         logging.debug("피처 스케일링 시작...")
         scaling_start_time = time.time()
         features_scaled = scaler.transform(processed_features)
         logging.debug(f"피처 스케일링 완료. ({time.time() - scaling_start_time:.2f}s)")
         logging.debug(f"스케일링 후 피처 (features_scaled):\n{features_scaled}")
 
-        # TFLite 모델 예측
         logging.debug("TFLite 모델 예측 시작...")
         inference_start_time = time.time()
         interpreter.set_tensor(input_details[0]['index'], features_scaled.astype(input_details[0]['dtype']))
@@ -311,11 +310,10 @@ def predict_genre_endpoint():
 
         label_idx = np.argmax(preds)
         label = genre_labels[label_idx]
-        probability = float(preds[0][label_idx]) * 100 # 확률 계산
+        probability = float(preds[0][label_idx]) * 100
 
         logging.info(f"예측된 장르: {label}, 확률: {probability:.2f}%")
         
-        # JSON 응답으로 변경
         return jsonify({'label': label, 'probability': f"{probability:.2f}"}), 200
 
     except Exception as e:
@@ -323,18 +321,15 @@ def predict_genre_endpoint():
         logging.error(traceback.format_exc())
         return jsonify({'error': f'장르 예측 중 오류 발생: {str(e)}'}), 500
     finally:
-        # 임시 파일 정리
         if os.path.exists(temp_wav_path):
             os.remove(temp_wav_path)
             logging.info(f"임시 WAV 파일 삭제: {temp_wav_path}")
-        # MP3 변환 시 생성될 수 있는 임시 MP3 파일도 확실히 삭제
         temp_mp3_path_check = os.path.join(os.path.dirname(os.path.abspath(__file__)), temp_input_name + '.mp3')
         if os.path.exists(temp_mp3_path_check):
             os.remove(temp_mp3_path_check)
             logging.info(f"임시 MP3 파일 삭제: {temp_mp3_path_check}")
 
 
-# 장르별 상세 정보를 담은 딕셔너리
 GENRE_DETAILS = {
     "blues": {
         "title": "블루스 (Blues)",
@@ -393,19 +388,16 @@ GENRE_DETAILS = {
     "rock": {
         "title": "록 (Rock)",
         "origin": "1950년대 미국에서 로큰롤에서 파생된 장르입니다.",
-        "features": "강렬한 기타 리프, 드럼 비트, 보컬이 특징이며, 다양한 하위 장르를 가집니다. 반항적이고 자유로운 정신을 표현합니다.",
-        "bpm_range": "BPM은 대개 100-180 사이입니다."
+        "features": "강렬한 기타 리프, 드럼 비트, 보컬이 특징이며, 다양한 하위 장르를 가집니다. 반항적이고 자유로운 정신을 표현합니다.<br />- BPM 범위: 대개 100-180 사이입니다."
     }
 }
 
 @app.route('/result')
 def show_genre_result():
     """장르 분석 결과 페이지 렌더링."""
-    genre_key = request.args.get('genre', '기타').lower() # 소문자로 변환하여 키로 사용
+    genre_key = request.args.get('genre', '기타').lower()
     probability = request.args.get('probability', '0%')
 
-    # GENRE_DETAILS 딕셔너리에서 해당 장르 정보 가져오기
-    # 키가 없는 경우 '기타' 장르 정보 사용
     genre_info = GENRE_DETAILS.get(genre_key, {
         "title": "기타 (Other)",
         "origin": "이 음악은 특정 장르로 분류하기 어렵거나, 새로운 장르일 수 있습니다.",
@@ -414,8 +406,8 @@ def show_genre_result():
     })
 
     return render_template('genre_result_page.html', 
-                           genre=genre_key, # 실제 장르 키 (예: 'jazz')
-                           genre_display_name=genre_info["title"], # 표시될 장르 이름 (예: '재즈 (Jazz)')
+                           genre=genre_key,
+                           genre_display_name=genre_info["title"],
                            probability=probability,
                            genre_origin=genre_info["origin"],
                            genre_features=genre_info["features"],
