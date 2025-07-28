@@ -244,8 +244,8 @@
             <img src="{{ url_for('static', filename='music_genre_classification.png') }}" alt="음악 장르 분류 이미지" style="width: 100%; max-width: 300px; border-radius: 15px; margin-bottom: 1rem;" onerror="this.src='https://placehold.co/300x200/cccccc/000000?text=Genre+Image'; this.alt='음악 장르 분류 이미지 (없음)';">
             <h2>음악 파일을 업로드하세요</h2>
             <form id="upload-form">
-                <!-- accept 속성을 .mp3,.wav로 다시 변경 -->
-                <input type="file" name="audio" accept=".mp3,.wav" required />
+                <!-- accept 속성을 .wav로만 변경 -->
+                <input type="file" name="audio" accept=".wav" required />
                 <button type="submit" class="predict-button">예측 시작</button>
             </form>
 
@@ -258,8 +258,8 @@
         <div id="error-message-display"></div>
         <!-- 파일 형식 안내 메시지 추가 -->
         <div id="file-format-info">
-            <p><strong>참고:</strong> 이 서비스는 <strong>MP3 또는 WAV 파일</strong>을 지원합니다.</p>
-            <p>또한, 원활한 분석을 위해 <strong>짧은 길이의 음악 파일</strong>을 권장합니다.</p>
+            <p><strong>참고:</strong> 이 서비스는 <strong>WAV 파일만 지원</strong>합니다.</p>
+            <p>업로드하신 WAV 파일은 분석을 위해 **자동으로 앞부분 10초로 잘라내어** 사용됩니다.</p>
         </div>
     </main>
 
@@ -297,6 +297,14 @@
             hideError(); // 새 파일 선택 시 오류 메시지 숨김
             if (this.files.length > 0) {
                 const file = this.files[0];
+                // WAV 파일만 허용하도록 클라이언트 측 유효성 검사 추가
+                if (!file.name.toLowerCase().endsWith('.wav')) {
+                    displayError("WAV 파일만 업로드할 수 있습니다. 다른 형식의 파일은 지원되지 않습니다.");
+                    this.value = ''; // 파일 선택 취소
+                    audioPreview.src = '';
+                    audioPreviewSection.style.display = 'none';
+                    return;
+                }
                 const fileURL = URL.createObjectURL(file);
                 audioPreview.src = fileURL;
                 audioPreviewSection.style.display = 'block';
@@ -314,6 +322,11 @@
 
             if (!audioFileInput.files || audioFileInput.files.length === 0) {
                 displayError("음악 파일을 선택해주세요.");
+                return;
+            }
+            // 클라이언트 측에서 WAV 파일 유효성 검사 다시 확인 (submit 버튼 클릭 시)
+            if (!audioFileInput.files[0].name.toLowerCase().endsWith('.wav')) {
+                displayError("WAV 파일만 업로드할 수 있습니다. 다른 형식의 파일은 지원되지 않습니다.");
                 return;
             }
 
@@ -353,7 +366,7 @@
                 clearTimeout(timeoutId);
                 console.error('장르 분류 요청 중 오류 발생:', error);
                 if (error.name === 'AbortError') {
-                    displayError('요청 시간 초과: 서버가 너무 오래 응답하지 않습니다. 짧은 음악 파일을 시도하거나 잠시 후 다시 시도해주세요.');
+                    displayError('요청 시간 초과: 서버가 너무 오래 응답하지 않습니다. 짧은 WAV 파일을 시도하거나 잠시 후 다시 시도해주세요.');
                 } else {
                     displayError(error.message);
                 }
