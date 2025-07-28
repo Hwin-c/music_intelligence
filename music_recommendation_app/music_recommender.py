@@ -1,3 +1,4 @@
+# music_recommender.py
 import requests
 import random
 import os
@@ -80,20 +81,54 @@ class MockMusicRecommender(object): # MockMusicRecommender는 MusicRecommender�
         self.getsongbpm_api_key = getsongbpm_api_key # 사용되지 않지만 일관성을 위해 유지
         logging.info("--- Mock Music Recommender initialized (using mock data only) ---")
 
-    def recommend_music(self, user_text: str):
+    def _calculate_relevance_score(self, song_data: dict, target_features: dict) -> float:
         """
-        사용자 텍스트를 기반으로 Mock 음악을 추천합니다.
+        노래의 오디오 특성이 목표 범위에 얼마나 잘 부합하는지 점수를 계산합니다.
+        각 특성(BPM, Danceability, Acousticness)은 0~1점 사이의 기여도를 가집니다.
+        총 점수는 각 특성 점수의 합계입니다.
         """
-        logging.info(f"Mocking music recommendation for user text: '{user_text}'")
-        
-        # 감정 분석 (Mock 또는 실제)
-        sentiment_result = self.sentiment_analyzer.analyze_sentiment(user_text)
-        user_emotion = sentiment_result["label"]
-        
-        # 오디오 특성 범위 매핑 (Mock 또는 실제)
-        target_audio_features = self.bpm_mapper.get_audio_feature_ranges(user_emotion)
+        score = 0.0
+        weights = {
+            "bpm": 1.0,
+            "danceability": 1.0,
+            "acousticness": 1.0,
+        }
 
-        # Mock 데이터
+        # 특성별 점수 계산 도우미 함수
+        def calculate_feature_score(song_value, min_target, max_target):
+            if song_value is None:
+                return 0.0
+            try:
+                # getsong.co API에서 0-100 범위로 반환될 것으로 가정
+                song_value = int(song_value) 
+                if min_target <= song_value <= max_target:
+                    center_target = (min_target + max_target) / 2
+                    range_half = (max_target - min_target) / 2
+                    if range_half > 0:
+                        return (1 - abs(song_value - center_target) / range_half) * 0.5 + 0.5
+                    else:
+                        return 1.0 if song_value == min_target else 0.0
+                return 0.0
+            except ValueError:
+                return 0.0
+
+        score += calculate_feature_score(song_data.get("bpm"), *target_features["bpm"]) * weights["bpm"]
+        score += calculate_feature_score(song_data.get("danceability"), *target_features["danceability"]) * weights["danceability"]
+        score += calculate_feature_score(song_data.get("acousticness"), *target_features["acousticness"])
+        
+        return score
+
+    def get_ranked_songs_by_audio_features(self, emotion_label: str, limit: int = 3):
+        """
+        사용자의 감정에 따라 오디오 특성 기반으로 노래를 검색하고 랭킹을 매겨 반환합니다.
+        Mock 데이터만 사용합니다.
+        """
+        logging.info(f"Mock API call: Simulating search and ranking for songs with audio features for '{emotion_label}' emotion with limit {limit}...")
+        time.sleep(1)
+        
+        target_audio_features = self.bpm_mapper.get_audio_feature_ranges(emotion_label)
+
+        # Mock 데이터 (energy와 liveness 제거)
         mock_songs_data = [
             {"title": "Dancing Monkey (Mock)", "artist": "Tones And I (Mock)", "bpm": 98, "uri": "#", "genres": ["Pop", "Indie"], "danceability": 80, "acousticness": 10},
             {"title": "Shape of You (Mock)", "artist": "Ed Sheeran (Mock)", "bpm": 96, "uri": "#", "genres": ["Pop", "R&B"], "danceability": 85, "acousticness": 5},
@@ -155,12 +190,7 @@ class MockMusicRecommender(object): # MockMusicRecommender는 MusicRecommender�
         unique_mock_songs.sort(key=lambda x: x.get("relevance_score", 0), reverse=True)
         recommended_songs = unique_mock_songs[:3] # Mock에서는 항상 3개만 반환
 
-        return {
-            "user_emotion": user_emotion,
-            "target_audio_features": target_audio_features,
-            "recommendations": recommended_songs
-        }
-
+        return recommended_songs # MockMusicRecommender의 recommend_music은 이 값을 바로 반환
 
 class MusicRecommender:
     """
@@ -224,8 +254,8 @@ class MusicRecommender:
         점수 계산 로직:
         1. 특성 값이 목표 범위 내에 있으면 기본 점수 (0.5점) 부여.
         2. 특성 값이 목표 범위의 중앙값에 가까울수록 추가 점수 (최대 0.5점) 부여.
-           - 범위 중앙과의 거리가 멀수록 점수 감소.
-           - 범위가 0인 경우 (min=max)는 값이 일치하면 1.0점, 아니면 0점.
+            - 범위 중앙과의 거리가 멀수록 점수 감소.
+            - 범위가 0인 경우 (min=max)는 값이 일치하면 1.0점, 아니면 0점.
         3. 각 특성 점수의 합이 최종 점수.
         """
         score = 0.0
@@ -242,7 +272,13 @@ class MusicRecommender:
         min_bpm, max_bpm = target_features["bpm"]
         if song_bpm is not None:
             try:
-                song_bpm = int(song_bpm)
+                # getsong.co API에서 0-1 범위로 반환될 경우 0-100으로 변환
+                # 이미 0-100 범위로 제공된다면 int(song_bpm)만 사용
+                if isinstance(song_bpm, float) and (song_bpm >= 0 and song_bpm <= 1):
+                    song_bpm = int(song_bpm * 100)
+                else:
+                    song_bpm = int(song_bpm)
+
                 if min_bpm <= song_bpm <= max_bpm:
                     center_bpm = (min_bpm + max_bpm) / 2
                     range_half = (max_bpm - min_bpm) / 2
@@ -259,7 +295,11 @@ class MusicRecommender:
         min_dance, max_dance = target_features["danceability"]
         if song_danceability is not None:
             try:
-                song_danceability = int(song_danceability)
+                if isinstance(song_danceability, float) and (song_danceability >= 0 and song_danceability <= 1):
+                    song_danceability = int(song_danceability * 100)
+                else:
+                    song_danceability = int(song_danceability)
+
                 if min_dance <= song_danceability <= max_dance:
                     center_dance = (min_dance + max_dance) / 2
                     range_half = (max_dance - min_dance) / 2
@@ -276,7 +316,11 @@ class MusicRecommender:
         min_acoustic, max_acoustic = target_features["acousticness"]
         if song_acousticness is not None:
             try:
-                song_acousticness = int(song_acousticness)
+                if isinstance(song_acousticness, float) and (song_acousticness >= 0 and song_acousticness <= 1):
+                    song_acousticness = int(song_acousticness * 100)
+                else:
+                    song_acousticness = int(song_acousticness)
+
                 if min_acoustic <= song_acousticness <= max_acoustic:
                     center_acoustic = (min_acoustic + max_acoustic) / 2
                     range_half = (max_acoustic - min_acoustic) / 2
@@ -347,7 +391,8 @@ class MusicRecommender:
             api_response = self._call_getsongbpm_api("search/", params, delay_seconds=1.5)
             calls_made += 1
 
-            if api_response and api_response.get("search"): 
+            # API 응답이 유효하고 'search' 키가 존재하며, 그 값이 리스트인지 확인
+            if api_response and isinstance(api_response.get("search"), list): 
                 for song_data in api_response["search"]: 
                     song_title = song_data.get("title", "Unknown Title")
                     song_uri = song_data.get("uri", "#") 
@@ -399,9 +444,22 @@ class MusicRecommender:
 
                     if song_bpm is not None and song_danceability is not None and song_acousticness is not None:
                         try:
-                            song_bpm = int(song_bpm)
-                            song_danceability = int(song_danceability)
-                            song_acousticness = int(song_acousticness)
+                            # getsong.co API에서 0-1 범위로 반환될 경우 0-100으로 변환
+                            # 이미 0-100 범위로 제공된다면 int()만 사용
+                            if isinstance(song_bpm, float) and (song_bpm >= 0 and song_bpm <= 1):
+                                song_bpm = int(song_bpm * 100)
+                            else:
+                                song_bpm = int(song_bpm)
+
+                            if isinstance(song_danceability, float) and (song_danceability >= 0 and song_danceability <= 1):
+                                song_danceability = int(song_danceability * 100)
+                            else:
+                                song_danceability = int(song_danceability)
+
+                            if isinstance(song_acousticness, float) and (song_acousticness >= 0 and song_acousticness <= 1):
+                                song_acousticness = int(song_acousticness * 100)
+                            else:
+                                song_acousticness = int(song_acousticness)
 
                             relevance_score = self._calculate_relevance_score(
                                 {"tempo": song_bpm, "danceability": song_danceability, "acousticness": song_acousticness},
@@ -424,6 +482,11 @@ class MusicRecommender:
                             logging.warning(f"Invalid numeric value for audio feature in song {song_title}. Skipping.")
                     else:
                         logging.debug(f"Missing or invalid audio features for song {song_title}. Skipping for ranking.")
+            # 'search' 키가 리스트가 아닌 경우 (예: {"error": "no result"})
+            elif api_response and isinstance(api_response.get("search"), dict) and api_response["search"].get("error"):
+                logging.warning(f"API response for query '{query}' returned an error: {api_response['search']['error']}. Skipping this query.")
+            else:
+                logging.warning(f"API response for query '{query}' did not contain a valid list of songs under 'search' key. Response: {api_response}. Skipping this query.")
             
             if len(candidate_songs) >= limit * 5:
                 break
@@ -472,7 +535,7 @@ if __name__ == "__main__":
         logging.info("GETSONGBPM_API_KEY is set. Proceeding with actual API calls.")
         recommender = MusicRecommender(getsongbpm_api_key)
 
-    logging.info("\n==== Music Recommendation System Demo Start === indecent")
+    logging.info("\n==== Music Recommendation System Demo Start ====")
 
     test_inputs = [
         "오늘은 정말 기분이 좋고 신나!",
