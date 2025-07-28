@@ -99,15 +99,15 @@ def extract_features_from_audio(file_path):
     try:
         logging.debug(f"오디오 파일 로드 시도: {file_path}")
         start_time = time.time()
-        # 샘플링 레이트 조정: 44100 -> 22050 (처리량 감소)
-        y, sr = librosa.load(file_path, sr=22050) 
+        # 샘플링 레이트 원복: 22050 -> 44100
+        y, sr = librosa.load(file_path, sr=44100) 
         end_time = time.time()
         logging.info(f"Audio loaded: duration={len(y)/sr:.2f} seconds, sr={sr}. Load time: {end_time - start_time:.2f}s")
 
-        # 오디오 길이 제한 추가: 30초 대신 15초로 제한
-        max_duration_seconds = 15 
-        if len(y) / sr > max_duration_seconds:
-            raise ValueError(f"오디오 파일 길이가 너무 깁니다. 최대 {max_duration_seconds}초까지 지원됩니다.")
+        # 오디오 길이 제한 로직 제거 (이전 동작 방식 유지)
+        # max_duration_seconds = 15 
+        # if len(y) / sr > max_duration_seconds:
+        #     raise ValueError(f"오디오 파일 길이가 너무 깁니다. 최대 {max_duration_seconds}초까지 지원됩니다.")
 
         if np.isnan(y).any():
             raise ValueError("오디오 신호가 유효하지 않습니다. NaN 값이 포함되어 있습니다.")
@@ -388,7 +388,8 @@ GENRE_DETAILS = {
     "rock": {
         "title": "록 (Rock)",
         "origin": "1950년대 미국에서 로큰롤에서 파생된 장르입니다.",
-        "features": "강렬한 기타 리프, 드럼 비트, 보컬이 특징이며, 다양한 하위 장르를 가집니다. 반항적이고 자유로운 정신을 표현합니다.<br />- BPM 범위: 대개 100-180 사이입니다."
+        "features": "강렬한 기타 리프, 드럼 비트, 보컬이 특징이며, 다양한 하위 장르를 가집니다. 반항적이고 자유로운 정신을 표현합니다.",
+        "bpm_range": "BPM은 대개 100-180 사이입니다."
     }
 }
 
