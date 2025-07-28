@@ -40,14 +40,13 @@
             text-align: center;
         }
 
-        /* 새로 추가된 메인 제목 스타일 */
         .main-heading {
-            font-size: 3rem; /* 더 큰 글씨 크기 */
+            font-size: 3rem;
             font-weight: bold;
-            color: #333; /* 어두운 색상으로 대비 */
-            margin-bottom: 2rem; /* 제목 아래 여백 */
-            text-align: center; /* 가운데 정렬 */
-            text-shadow: 0 2px 4px rgba(0,0,0,0.2); /* 은은한 그림자 */
+            color: #333;
+            margin-bottom: 2rem;
+            text-align: center;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
 
         .upload-box {
@@ -147,17 +146,31 @@
 
         /* 오류 메시지 스타일 */
         #error-message-display {
-            color: #d9534f; /* 붉은색 */
-            background-color: #f2dede; /* 연한 붉은색 배경 */
+            color: #d9534f;
+            background-color: #f2dede;
             border: 1px solid #ebccd1;
             padding: 1rem;
             margin-top: 1.5rem;
             border-radius: 8px;
             font-weight: bold;
-            display: none; /* 기본적으로 숨김 */
+            display: none;
             width: 90%;
             max-width: 500px;
             text-align: center;
+        }
+
+        /* 파일 형식 안내 메시지 스타일 */
+        #file-format-info {
+            color: #007bff; /* 파란색 */
+            background-color: #e7f3ff; /* 연한 파란색 배경 */
+            border: 1px solid #cce5ff;
+            padding: 0.8rem;
+            margin-top: 1rem;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            text-align: center;
+            width: 90%;
+            max-width: 500px;
         }
 
 
@@ -165,7 +178,6 @@
             main {
                 padding: 1rem;
             }
-            /* 미디어 쿼리 내에서 메인 제목 스타일 조정 */
             .main-heading {
                 font-size: 2rem;
                 margin-bottom: 1.5rem;
@@ -192,6 +204,10 @@
             #error-message-display {
                 padding: 0.8rem;
                 font-size: 0.9rem;
+            }
+            #file-format-info {
+                padding: 0.6rem;
+                font-size: 0.85rem;
             }
         }
         footer {
@@ -228,7 +244,8 @@
             <img src="{{ url_for('static', filename='music_genre_classification.png') }}" alt="음악 장르 분류 이미지" style="width: 100%; max-width: 300px; border-radius: 15px; margin-bottom: 1rem;" onerror="this.src='https://placehold.co/300x200/cccccc/000000?text=Genre+Image'; this.alt='음악 장르 분류 이미지 (없음)';">
             <h2>음악 파일을 업로드하세요</h2>
             <form id="upload-form">
-                <input type="file" name="audio" accept=".mp3,.wav" required />
+                <!-- accept 속성을 .wav로만 변경 -->
+                <input type="file" name="audio" accept=".wav" required />
                 <button type="submit" class="predict-button">예측 시작</button>
             </form>
 
@@ -239,6 +256,11 @@
         </div>
         <!-- 오류 메시지를 표시할 영역 추가 -->
         <div id="error-message-display"></div>
+        <!-- 파일 형식 안내 메시지 추가 -->
+        <div id="file-format-info">
+            <p><strong>참고:</strong> 이 서비스는 <strong>WAV 파일만 지원</strong>합니다. MP3 파일은 업로드할 수 없습니다.</p>
+            <p>또한, 원활한 분석을 위해 <strong>짧은 길이의 WAV 파일</strong>을 권장합니다.</p>
+        </div>
     </main>
 
     <div id="loading-overlay">
@@ -257,6 +279,7 @@
         const audioPreviewSection = document.querySelector('.audio-player-section');
         const audioPreview = document.getElementById('audio-preview');
         const errorMessageDisplay = document.getElementById('error-message-display');
+        const fileFormatInfo = document.getElementById('file-format-info'); // 새로 추가된 요소
 
         // 오류 메시지 표시 함수
         function displayError(message) {
@@ -274,6 +297,14 @@
             hideError(); // 새 파일 선택 시 오류 메시지 숨김
             if (this.files.length > 0) {
                 const file = this.files[0];
+                // WAV 파일만 허용하도록 클라이언트 측 유효성 검사 추가
+                if (!file.name.toLowerCase().endsWith('.wav')) {
+                    displayError("WAV 파일만 업로드할 수 있습니다. 다른 형식의 파일은 지원되지 않습니다.");
+                    this.value = ''; // 파일 선택 취소
+                    audioPreview.src = '';
+                    audioPreviewSection.style.display = 'none';
+                    return;
+                }
                 const fileURL = URL.createObjectURL(file);
                 audioPreview.src = fileURL;
                 audioPreviewSection.style.display = 'block';
@@ -289,25 +320,30 @@
 
             const formData = new FormData(uploadForm);
 
-            // 파일이 선택되었는지 다시 확인
             if (!audioFileInput.files || audioFileInput.files.length === 0) {
                 displayError("음악 파일을 선택해주세요.");
+                return;
+            }
+            // 클라이언트 측에서 WAV 파일 유효성 검사 다시 확인 (submit 버튼 클릭 시)
+            if (!audioFileInput.files[0].name.toLowerCase().endsWith('.wav')) {
+                displayError("WAV 파일만 업로드할 수 있습니다. 다른 형식의 파일은 지원되지 않습니다.");
                 return;
             }
 
             loadingOverlay.style.display = 'flex';
 
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 120000); // 120초 (2분) 타임아웃
+            // 클라이언트 측 타임아웃을 90초로 유지 (서버 응답이 느릴 경우)
+            const timeoutId = setTimeout(() => controller.abort(), 90000); 
 
             try {
                 const response = await fetch('/predict', {
                     method: 'POST',
                     body: formData,
-                    signal: controller.signal // AbortController의 signal을 fetch 요청에 연결
+                    signal: controller.signal
                 });
 
-                clearTimeout(timeoutId); // 요청 성공 또는 실패 시 타임아웃 해제
+                clearTimeout(timeoutId);
 
                 if (!response.ok) {
                     const errorText = await response.text();
@@ -327,10 +363,10 @@
                 window.location.href = `/result?genre=${encodeURIComponent(genre)}&probability=${encodeURIComponent(data.probability)}`;
 
             } catch (error) {
-                clearTimeout(timeoutId); // 오류 발생 시에도 타임아웃 해제
+                clearTimeout(timeoutId);
                 console.error('장르 분류 요청 중 오류 발생:', error);
                 if (error.name === 'AbortError') {
-                    displayError('요청 시간 초과: 서버가 너무 오래 응답하지 않습니다. 더 짧은 음악 파일을 시도하거나 잠시 후 다시 시도해주세요.');
+                    displayError('요청 시간 초과: 서버가 너무 오래 응답하지 않습니다. 짧은 WAV 파일을 시도하거나 잠시 후 다시 시도해주세요.');
                 } else {
                     displayError(error.message);
                 }
@@ -339,7 +375,6 @@
             }
         });
 
-        // 이미지 로드 오류 처리 (기존 코드 유지)
         document.querySelector('.logo-image').onerror = function() {
             this.src = 'https://placehold.co/50x50/cccccc/000000?text=Logo';
             this.alt = '로고 (이미지 없음)';

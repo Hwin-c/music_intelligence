@@ -78,17 +78,18 @@ def _load_genre_classification_models():
 with app.app_context():
     _load_genre_classification_models()
 
-try:
-    from pydub import AudioSegment
-    if AudioSegment.converter:
-        logging.info(f"pydub (ffmpeg) is available and converter path is: {AudioSegment.converter}")
-    else:
-        logging.warning("pydub is loaded, but ffmpeg converter path is not set. MP3 conversion might fail.")
-except ImportError:
-    logging.error("pydub module not found. MP3 conversion will not work.")
-except Exception as e:
-    logging.error(f"Error checking pydub/ffmpeg availability: {e}")
-    logging.error(traceback.format_exc())
+# pydub 및 ffmpeg 가용성 확인 로깅 제거 (더 이상 사용하지 않으므로)
+# try:
+#     from pydub import AudioSegment
+#     if AudioSegment.converter:
+#         logging.info(f"pydub (ffmpeg) is available and converter path is: {AudioSegment.converter}")
+#     else:
+#         logging.warning("pydub is loaded, but ffmpeg converter path is not set. MP3 conversion might fail.")
+# except ImportError:
+#     logging.error("pydub module not found. MP3 conversion will not work.")
+# except Exception as e:
+#     logging.error(f"Error checking pydub/ffmpeg availability: {e}")
+#     logging.error(traceback.format_exc())
 
 
 def extract_features_from_audio(file_path):
@@ -99,15 +100,9 @@ def extract_features_from_audio(file_path):
     try:
         logging.debug(f"오디오 파일 로드 시도: {file_path}")
         start_time = time.time()
-        # 샘플링 레이트 원복: 22050 -> 44100
         y, sr = librosa.load(file_path, sr=44100) 
         end_time = time.time()
         logging.info(f"Audio loaded: duration={len(y)/sr:.2f} seconds, sr={sr}. Load time: {end_time - start_time:.2f}s")
-
-        # 오디오 길이 제한 로직 제거 (이전 동작 방식 유지)
-        # max_duration_seconds = 15 
-        # if len(y) / sr > max_duration_seconds:
-        #     raise ValueError(f"오디오 파일 길이가 너무 깁니다. 최대 {max_duration_seconds}초까지 지원됩니다.")
 
         if np.isnan(y).any():
             raise ValueError("오디오 신호가 유효하지 않습니다. NaN 값이 포함되어 있습니다.")
@@ -229,7 +224,8 @@ def predict_genre_endpoint():
     temp_wav_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), temp_input_name + '.wav')
 
     try:
-        from pydub import AudioSegment
+        # pydub 임포트 및 관련 로직 제거
+        # from pydub import AudioSegment 
         import sklearn.preprocessing
         import pandas as pd
         import numpy as np
@@ -237,33 +233,14 @@ def predict_genre_endpoint():
         logging.debug(f"업로드된 파일: {filename}")
         file_processing_start_time = time.time()
 
-        if filename.endswith('.mp3'):
-            temp_mp3_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), temp_input_name + '.mp3')
-            audio_file.save(temp_mp3_path)
-            logging.info(f"MP3 파일 '{filename}' 임시 저장 완료: {temp_mp3_path}")
-            
-            try:
-                logging.debug("MP3 to WAV 변환 시작...")
-                audio = AudioSegment.from_mp3(temp_mp3_path)
-                audio.export(temp_wav_path, format='wav')
-                logging.info(f"MP3 파일 '{filename}'을 WAV로 변환 후 임시 저장: {temp_wav_path}")
-                logging.debug(f"MP3 to WAV 변환 완료. ({time.time() - file_processing_start_time:.2f}s)")
-            except Exception as e:
-                logging.error(f"MP3 to WAV 변환 중 오류 발생: {e}")
-                logging.error(traceback.format_exc())
-                return jsonify({'error': f'오디오 변환 중 오류 발생: {str(e)}'}), 500
-            finally:
-                if os.path.exists(temp_mp3_path):
-                    os.remove(temp_mp3_path)
-                    logging.info(f"임시 MP3 파일 삭제: {temp_mp3_path}")
-
-        elif filename.endswith('.wav'):
+        # MP3 처리 로직 제거 (WAV만 허용)
+        if filename.endswith('.wav'):
             audio_file.save(temp_wav_path)
             logging.info(f"WAV 파일 '{filename}' 임시 저장: {temp_wav_path}")
             logging.debug(f"WAV 파일 저장 완료. ({time.time() - file_processing_start_time:.2f}s)")
         else:
             logging.warning(f"지원하지 않는 파일 형식: {filename}")
-            return jsonify({'error': 'Unsupported file format. Please upload mp3 or wav.'}), 400
+            return jsonify({'error': 'Unsupported file format. Please upload only WAV files.'}), 400
 
         logging.debug("오디오 특징 추출 시작...")
         features_extraction_start_time = time.time()
@@ -324,10 +301,11 @@ def predict_genre_endpoint():
         if os.path.exists(temp_wav_path):
             os.remove(temp_wav_path)
             logging.info(f"임시 WAV 파일 삭제: {temp_wav_path}")
-        temp_mp3_path_check = os.path.join(os.path.dirname(os.path.abspath(__file__)), temp_input_name + '.mp3')
-        if os.path.exists(temp_mp3_path_check):
-            os.remove(temp_mp3_path_check)
-            logging.info(f"임시 MP3 파일 삭제: {temp_mp3_path_check}")
+        # MP3 임시 파일 삭제 로직도 제거
+        # temp_mp3_path_check = os.path.join(os.path.dirname(os.path.abspath(__file__)), temp_input_name + '.mp3')
+        # if os.path.exists(temp_mp3_path_check):
+        #     os.remove(temp_mp3_path_check)
+        #     logging.info(f"임시 MP3 파일 삭제: {temp_mp3_path_check}")
 
 
 GENRE_DETAILS = {
