@@ -13,6 +13,15 @@
 로컬 개발 환경에서는 위 두 기능을 모두 통합한 하나의 웹사이트로 구현되어 프로젝트가 의도한 완전한 모습을 보여줍니다.  
 반면, **배포 환경에서는 리소스 제약으로 인해 두 기능이 분리된 웹사이트로 운영**됩니다.
 
+**배포된 웹사이트:**
+
+- 음악 장르 분류 앱: https://music-genre-classifier-gknv.onrender.com
+- 감성 기반 음악 추천 앱: https://music-recommender-ekcf.onrender.com
+
+## 🎬 구현 영상
+
+<img src="https://private-user-images.githubusercontent.com/203403059/471998779-4e018133-963b-4324-835c-1fa835d9e327.gif?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NTM3OTM2NzgsIm5iZiI6MTc1Mzc5MzM3OCwicGF0aCI6Ii8yMDM0MDMwNTkvNDcxOTk4Nzc5LTRlMDE4MTMzLTk2M2ItNDMyNC04MzVjLTFmYTgzNWQ5ZTMyNy5naWY_WC1BbXotQWxnb3JpdGhtPUFXUzQtSE1BQy1TSEEyNTYmWC1BbXotQ3JlZGVudGlhbD1BS0lBVkNPRFlMU0E1M1BRSzRaQSUyRjIwMjUwNzI5JTJGdXMtZWFzdC0xJTJGczMlMkZhd3M0X3JlcXVlc3QmWC1BbXotRGF0ZT0yMDI1MDcyOVQxMjQ5MzhaJlgtQW16LUV4cGlyZXM9MzAwJlgtQW16LVNpZ25hdHVyZT0zOTA1M2QzOTVjNDc5NTFhNGE2MWJhNDM5ZGY5M2FlN2M2MzlmOGNhOTRkOWNjZjg3ZjgwNjI4NzM3NjgxYTY2JlgtQW16LVNpZ25lZEhlYWRlcnM9aG9zdCJ9.392CQU8olW0eJs95-i8WVwDgVlv7flh8LJ1-3X4pd8Y">
+
 ## 🚀 로컬 환경 설정 및 실행 방법
 
 이 프로젝트는 Python Flask 프레임워크를 사용하여 개발되었습니다.  
@@ -106,10 +115,6 @@ flask run --port 5001
 ```
 
 모든 서버가 실행되면 웹 브라우저에서 `http://127.0.0.1:8000`으로 접속하세요.
-
-## 🎬 구현 영상
-
-<img src="https://private-user-images.githubusercontent.com/203403059/471998779-4e018133-963b-4324-835c-1fa835d9e327.gif?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NTM3OTM2NzgsIm5iZiI6MTc1Mzc5MzM3OCwicGF0aCI6Ii8yMDM0MDMwNTkvNDcxOTk4Nzc5LTRlMDE4MTMzLTk2M2ItNDMyNC04MzVjLTFmYTgzNWQ5ZTMyNy5naWY_WC1BbXotQWxnb3JpdGhtPUFXUzQtSE1BQy1TSEEyNTYmWC1BbXotQ3JlZGVudGlhbD1BS0lBVkNPRFlMU0E1M1BRSzRaQSUyRjIwMjUwNzI5JTJGdXMtZWFzdC0xJTJGczMlMkZhd3M0X3JlcXVlc3QmWC1BbXotRGF0ZT0yMDI1MDcyOVQxMjQ5MzhaJlgtQW16LUV4cGlyZXM9MzAwJlgtQW16LVNpZ25hdHVyZT0zOTA1M2QzOTVjNDc5NTFhNGE2MWJhNDM5ZGY5M2FlN2M2MzlmOGNhOTRkOWNjZjg3ZjgwNjI4NzM3NjgxYTY2JlgtQW16LVNpZ25lZEhlYWRlcnM9aG9zdCJ9.392CQU8olW0eJs95-i8WVwDgVlv7flh8LJ1-3X4pd8Y">
 
 ## 📄 라이선스
 
