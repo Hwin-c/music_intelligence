@@ -95,15 +95,16 @@ def extract_features_from_audio(file_path):
         end_time = time.time()
         logging.info(f"Audio loaded: duration={len(y)/sr:.2f} seconds, sr={sr}. Load time: {end_time - start_time:.2f}s")
 
-        # 오디오를 10초로 자르는 로직 추가
-        max_samples = int(10 * sr) # 10초에 해당하는 샘플 수 계산
+        # 오디오를 30초로 자르는 로직으로 변경
+        max_samples = int(30 * sr) # 30초에 해당하는 샘플 수 계산
         if len(y) > max_samples:
-            y = y[:max_samples] # 앞부분 10초만 사용
-            logging.info(f"오디오 파일이 10초를 초과하여 앞부분 10초로 잘랐습니다. 새 길이: {len(y)/sr:.2f}s")
+            y = y[:max_samples] # 앞부분 30초만 사용
+            logging.info(f"오디오 파일이 30초를 초과하여 앞부분 30초로 잘랐습니다. 새 길이: {len(y)/sr:.2f}s")
 
         if np.isnan(y).any():
             raise ValueError("오디오 신호가 유효하지 않습니다. NaN 값이 포함되어 있습니다.")
         
+        # ... (이하 특징 추출 로직 유지) ...
         features = {}
 
         start_feature_time = time.time()
