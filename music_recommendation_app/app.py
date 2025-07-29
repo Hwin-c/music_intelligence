@@ -1,3 +1,5 @@
+# C:\Users\USER\Desktop\music_intelligence\music_recommendation_app\app.py
+
 from flask import Flask, request, jsonify, render_template, redirect, url_for
 import os
 import logging
@@ -6,7 +8,7 @@ import sys
 import threading
 import time
 import json
-import requests # requests 라이브러리 임포트
+import requests
 
 # 로깅 설정 (기존과 동일)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -15,19 +17,18 @@ app = Flask(__name__,
             static_folder=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static'),
             template_folder=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates'))
 
-# --- Getsong API 연동을 위한 클래스 (Mock 대신 실제 호출) ---
-class MusicRecommender: # 클래스 이름 변경
+# --- Getsong API 연동을 위한 클래스 ---
+class MusicRecommender:
     def __init__(self):
-        # TODO: 실제 Getsong API 키로 교체하세요.
-        # 보안을 위해 환경 변수에서 불러오는 것을 권장합니다.
-        self.api_key = os.environ.get("GETSONG_API_KEY", "YOUR_GETSONG_API_KEY") 
-        # TODO: Getsong API의 텍스트 기반 추천 엔드포인트 URL로 교체하세요.
-        # 예: "https://api.getsong.co/v1/recommend_by_text" (가상의 URL)
-        self.api_url = os.environ.get("GETSONG_API_URL", "https://api.getsong.co/v1/recommend_by_text") 
+        # TODO: Getsong API 키 환경 변수 이름을 GETSONGBPM_API_KEY로 통일
+        self.api_key = os.environ.get("GETSONGBPM_API_KEY", "YOUR_GETSONG_API_KEY_PLACEHOLDER") 
+        # TODO: Getsong API의 텍스트 기반 추천 엔드포인트 실제 URL로 교체
+        # 이 URL이 404 오류의 주 원인일 가능성이 높습니다. Getsong API 문서를 다시 확인하세요.
+        self.api_url = os.environ.get("GETSONG_API_URL", "https://api.getsong.co/v1/recommend_by_text_actual") # 가상 URL, 실제 URL로 교체 필요
         
-        if self.api_key == "YOUR_GETSONG_API_KEY":
+        if self.api_key == "YOUR_GETSONG_API_KEY_PLACEHOLDER":
             logging.warning("경고: Getsong API 키가 기본값으로 설정되어 있습니다. 실제 키로 교체해주세요.")
-        if self.api_url == "https://api.getsong.co/v1/recommend_by_text":
+        if self.api_url == "https://api.getsong.co/v1/recommend_by_text_actual":
             logging.warning("경고: Getsong API URL이 가상값으로 설정되어 있습니다. 실제 URL로 교체해주세요.")
 
         logging.info("MusicRecommender 초기화 완료.")
@@ -91,7 +92,11 @@ class MusicRecommender: # 클래스 이름 변경
             raise Exception("Getsong API 응답 시간이 초과되었습니다. 잠시 후 다시 시도해주세요.")
         except requests.exceptions.RequestException as e:
             logging.error(f"Getsong API 요청 중 네트워크 또는 HTTP 오류 발생: {e}")
-            raise Exception(f"Getsong API 통신 중 오류가 발생했습니다: {str(e)}")
+            # 이 부분에서 404 오류가 발생했으므로, 사용자에게 더 명확한 메시지를 전달합니다.
+            if "404 Client Error" in str(e):
+                raise Exception(f"Getsong API 엔드포인트 URL이 잘못되었거나 존재하지 않습니다: {self.api_url}")
+            else:
+                raise Exception(f"Getsong API 통신 중 오류가 발생했습니다: {str(e)}")
         except json.JSONDecodeError:
             logging.error(f"Getsong API 응답 JSON 파싱 실패: {response.text}")
             raise Exception("Getsong API 응답 형식이 올바르지 않습니다.")
@@ -101,7 +106,7 @@ class MusicRecommender: # 클래스 이름 변경
 
 
 # MusicRecommender 인스턴스 생성
-recommender = MusicRecommender() # Mock 대신 실제 Recommender 사용
+recommender = MusicRecommender()
 
 # Flask 라우트 정의 (기존과 동일)
 @app.route('/')
