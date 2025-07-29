@@ -162,6 +162,7 @@
 
   <main>
     <div class="result-box">
+      <!-- Jinja2 변수를 사용하여 직접 렌더링 -->
       <div class="genre-title">해당 음악의 장르는 <strong>{{ genre_display_name }}</strong>일 확률이 <strong>{{ probability }}%</strong>입니다.</div>
       <div class="genre-info">
         <h3>{{ genre_display_name }} 음악이란?</h3>
@@ -184,114 +185,68 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const genre = "{{ genre }}";
-        const probability = "{{ probability }}";
-
-        const predictedGenreElement = document.getElementById('predicted-genre');
-        const genreProbabilityElement = document.getElementById('genre-probability');
-        const genreDescriptionElement = document.getElementById('genre-description');
+        const genre = "{{ genre }}"; // Flask에서 전달된 genre 값 사용
         const recommendSectionElement = document.querySelector('.recommend-section');
 
-        predictedGenreElement.textContent = genre;
-        genreProbabilityElement.textContent = probability + '%';
-
-        const genreInfo = {
-            "blues": {
-                description: "🎷 <strong>블루스(Blues)</strong> 음악이란?<br />- 기원: 19세기 말 미국 남부 아프리카계 미국인 공동체에서 시작된 음악 장르입니다.<br />- 주요 특징: 블루 노트, 콜 앤 리스폰스(Call and Response) 형식, 서정적이고 감성적인 가사입니다.<br />- BPM 범위: 대개 60-90 사이로 느린 편입니다.",
-                songs: [
-                    { title: "The Thrill Is Gone", artist: "B.B. King", youtube: "https://www.youtube.com/watch?v=4fk2W7210xQ" },
-                    { title: "Cross Road Blues", artist: "Robert Johnson", youtube: "https://www.youtube.com/watch?v=Yd60nI47D7A" },
-                    { title: "Sweet Home Chicago", artist: "Robert Johnson", youtube: "https://www.youtube.com/watch?v=T_A_L_y2_2c" }
-                ]
-            },
-            "classical": {
-                description: "🎻 <strong>클래식(Classical)</strong> 음악이란?<br />- 기원: 서양 예술 음악의 한 장르로, 주로 18세기 중반부터 19세기 초까지의 시대를 지칭합니다.<br />- 주요 특징: 정교한 형식과 구조, 조화로운 선율과 화성, 풍부한 오케스트레이션이 특징입니다.<br />- BPM 범위: 곡에 따라 매우 다양하나, 대체로 템포 변화가 큽니다.",
-                songs: [
-                    { title: "Symphony No. 5", artist: "Ludwig van Beethoven", youtube: "https://www.youtube.com/watch?v=jvXywhJp-dY" },
-                    { title: "Eine kleine Nachtmusik", artist: "Wolfgang Amadeus Mozart", youtube: "https://www.youtube.com/watch?v=o1FS8z_Fp0o" },
-                    { title: "Moonlight Sonata", artist: "Ludwig van Beethoven", youtube: "https://www.youtube.com/watch?v=FM7Z_E-Q-28" }
-                ]
-            },
-            "country": {
-                description: "🤠 <strong>컨트리(Country)</strong> 음악이란?<br />- 기원: 1920년대 미국 남부의 민속 음악과 서부 카우보이 음악에서 유래했습니다.<br />- 주요 특징: 단순하고 서정적인 멜로디, 어쿠스틱 기타, 밴조, 피들 등의 악기 사용, 일상생활과 자연에 대한 가사가 특징입니다.<br />- BPM 범위: 대개 80-120 사이입니다.",
-                songs: [
-                    { title: "Take Me Home, Country Roads", artist: "John Denver", youtube: "https://www.youtube.com/watch?v=1vrADq-y348" },
-                    { title: "Ring of Fire", artist: "Johnny Cash", youtube: "https://www.youtube.com/watch?v=It7DTK_hF6E" },
-                    { title: "Jolene", artist: "Dolly Parton", youtube: "https://www.youtube.com/watch?v=fA4h2-y_V_k" }
-                ]
-            },
-            "disco": {
-                description: "🕺 <strong>디스코(Disco)</strong> 음악이란?<br />- 기원: 1970년대 뉴욕 클럽 문화에서 시작된 댄스 음악 장르입니다.<br />- 주요 특징: 강렬한 4/4박자 비트, 신시사이저, 스트링, 혼 섹션 사용, 춤추기 좋은 리듬이 특징입니다.<br />- BPM 범위: 대개 110-130 사이입니다.",
-                songs: [
-                    { title: "Stayin' Alive", artist: "Bee Gees", youtube: "https://www.youtube.com/watch?v=fNFzfwLM72c" },
-                    { title: "Dancing Queen", artist: "ABBA", youtube: "https://www.youtube.com/watch?v=xFrGuyw1V8s" },
-                    { title: "Le Freak", artist: "Chic", youtube: "https://www.youtube.com/watch?v=h1qQ16gxmKs" }
-                ]
-            },
-            "hiphop": {
-                description: "🎤 <strong>힙합(Hip-Hop)</strong> 음악이란?<br />- 기원: 1970년대 뉴욕 브롱스에서 시작된 문화 운동의 일부입니다.<br />- 주요 특징: 랩(Rapping), 디제잉(DJing), 샘플링, 강력한 비트와 리듬, 사회 비판적 또는 자전적 가사가 특징입니다.<br />- BPM 범위: 대개 80-120 사이입니다.",
-                songs: [
-                    { title: "Lose Yourself", artist: "Eminem", youtube: "https://www.youtube.com/watch?v=_Y_Vz_iK_6A" },
-                    { title: "Nuthin' but a 'G' Thang", artist: "Dr. Dre ft. Snoop Dogg", youtube: "https://www.youtube.com/watch?v=fC_tPq6U14Q" },
-                    { title: "Changes", artist: "2Pac", youtube: "https://www.youtube.com/watch?v=eXv_Xw-D-5I" }
-                ]
-            },
-            "jazz": {
-                description: "🎷 <strong>재즈(Jazz)</strong> 음악이란?<br />- 기원: 19세기 말 미국 뉴올리언스의 흑인 문화에서 비롯되었습니다.<br />- 주요 특징: 즉흥 연주, 스윙 리듬, 4/4 박자, 고유한 코드 진행, 다양한 악기들의 상호작용이 특징입니다.<br />- BPM 범위: 대개 128~185 사이로 다양합니다.",
-                songs: [
-                    { title: "Autumn Leaves", artist: "Cannonball Adderley", youtube: "https://www.youtube.com/watch?v=hZg1M42g32Q" },
-                    { title: "Take Five", artist: "Dave Brubeck Quartet", youtube: "https://www.youtube.com/watch?v=PH_jI7T-QxM" },
-                    { title: "So What", artist: "Miles Davis", youtube: "https://www.youtube.com/watch?v=zqNTaTz1B9c" }
-                ]
-            },
-            "metal": {
-                description: "🤘 <strong>메탈(Metal)</strong> 음악이란?<br />- 기원: 1960년대 후반 하드 록에서 파생된 장르입니다.<br />- 주요 특징: 강력한 기타 리프, 왜곡된 사운드, 빠른 드럼 비트, 공격적인 보컬, 복잡한 곡 구조가 특징입니다.<br />- BPM 범위: 대개 120-200 이상으로 매우 빠를 수 있습니다.",
-                songs: [
-                    { title: "Master of Puppets", artist: "Metallica", youtube: "https://www.youtube.com/watch?v=K6_zs_J8K4M" },
-                    { title: "Iron Man", artist: "Black Sabbath", youtube: "https://www.youtube.com/watch?v=9LjbMVXjOP5" },
-                    { title: "Hallowed Be Thy Name", artist: "Iron Maiden", youtube: "https://www.youtube.com/watch?v=J51LPlP-s9o" }
-                ]
-            },
-            "pop": {
-                description: "🎤 <strong>팝(Pop)</strong> 음악이란?<br />- 기원: 대중적인 인기를 얻기 위해 만들어진 상업적인 음악 장르입니다.<br />- 주요 특징: 쉽고 따라 부르기 쉬운 멜로디, 다양한 스타일의 혼합, 최신 트렌드 반영, 반복적인 후렴구가 특징입니다.<br />- BPM 범위: 대개 90-140 사이입니다.",
-                songs: [
-                    { title: "Dynamite", artist: "BTS", youtube: "https://www.youtube.com/watch?v=gdZLi9oWNZg" },
-                    { title: "Bad Guy", artist: "Billie Eilish", youtube: "https://www.youtube.com/watch?v=DyDfgMOUjCI" },
-                    { title: "Shape of You", artist: "Ed Sheeran", youtube: "https://www.youtube.com/watch?v=JGwWNGJdvx8" }
-                ]
-            },
-            "reggae": {
-                description: "🇯🇲 <strong>레게(Reggae)</strong> 음악이란?<br />- 기원: 1960년대 후반 자메이카에서 시작된 음악 장르입니다.<br />- 주요 특징: 오프비트(off-beat) 리듬, 베이스 기타와 드럼의 강조, 종교적 또는 사회적 메시지를 담은 가사가 특징입니다.<br />- BPM 범위: 대개 60-90 사이로 느린 편입니다.",
-                songs: [
-                    { title: "No Woman, No Cry", artist: "Bob Marley & The Wailers", youtube: "https://www.youtube.com/watch?v=jGqA24k-J2Y" },
-                    { title: "Three Little Birds", artist: "Bob Marley & The Wailers", youtube: "https://www.youtube.com/watch?v=LanCLS_hCpg" },
-                    { title: "Red Red Wine", artist: "UB40", youtube: "https://www.youtube.com/watch?v=zXt53QT7_2U" }
-                ]
-            },
-            "rock": {
-                description: "🎸 <strong>록(Rock)</strong> 음악이란?<br />- 기원: 1950년대 미국에서 로큰롤에서 파생된 장르입니다.<br />- 주요 특징: 강렬한 기타 리프, 드럼 비트, 보컬이 특징이며, 다양한 하위 장르를 가집니다. 반항적이고 자유로운 정신을 표현합니다.<br />- BPM 범위: 대개 100-180 사이입니다.",
-                songs: [
-                    { title: "Bohemian Rhapsody", artist: "Queen", youtube: "https://www.youtube.com/watch?v=fJ9rUzIMcZQ" },
-                    { title: "Smells Like Teen Spirit", artist: "Nirvana", youtube: "https://www.youtube.com/watch?v=hTWKbfoikeg" },
-                    { title: "Stairway to Heaven", artist: "Led Zeppelin", youtube: "https://www.youtube.com/watch?v=QkF3OWuY18A" }
-                ]
-            },
-            "기타": {
-                description: "🎶 이 음악은 특정 장르로 분류하기 어렵거나, 새로운 장르일 수 있습니다.",
-                songs: []
-            }
+        // app.py의 GENRE_DETAILS와 동일한 songs 정보만 JavaScript 객체로 정의
+        const genreSongs = {
+            "blues": [
+                { title: "The Thrill Is Gone", artist: "B.B. King", youtube: "https://www.youtube.com/watch?v=4fk2W7210xQ" },
+                { title: "Cross Road Blues", artist: "Robert Johnson", youtube: "https://www.youtube.com/watch?v=Yd60nI47D7A" },
+                { title: "Sweet Home Chicago", artist: "Robert Johnson", youtube: "https://www.youtube.com/watch?v=T_A_L_y2_2c" }
+            ],
+            "classical": [
+                { title: "Symphony No. 5", artist: "Ludwig van Beethoven", youtube: "https://www.youtube.com/watch?v=jvXywhJp-dY" },
+                { title: "Eine kleine Nachtmusik", artist: "Wolfgang Amadeus Mozart", youtube: "https://www.youtube.com/watch?v=o1FS8z_Fp0o" },
+                { title: "Moonlight Sonata", artist: "Ludwig van Beethoven", youtube: "https://www.youtube.com/watch?v=FM7Z_E-Q-28" }
+            ],
+            "country": [
+                { title: "Take Me Home, Country Roads", artist: "John Denver", youtube: "https://www.youtube.com/watch?v=1vrADq-y348" },
+                { title: "Ring of Fire", artist: "Johnny Cash", youtube: "https://www.youtube.com/watch?v=It7DTK_hF6E" },
+                { title: "Jolene", artist: "Dolly Parton", youtube: "https://www.youtube.com/watch?v=fA4h2-y_V_k" }
+            ],
+            "disco": [
+                { title: "Stayin' Alive", artist: "Bee Gees", youtube: "https://www.youtube.com/watch?v=fNFzfwLM72c" },
+                { title: "Dancing Queen", artist: "ABBA", youtube: "https://www.youtube.com/watch?v=xFrGuyw1V8s" },
+                { title: "Le Freak", artist: "Chic", youtube: "https://www.youtube.com/watch?v=h1qQ16gxmKs" }
+            ],
+            "hiphop": [
+                { title: "Lose Yourself", artist: "Eminem", youtube: "https://www.youtube.com/watch?v=_Y_Vz_iK_6A" },
+                { title: "Nuthin' but a 'G' Thang", artist: "Dr. Dre ft. Snoop Dogg", youtube: "https://www.youtube.com/watch?v=fC_tPq6U14Q" },
+                { title: "Changes", artist: "2Pac", youtube: "https://www.youtube.com/watch?v=eXv_Xw-D-5I" }
+            ],
+            "jazz": [
+                { title: "Autumn Leaves", artist: "Cannonball Adderley", youtube: "https://www.youtube.com/watch?v=hZg1M42g32Q" },
+                { title: "Take Five", artist: "Dave Brubeck Quartet", youtube: "https://www.youtube.com/watch?v=PH_jI7T-QxM" },
+                { title: "So What", artist: "Miles Davis", youtube: "https://www.youtube.com/watch?v=zqNTaTz1B9c" }
+            ],
+            "metal": [
+                { title: "Master of Puppets", artist: "Metallica", youtube: "https://www.youtube.com/watch?v=K6_zs_J8K4M" },
+                { title: "Iron Man", artist: "Black Sabbath", youtube: "https://www.youtube.com/watch?v=9LjbMVXjOP5" },
+                { title: "Hallowed Be Thy Name", artist: "Iron Maiden", youtube: "https://www.youtube.com/watch?v=J51LPlP-s9o" }
+            ],
+            "pop": [
+                { title: "Dynamite", artist: "BTS", youtube: "https://www.youtube.com/watch?v=gdZLi9oWNZg" },
+                { title: "Bad Guy", artist: "Billie Eilish", youtube: "https://www.youtube.com/watch?v=DyDfgMOUjCI" },
+                { title: "Shape of You", artist: "Ed Sheeran", youtube: "https://www.youtube.com/watch?v=JGwWNGJdvx8" }
+            ],
+            "reggae": [
+                { title: "No Woman, No Cry", artist: "Bob Marley & The Wailers", youtube: "https://www.youtube.com/watch?v=jGqA24k-J2Y" },
+                { title: "Three Little Birds", artist: "Bob Marley & The Wailers", youtube: "https://www.youtube.com/watch?v=LanCLS_hCpg" },
+                { title: "Red Red Wine", artist: "UB40", youtube: "https://www.youtube.com/watch?v=zXt53QT7_2U" }
+            ],
+            "rock": [
+                { title: "Bohemian Rhapsody", artist: "Queen", youtube: "https://www.youtube.com/watch?v=fJ9rUzIMcZQ" },
+                { title: "Smells Like Teen Spirit", artist: "Nirvana", youtube: "https://www.youtube.com/watch?v=hTWKbfoikeg" },
+                { title: "Stairway to Heaven", artist: "Led Zeppelin", youtube: "https://www.youtube.com/watch?v=QkF3OWuY18A" }
+            ],
+            "기타": [] // '기타' 장르에 대한 추천곡은 없음
         };
 
-        const info = genreInfo[genre] || genreInfo["기타"];
-        genreDescriptionElement.innerHTML = `
-            <h3>${info.title} 음악이란?</h3>
-            <p>- 기원: ${info.origin}</p>
-            <p>- 주요 특징: ${info.features}</p>
-            <p>- BPM 범위: ${info.bpm_range}</p>
-        `;
-
-        if (info.songs.length > 0) {
-            info.songs.forEach((song, index) => {
+        const songsToRecommend = genreSongs[genre] || genreSongs["기타"];
+        
+        if (songsToRecommend.length > 0) {
+            songsToRecommend.forEach((song, index) => {
                 const item = document.createElement('div');
                 item.className = 'recommend-item';
                 item.innerHTML = `

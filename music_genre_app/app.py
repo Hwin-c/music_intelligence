@@ -46,11 +46,11 @@ def _load_genre_classification_models():
         import numpy as np
         import pickle
         
-        # 모델 파일 경로를 MODEL_DIR (music_genre_app 디렉토리) 아래 saved_models로 설정
-        keras_model_path = os.path.join(MODEL_DIR, 'saved_models', 'model.keras')
-        scaler_path = os.path.join(MODEL_DIR, 'saved_models', 'scaler.pkl')
-        genre_labels_path = os.path.join(MODEL_DIR, 'saved_models', 'genre_labels.json')
-        feature_columns_path = os.path.join(MODEL_DIR, 'saved_models', 'feature_columns.json')
+        # 모든 모델/도구 파일 경로 수정: music_genre_app 디렉토리 바로 아래로 설정
+        keras_model_path = os.path.join(MODEL_DIR, 'model.keras')
+        scaler_path = os.path.join(MODEL_DIR, 'scaler.pkl')
+        genre_labels_path = os.path.join(MODEL_DIR, 'genre_labels.json')
+        feature_columns_path = os.path.join(MODEL_DIR, 'feature_columns.json')
 
         logging.info(f"Keras 모델 로드 시도 중: {keras_model_path}")
         model = tf.keras.models.load_model(keras_model_path)
@@ -305,3 +305,94 @@ def predict_genre_endpoint():
         if os.path.exists(temp_wav_path):
             os.remove(temp_wav_path)
             logging.info(f"임시 WAV 파일 삭제: {temp_wav_path}")
+
+
+# 장르별 상세 정보를 담은 딕셔너리 (기존 유지)
+GENRE_DETAILS = {
+    "blues": {
+        "title": "블루스 (Blues)",
+        "origin": "19세기 말 미국 남부 아프리카계 미국인 공동체에서 시작된 음악 장르입니다.",
+        "features": "주요 특징은 블루 노트, 콜 앤 리스폰스(Call and Response) 형식, 서정적이고 감성적인 가사입니다.",
+        "bpm_range": "BPM은 대개 60-90 사이로 느린 편입니다."
+    },
+    "classical": {
+        "title": "클래식 (Classical)",
+        "origin": "서양 예술 음악의 한 장르로, 주로 18세기 중반부터 19세기 초까지의 시대를 지칭합니다.",
+        "features": "정교한 형식과 구조, 조화로운 선율과 화성, 풍부한 오케스트레이션이 특징입니다.",
+        "bpm_range": "BPM은 곡에 따라 매우 다양하나, 대체로 템포 변화가 큽니다."
+    },
+    "country": {
+        "title": "컨트리 (Country)",
+        "origin": "1920년대 미국 남부의 민속 음악과 서부 카우보이 음악에서 유래했습니다.",
+        "features": "단순하고 서정적인 멜로디, 어쿠스틱 기타, 밴조, 피들 등의 악기 사용, 일상생활과 자연에 대한 가사가 특징입니다.",
+        "bpm_range": "BPM은 대개 80-120 사이입니다."
+    },
+    "disco": {
+        "title": "디스코 (Disco)",
+        "origin": "1970년대 뉴욕 클럽 문화에서 시작된 댄스 음악 장르입니다.",
+        "features": "강렬한 4/4박자 비트, 신시사이저, 스트링, 혼 섹션 사용, 춤추기 좋은 리듬이 특징입니다.",
+        "bpm_range": "BPM은 대개 110-130 사이입니다."
+    },
+    "hiphop": {
+        "title": "힙합 (Hip-Hop)",
+        "origin": "1970년대 뉴욕 브롱스에서 시작된 문화 운동의 일부입니다.",
+        "features": "랩(Rapping), 디제잉(DJing), 샘플링, 강력한 비트와 리듬, 사회 비판적 또는 자전적 가사가 특징입니다.",
+        "bpm_range": "BPM은 대개 80-120 사이입니다."
+    },
+    "jazz": {
+        "title": "재즈 (Jazz)",
+        "origin": "19세기 말 미국 뉴올리언스의 흑인 문화에서 비롯되었습니다.",
+        "features": "즉흥 연주, 스윙 리듬, 4/4 박자, 고유한 코드 진행, 다양한 악기들의 상호작용이 특징입니다.",
+        "bpm_range": "BPM은 대개 128~185 사이로 다양합니다."
+    },
+    "metal": {
+        "title": "메탈 (Metal)",
+        "origin": "1960년대 후반 하드 록에서 파생된 장르입니다.",
+        "features": "강력한 기타 리프, 왜곡된 사운드, 빠른 드럼 비트, 공격적인 보컬, 복잡한 곡 구조가 특징입니다.",
+        "bpm_range": "BPM은 대개 120-200 이상으로 매우 빠를 수 있습니다."
+    },
+    "pop": {
+        "title": "팝 (Pop)",
+        "origin": "대중적인 인기를 얻기 위해 만들어진 상업적인 음악 장르입니다.",
+        "features": "쉽고 따라 부르기 쉬운 멜로디, 다양한 스타일의 혼합, 최신 트렌드 반영, 반복적인 후렴구가 특징입니다.",
+        "bpm_range": "BPM은 대개 90-140 사이입니다."
+    },
+    "reggae": {
+        "title": "레게 (Reggae)",
+        "origin": "1960년대 후반 자메이카에서 시작된 음악 장르입니다.",
+        "features": "오프비트(off-beat) 리듬, 베이스 기타와 드럼의 강조, 종교적 또는 사회적 메시지를 담은 가사가 특징입니다.",
+        "bpm_range": "BPM은 대개 60-90 사이로 느린 편입니다."
+    },
+    "rock": {
+        "title": "록 (Rock)",
+        "origin": "1950년대 미국에서 로큰롤에서 파생된 장르입니다.",
+        "features": "강렬한 기타 리프, 드럼 비트, 보컬이 특징이며, 다양한 하위 장르를 가집니다. 반항적이고 자유로운 정신을 표현합니다.",
+        "bpm_range": "BPM은 대개 100-180 사이입니다."
+    }
+}
+
+@app.route('/result')
+def show_genre_result():
+    """장르 분석 결과 페이지 렌더링."""
+    genre_key = request.args.get('genre', '기타').lower()
+    probability = request.args.get('probability', '0%')
+
+    genre_info = GENRE_DETAILS.get(genre_key, {
+        "title": "기타 (Other)",
+        "origin": "이 음악은 특정 장르로 분류하기 어렵거나, 새로운 장르일 수 있습니다.",
+        "features": "특징적인 요소들을 파악하기 어렵습니다.",
+        "bpm_range": "BPM 정보는 알 수 없습니다."
+    })
+
+    return render_template('genre_result_page.html', 
+                           genre=genre_key, # JavaScript에서 사용하기 위해 전달
+                           genre_display_name=genre_info["title"],
+                           probability=probability,
+                           genre_origin=genre_info["origin"],
+                           genre_features=genre_info["features"],
+                           genre_bpm_range=genre_info["bpm_range"])
+
+if __name__ == '__main__':
+    port = int(os.environ.get("PORT", 5000))
+    logging.info(f"Music Genre App 로컬 개발 서버 시작 시도 중 (host=0.0.0.0, port={port})...")
+    app.run(debug=True, host='0.0.0.0', port=port)
