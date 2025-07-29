@@ -176,7 +176,7 @@
 <body>
   <header>
     <!-- 로고 링크는 메인 랜딩 페이지로 이동합니다. -->
-    <a href="/" class="logo-link">
+    <a href="http://127.0.0.1:8000" class="logo-link">
       <img src="{{ url_for('static', filename='logo.png') }}" alt="로고" class="logo-image" onerror="this.src='https://placehold.co/50x50/cccccc/000000?text=Logo'; this.alt='로고 (이미지 없음)';" />
     </a>
   </header>
@@ -196,9 +196,9 @@
       </div>
       <div class="actions">
         <!-- "다시 해보기" 버튼은 음악 장르 분류 앱의 메인 페이지로 이동 -->
-        <button class="action-button" onclick="location.href='/genre'">다시 해보기</button>
+        <button class="action-button" onclick="location.href='http://127.0.0.1:5000/'">다시 해보기</button>
         <!-- "메인 페이지로 돌아가기" 버튼 추가 -->
-        <a href="/" class="home-button">메인 페이지로 돌아가기</a>
+        <a href="http://127.0.0.1:8000" class="home-button">메인 페이지로 돌아가기</a>
       </div>
     </div>
   </main>
