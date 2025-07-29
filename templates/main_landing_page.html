@@ -30,12 +30,13 @@
             box-sizing: border-box;
         }
 
+        /* 왼쪽 상단 로고를 삭제합니다. */
         .logo-link {
-            text-decoration: none;
+            display: none; 
         }
 
         .logo-image {
-            height: 50px;
+            height: 50px; /* 이 스타일은 더 이상 왼쪽 상단 로고에 적용되지 않습니다. */
         }
 
         main {
@@ -48,13 +49,34 @@
             width: 100%;
         }
 
-        .main-title {
+        /* 메인 타이틀 텍스트는 이미지로 대체되므로, 이 스타일은 더 이상 사용되지 않습니다. */
+        /* .main-title {
             font-size: 3.5rem;
             font-weight: bold;
             color: #333;
             margin-bottom: 3rem;
             text-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        } */
+
+        /* 메인 로고 이미지 스타일 */
+        .main-logo-img {
+            width: 80%; /* 반응형 너비 */
+            max-width: 500px; /* 최대 너비 설정 */
+            height: auto;
+            margin-bottom: 2rem; /* 설명 텍스트와의 간격 */
+            border-radius: 15px; /* 둥근 모서리 */
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2); /* 그림자 효과 */
         }
+
+        /* 프로젝트 설명 텍스트 스타일 */
+        .project-description {
+            font-size: 1.2rem;
+            color: #555;
+            margin-bottom: 3rem; /* 기능 컨테이너와의 간격 */
+            line-height: 1.6;
+            max-width: 700px; /* 가독성을 위한 최대 너비 */
+        }
+
 
         .feature-container {
             display: flex;
@@ -121,9 +143,16 @@
         }
 
         @media (max-width: 768px) {
-            .main-title {
+            /* .main-title {
                 font-size: 2.5rem;
                 margin-bottom: 2rem;
+            } */
+            .main-logo-img {
+                max-width: 300px;
+            }
+            .project-description {
+                font-size: 1rem;
+                padding: 0 1rem; /* 모바일에서 좌우 패딩 추가 */
             }
             .feature-container {
                 flex-direction: column;
@@ -144,13 +173,27 @@
 </head>
 <body>
     <header>
+        <!-- 왼쪽 상단 로고는 display: none; 처리되어 보이지 않습니다. -->
         <a href="/" class="logo-link">
             <img src="{{ url_for('static', filename='logo.png') }}" alt="음잘딱깔센 로고" class="logo-image" onerror="this.src='https://placehold.co/50x50/cccccc/000000?text=Logo'; this.alt='로고 (이미지 없음)';" />
         </a>
     </header>
 
     <main>
-        <h1 class="main-title">음잘딱깔센</h1>
+        <!-- '음잘딱깔센' 텍스트 제목을 커다란 로고 이미지로 대체 -->
+        <img
+            src="https://placehold.co/500x200/4A90E2/FFFFFF?text=Eumjalttakkalsen+Logo"
+            alt="음잘딱깔센 메인 로고"
+            class="main-logo-img"
+            onerror="this.onerror=null;this.src='https://placehold.co/500x200/4A90E2/FFFFFF?text=Logo+Image+Error';"
+        />
+
+        <!-- 프로젝트 설명 추가 -->
+        <p class="project-description">
+            인공지능이 음악을 잘 딱 깔끔하고 센스 있게 장르를 분류해주고<br />
+            나의 감정에 걸맞는 음악을 추천해준다는 뜻이 내포되어 있다.
+        </p>
+
         <div class="feature-container">
             <a href="/genre" class="feature-card">
                 <img src="{{ url_for('static', filename='music_genre_classification.png') }}" alt="음악 장르 분류" class="feature-image" onerror="this.src='https://placehold.co/250x250/cccccc/000000?text=Genre'; this.alt='장르 분류 이미지 없음';" />
@@ -168,10 +211,8 @@
     </footer>
 
     <script>
-        document.querySelector('.logo-image').onerror = function() {
-            this.src = 'https://placehold.co/50x50/cccccc/000000?text=Logo';
-            this.alt = '로고 (이미지 없음)';
-        };
+        // 기존 onerror 핸들러는 왼쪽 상단 로고가 display: none; 이므로 불필요하지만, 혹시 모를 경우를 대비해 유지합니다.
+        // main-logo-img에 대한 onerror는 img 태그 내에 직접 정의했습니다.
         document.querySelector('img[alt="음악 장르 분류"]').onerror = function() {
             this.src = 'https://placehold.co/250x250/cccccc/000000?text=Genre';
             this.alt = '장르 분류 이미지 없음';
