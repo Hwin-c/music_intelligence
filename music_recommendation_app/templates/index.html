@@ -4,11 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>음악 추천 | 음잘딱깔센</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
     <style>
         body {
             margin: 0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(to bottom right, #a3c8f5, #4a90e2);
+            background: linear-gradient(to bottom right, #4a90e2, #a3c8f5); /* 배경색 반전 또는 다르게 설정 */
             color: #333;
             height: 100vh;
             display: flex;
@@ -36,119 +37,92 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            padding: 3rem;
             text-align: center;
-            padding: 2rem;
         }
 
-        /* 새로 추가된 메인 제목 스타일 */
         .main-heading {
-            font-size: 3rem; /* 더 큰 글씨 크기 */
+            font-size: 3rem;
             font-weight: bold;
-            color: #333; /* 어두운 색상으로 대비 */
-            margin-bottom: 2rem; /* 제목 아래 여백 */
-            text-align: center; /* 가운데 정렬 */
-            text-shadow: 0 2px 4px rgba(0,0,0,0.2); /* 은은한 그림자 */
+            color: #333;
+            margin-bottom: 2rem;
+            text-align: center;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
 
-        .chat-box {
+        .feature-box {
             background-color: #ffffffcc;
             padding: 3rem;
             border-radius: 20px;
             box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
-            max-width: 600px;
-            width: 90%;
             display: flex;
             flex-direction: column;
-            gap: 1.5rem;
-        }
-
-        .chat-box h2 {
-            margin: 0;
-            font-size: 1.8rem;
-        }
-
-        textarea {
-            width: 100%;
-            height: 120px;
-            font-size: 1.2rem;
-            padding: 1rem;
-            border-radius: 10px;
-            border: 1px solid #ccc;
-            resize: none;
-        }
-
-        .send-button {
-            background-color: #4a90e2;
-            color: white;
-            font-size: 1.2rem;
-            padding: 1rem;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-
-        .send-button:hover {
-            background-color: #357abd;
-        }
-
-        #loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.7);
-            display: none;
-            justify-content: center;
             align-items: center;
-            flex-direction: column;
-            z-index: 1000;
-            color: white;
+            gap: 2rem;
+            width: 90%;
+            max-width: 500px;
         }
 
-        .spinner {
-            width: 80px;
-            height: 80px;
-            border: 10px solid rgba(255, 255, 255, 0.3);
-            border-top: 10px solid white;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .loading-text {
-            font-size: 2rem;
-            font-weight: bold;
-            margin-top: 2rem;
-            animation: blink 1.5s infinite;
-        }
-
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        /* 이미지 중앙 정렬을 위한 스타일 추가 */
-        .chat-box img {
-            margin: 0 auto; /* 좌우 마진을 자동으로 설정하여 가운데 정렬 */
-            display: block; /* 블록 레벨 요소로 만들어 margin: auto가 작동하도록 함 */
+        .feature-image {
             width: 100%; 
             max-width: 300px; 
             border-radius: 15px; 
             margin-bottom: 1rem;
         }
 
-        /* 오류 메시지 스타일 */
-        .error-message {
-            color: #d9534f; /* 빨간색 계열 */
-            font-weight: bold;
-            margin-top: 1rem;
-            font-size: 1.1rem;
+        .feature-description {
+            font-size: 1.2rem;
+            color: #555;
+            margin-bottom: 1.5rem;
+        }
+
+        .start-button {
+            background-color: #4a90e2;
+            color: white;
+            font-size: 1.5rem;
+            padding: 1rem 3rem;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            width: 100%;
+            text-decoration: none; /* 링크 스타일 제거 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .start-button:hover {
+            background-color: #357abd;
+        }
+
+        .navigation-buttons {
+            margin-top: 2rem;
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .nav-button {
+            padding: 0.8rem 2rem;
+            font-size: 1rem;
+            background-color: #6c757d; /* 회색 계열 */
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            flex: 1; /* 공간 균등 분배 */
+            text-decoration: none; /* 링크 스타일 제거 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .nav-button:hover {
+            background-color: #5a6268;
         }
 
         @media (max-width: 600px) {
@@ -159,25 +133,23 @@
                 font-size: 2rem;
                 margin-bottom: 1.5rem;
             }
-            .chat-box {
+            .feature-box {
                 padding: 2rem;
+                gap: 1.5rem;
+            }
+            .feature-description {
+                font-size: 1rem;
+            }
+            .start-button {
+                font-size: 1.2rem;
+                padding: 0.8rem 2rem;
+            }
+            .navigation-buttons {
+                flex-direction: column;
                 gap: 1rem;
             }
-            textarea {
-                font-size: 1rem;
-                height: 100px;
-            }
-            .send-button {
-                font-size: 1rem;
-                padding: 0.8rem;
-            }
-            .loading-text {
-                font-size: 1.5rem;
-            }
-            .spinner {
-                width: 60px;
-                height: 60px;
-                border-width: 8px;
+            .nav-button {
+                width: 100%;
             }
         }
         footer {
@@ -203,102 +175,40 @@
 </head>
 <body>
     <header>
+        <!-- 로고 링크는 이제 메인 랜딩 페이지로 이동합니다. -->
         <a href="/" class="logo-link">
             <img src="{{ url_for('static', filename='logo.png') }}" alt="로고" class="logo-image" onerror="this.src='https://placehold.co/50x50/cccccc/000000?text=Logo'; this.alt='로고 (이미지 없음)';" />
         </a>
     </header>
 
     <main>
-        <h1 class="main-heading">음악 추천</h1>
-        <div class="chat-box">
-            <img src="{{ url_for('static', filename='music_recommendation.png') }}" alt="음악 추천 이미지" />
-            <h2>어떤 음악을 추천해 드릴까요?</h2>
-            <form id="recommend-form">
-                <textarea id="user-text" placeholder="예: '신나는 음악 추천해줘!', '공부할 때 들을 조용한 노래', '기분 전환할 때 좋은 노래'"></textarea>
-                <button type="submit" class="send-button">메시지 보내기</button>
-            </form>
-            {% if error_message %}
-                <p class="error-message">{{ error_message }}</p>
-            {% endif %}
+        <h1 class="main-heading">음악 추천 서비스</h1>
+        <div class="feature-box">
+            <img src="{{ url_for('static', filename='music_recommendation.png') }}" alt="음악 추천 이미지" class="feature-image" onerror="this.src='https://placehold.co/300x200/cccccc/000000?text=Recommendation+Image'; this.alt='음악 추천 이미지 (없음)';">
+            <h2>내 감정에 맞는 음악 찾기</h2>
+            <p class="feature-description">당신의 기분을 텍스트로 알려주세요. 인공지능이 당신의 감정을 분석하여 최적의 음악을 추천해 드립니다.</p>
+            <!-- 이 링크는 music_recommendation_app 내의 감정 분석 시작 페이지로 이동합니다. -->
+            <a href="/recommendation/analyze" class="start-button">감정 분석 시작</a>
+        </div>
+
+        <!-- 메인 랜딩 페이지로 돌아가는 버튼 추가 -->
+        <div class="navigation-buttons">
+            <a href="/" class="nav-button">메인 페이지로 돌아가기</a>
         </div>
     </main>
 
-    <div id="loading-overlay">
-        <div class="spinner"></div>
-        <div class="loading-text">추천 음악을 찾고 있어요..!</div>
-    </div>
-
     <footer>
-        <p>&copy; 2025 음잘딱깔센 | Powered by <a href="https://api.getsong.co/" target="_blank">getsong.co</a></p>
+        <p>&copy; 2025 음잘딱깔센</p>
     </footer>
 
     <script>
-        const recommendForm = document.getElementById('recommend-form');
-        const userTextInput = document.getElementById('user-text');
-        const loadingOverlay = document.getElementById('loading-overlay');
-
-        recommendForm.addEventListener('submit', async function (e) {
-            e.preventDefault();
-            const userText = userTextInput.value.trim();
-
-            if (!userText) {
-                // alert('어떤 음악을 추천해 드릴지 입력해주세요!'); // alert 대신 커스텀 메시지 표시
-                const errorMessageElement = document.querySelector('.error-message');
-                if (errorMessageElement) {
-                    errorMessageElement.textContent = '어떤 음악을 추천해 드릴지 입력해주세요!';
-                    errorMessageElement.style.display = 'block';
-                } else {
-                    // 오류 메시지 요소가 없는 경우를 대비 (개발 중에는 발생하지 않아야 함)
-                    alert('어떤 음악을 추천해 드릴지 입력해주세요!');
-                }
-                return;
-            }
-
-            loadingOverlay.style.display = 'flex';
-
-            try {
-                const formData = new FormData();
-                // 여기서 필드 이름을 'user_message'로 변경합니다.
-                formData.append('user_message', userText); 
-
-                const response = await fetch('/recommend', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                // 서버에서 400 Bad Request나 다른 오류 코드를 보낼 경우 처리
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || '알 수 없는 오류');
-                }
-
-                const data = await response.json();
-                
-                // Flask의 /recommend 엔드포인트가 이제 JSON 응답을 보냅니다.
-                // 이 JSON 응답에는 user_message와 recommendations가 포함되어야 합니다.
-                // 따라서 recommend_loading_page.html로 리다이렉트하는 대신,
-                // 바로 recommend_result_page.html로 리다이렉트하며 데이터를 전달합니다.
-                window.location.href = `/recommend_result?user_message=${encodeURIComponent(data.user_message)}&recommendation_info_json=${encodeURIComponent(JSON.stringify(data.recommendation_info))}`;
-
-            } catch (error) {
-                console.error('음악 추천 요청 중 오류 발생:', error);
-                // alert 대신 오류 메시지 표시
-                const errorMessageElement = document.querySelector('.error-message');
-                if (errorMessageElement) {
-                    errorMessageElement.textContent = '오류 발생: ' + error.message;
-                    errorMessageElement.style.display = 'block';
-                } else {
-                    alert('오류 발생: ' + error.message);
-                }
-            } finally {
-                loadingOverlay.style.display = 'none';
-            }
-        });
-
-        // 이미지 로드 실패 시 대체 이미지 설정 (로고)
         document.querySelector('.logo-image').onerror = function() {
             this.src = 'https://placehold.co/50x50/cccccc/000000?text=Logo';
             this.alt = '로고 (이미지 없음)';
+        };
+        document.querySelector('img[alt="음악 추천 이미지"]').onerror = function() {
+            this.src = 'https://placehold.co/300x200/cccccc/000000?text=Recommendation+Image';
+            this.alt = '음악 추천 이미지 (없음)';
         };
     </script>
 </body>

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>음잘딱깔센 - 음악 서비스 통합</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(to bottom right, #a3c8f5, #4a90e2);
+            color: #333;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            padding: 1rem 2rem;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .logo-link {
+            text-decoration: none;
+        }
+
+        .logo-image {
+            height: 50px;
+        }
+
+        main {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            width: 100%;
+        }
+
+        .main-title {
+            font-size: 3.5rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 3rem;
+            text-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .feature-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 3rem; /* 이미지 간격 조정 */
+            justify-content: center;
+            width: 100%;
+            max-width: 900px; /* 컨테이너 최대 너비 */
+        }
+
+        .feature-card {
+            background-color: #ffffffcc;
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none; /* 링크 스타일 제거 */
+            color: #333;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            width: calc(50% - 1.5rem); /* 2개 나란히 배치, gap 고려 */
+            max-width: 350px; /* 각 카드 최대 너비 */
+            box-sizing: border-box;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .feature-image {
+            width: 100%;
+            max-width: 250px; /* 이미지 크기 조정 */
+            height: auto;
+            border-radius: 15px;
+            margin-bottom: 1.5rem;
+        }
+
+        .feature-text {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #4a90e2; /* 강조 색상 */
+        }
+
+        footer {
+            margin-top: auto;
+            padding: 1rem;
+            text-align: center;
+            color: #777;
+            font-size: 0.9em;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        footer p {
+            margin: 0.5rem 0;
+        }
+        footer a {
+            color: #0056b3;
+            text-decoration: none;
+        }
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .main-title {
+                font-size: 2.5rem;
+                margin-bottom: 2rem;
+            }
+            .feature-container {
+                flex-direction: column;
+                gap: 2rem;
+            }
+            .feature-card {
+                width: 90%; /* 모바일에서 전체 너비 사용 */
+                max-width: 400px;
+            }
+            .feature-image {
+                max-width: 200px;
+            }
+            .feature-text {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="/" class="logo-link">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="음잘딱깔센 로고" class="logo-image" onerror="this.src='https://placehold.co/50x50/cccccc/000000?text=Logo'; this.alt='로고 (이미지 없음)';" />
+        </a>
+    </header>
+
+    <main>
+        <h1 class="main-title">음잘딱깔센</h1>
+        <div class="feature-container">
+            <a href="/genre" class="feature-card">
+                <img src="{{ url_for('static', filename='music_genre_classification.png') }}" alt="음악 장르 분류" class="feature-image" onerror="this.src='https://placehold.co/250x250/cccccc/000000?text=Genre'; this.alt='장르 분류 이미지 없음';" />
+                <div class="feature-text">음악 장르 분류</div>
+            </a>
+            <a href="/recommendation" class="feature-card">
+                <img src="{{ url_for('static', filename='music_recommendation.png') }}" alt="음악 추천" class="feature-image" onerror="this.src='https://placehold.co/250x250/cccccc/000000?text=Recommend'; this.alt='음악 추천 이미지 없음';" />
+                <div class="feature-text">음악 추천</div>
+            </a>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 음잘딱깔센</p>
+    </footer>
+
+    <script>
+        document.querySelector('.logo-image').onerror = function() {
+            this.src = 'https://placehold.co/50x50/cccccc/000000?text=Logo';
+            this.alt = '로고 (이미지 없음)';
+        };
+        document.querySelector('img[alt="음악 장르 분류"]').onerror = function() {
+            this.src = 'https://placehold.co/250x250/cccccc/000000?text=Genre';
+            this.alt = '장르 분류 이미지 없음';
+        };
+        document.querySelector('img[alt="음악 추천"]').onerror = function() {
+            this.src = 'https://placehold.co/250x250/cccccc/000000?text=Recommend';
+            this.alt = '음악 추천 이미지 없음';
+        };
+    </script>
+</body>
+</html>

@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>음악 장르 분류 | 음잘딱깔센</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
     <style>
         body {
             margin: 0;
@@ -173,6 +174,35 @@
             max-width: 500px;
         }
 
+        .navigation-buttons {
+            margin-top: 2rem;
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .nav-button {
+            padding: 0.8rem 2rem;
+            font-size: 1rem;
+            background-color: #6c757d; /* 회색 계열 */
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            flex: 1; /* 공간 균등 분배 */
+            text-decoration: none; /* 링크 스타일 제거 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .nav-button:hover {
+            background-color: #5a6268;
+        }
+
 
         @media (max-width: 600px) {
             main {
@@ -209,6 +239,13 @@
                 padding: 0.6rem;
                 font-size: 0.85rem;
             }
+            .navigation-buttons {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            .nav-button {
+                width: 100%;
+            }
         }
         footer {
             margin-top: auto;
@@ -233,6 +270,7 @@
 </head>
 <body>
     <header>
+        <!-- 로고 링크는 이제 메인 랜딩 페이지로 이동합니다. -->
         <a href="/" class="logo-link">
             <img src="{{ url_for('static', filename='logo.png') }}" alt="로고" class="logo-image" onerror="this.src='https://placehold.co/50x50/cccccc/000000?text=Logo'; this.alt='로고 (이미지 없음)';" />
         </a>
@@ -244,7 +282,6 @@
             <img src="{{ url_for('static', filename='music_genre_classification.png') }}" alt="음악 장르 분류 이미지" style="width: 100%; max-width: 300px; border-radius: 15px; margin-bottom: 1rem;" onerror="this.src='https://placehold.co/300x200/cccccc/000000?text=Genre+Image'; this.alt='음악 장르 분류 이미지 (없음)';">
             <h2>음악 파일을 업로드하세요</h2>
             <form id="upload-form">
-                <!-- accept 속성을 .wav로만 변경 -->
                 <input type="file" name="audio" accept=".wav" required />
                 <button type="submit" class="predict-button">예측 시작</button>
             </form>
@@ -254,12 +291,15 @@
                 <audio id="audio-preview" controls></audio>
             </div>
         </div>
-        <!-- 오류 메시지를 표시할 영역 추가 -->
         <div id="error-message-display"></div>
-        <!-- 파일 형식 안내 메시지 추가 -->
         <div id="file-format-info">
             <p><strong>참고:</strong> 이 서비스는 <strong>WAV 파일만 지원</strong>합니다.</p>
-            <p>업로드하신 WAV 파일은 분석을 위해 **자동으로 앞부분 10초로 잘라내어** 사용됩니다.</p>
+            <p>업로드하신 WAV 파일은 분석을 위해 **자동으로 앞부분 30초로 잘라내어** 사용됩니다.</p>
+        </div>
+
+        <!-- 메인 랜딩 페이지로 돌아가는 버튼 추가 -->
+        <div class="navigation-buttons">
+            <a href="/" class="nav-button">메인 페이지로 돌아가기</a>
         </div>
     </main>
 
@@ -279,28 +319,25 @@
         const audioPreviewSection = document.querySelector('.audio-player-section');
         const audioPreview = document.getElementById('audio-preview');
         const errorMessageDisplay = document.getElementById('error-message-display');
-        const fileFormatInfo = document.getElementById('file-format-info'); // 새로 추가된 요소
+        const fileFormatInfo = document.getElementById('file-format-info');
 
-        // 오류 메시지 표시 함수
         function displayError(message) {
             errorMessageDisplay.textContent = '오류 발생: ' + message;
             errorMessageDisplay.style.display = 'block';
         }
 
-        // 오류 메시지 숨김 함수
         function hideError() {
             errorMessageDisplay.textContent = '';
             errorMessageDisplay.style.display = 'none';
         }
 
         audioFileInput.addEventListener('change', function() {
-            hideError(); // 새 파일 선택 시 오류 메시지 숨김
+            hideError();
             if (this.files.length > 0) {
                 const file = this.files[0];
-                // WAV 파일만 허용하도록 클라이언트 측 유효성 검사 추가
                 if (!file.name.toLowerCase().endsWith('.wav')) {
                     displayError("WAV 파일만 업로드할 수 있습니다. 다른 형식의 파일은 지원되지 않습니다.");
-                    this.value = ''; // 파일 선택 취소
+                    this.value = '';
                     audioPreview.src = '';
                     audioPreviewSection.style.display = 'none';
                     return;
@@ -316,7 +353,7 @@
 
         uploadForm.addEventListener('submit', async function (e) {
             e.preventDefault();
-            hideError(); // 제출 시 기존 오류 메시지 숨김
+            hideError();
 
             const formData = new FormData(uploadForm);
 
@@ -324,7 +361,6 @@
                 displayError("음악 파일을 선택해주세요.");
                 return;
             }
-            // 클라이언트 측에서 WAV 파일 유효성 검사 다시 확인 (submit 버튼 클릭 시)
             if (!audioFileInput.files[0].name.toLowerCase().endsWith('.wav')) {
                 displayError("WAV 파일만 업로드할 수 있습니다. 다른 형식의 파일은 지원되지 않습니다.");
                 return;
@@ -333,7 +369,6 @@
             loadingOverlay.style.display = 'flex';
 
             const controller = new AbortController();
-            // 클라이언트 측 타임아웃을 90초로 유지 (서버 응답이 느릴 경우)
             const timeoutId = setTimeout(() => controller.abort(), 90000); 
 
             try {
@@ -360,6 +395,7 @@
                 const data = await response.json();
                 
                 const genre = data.label;
+                // /result 경로로 이동 (music_genre_app 내부의 라우트)
                 window.location.href = `/result?genre=${encodeURIComponent(genre)}&probability=${encodeURIComponent(data.probability)}`;
 
             } catch (error) {
