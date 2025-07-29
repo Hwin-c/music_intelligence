@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>장르 분석 결과 | 음잘딱깔센</title>
+  <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
   <style>
     body {
       margin: 0;
@@ -195,9 +196,9 @@
       </div>
       <div class="actions">
         <!-- "다시 해보기" 버튼은 음악 장르 분류 앱의 메인 페이지로 이동 -->
-        <button class="action-button" onclick="location.href='/'">다시 해보기</button>
-        <!-- "홈으로 이동하기" 버튼 추가 -->
-        <a href="/" class="home-button">홈으로 이동하기</a>
+        <button class="action-button" onclick="location.href='/genre'">다시 해보기</button>
+        <!-- "메인 페이지로 돌아가기" 버튼 추가 -->
+        <a href="/" class="home-button">메인 페이지로 돌아가기</a>
       </div>
     </div>
   </main>
