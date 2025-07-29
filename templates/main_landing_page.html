@@ -35,9 +35,10 @@
             display: none; 
         }
 
-        .logo-image {
-            height: 50px; /* 이 스타일은 더 이상 왼쪽 상단 로고에 적용되지 않습니다. */
-        }
+        /* 이 스타일은 더 이상 왼쪽 상단 로고에 적용되지 않습니다. */
+        /* .logo-image {
+            height: 50px; 
+        } */
 
         main {
             flex-grow: 1;
@@ -48,15 +49,6 @@
             padding: 2rem;
             width: 100%;
         }
-
-        /* 메인 타이틀 텍스트는 이미지로 대체되므로, 이 스타일은 더 이상 사용되지 않습니다. */
-        /* .main-title {
-            font-size: 3.5rem;
-            font-weight: bold;
-            color: #333;
-            margin-bottom: 3rem;
-            text-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        } */
 
         /* 메인 로고 이미지 스타일 */
         .main-logo-img {
@@ -143,10 +135,6 @@
         }
 
         @media (max-width: 768px) {
-            /* .main-title {
-                font-size: 2.5rem;
-                margin-bottom: 2rem;
-            } */
             .main-logo-img {
                 max-width: 300px;
             }
@@ -181,11 +169,12 @@
 
     <main>
         <!-- '음잘딱깔센' 텍스트 제목을 커다란 로고 이미지로 대체 -->
+        <!-- static/logo.png 파일을 사용합니다. -->
         <img
-            src="https://placehold.co/500x200/4A90E2/FFFFFF?text=Eumjalttakkalsen+Logo"
+            src="{{ url_for('static', filename='logo.png') }}"
             alt="음잘딱깔센 메인 로고"
             class="main-logo-img"
-            onerror="this.onerror=null;this.src='https://placehold.co/500x200/4A90E2/FFFFFF?text=Logo+Image+Error';"
+            onerror="this.onerror=null;this.src='https://placehold.co/500x200/4A90E2/FFFFFF?text=Logo+Image+Error';this.alt='로고 이미지 로드 실패';"
         />
 
         <!-- 프로젝트 설명 추가 -->
@@ -213,6 +202,8 @@
     <script>
         // 기존 onerror 핸들러는 왼쪽 상단 로고가 display: none; 이므로 불필요하지만, 혹시 모를 경우를 대비해 유지합니다.
         // main-logo-img에 대한 onerror는 img 태그 내에 직접 정의했습니다.
+        // document.querySelector('.logo-image').onerror는 이제 display: none; 된 요소에 대한 것이므로 제거합니다.
+
         document.querySelector('img[alt="음악 장르 분류"]').onerror = function() {
             this.src = 'https://placehold.co/250x250/cccccc/000000?text=Genre';
             this.alt = '장르 분류 이미지 없음';
