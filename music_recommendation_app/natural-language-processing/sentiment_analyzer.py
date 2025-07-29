@@ -2,12 +2,13 @@ import logging
 import traceback
 import torch
 import numpy as np
+from transformers import AutoTokenizer, AutoModelForSequenceClassification # transformers 임포트를 상단으로 이동
 
 # 로깅 설정 (app.py의 로깅 설정을 따르지만, 이 파일에서도 상세 로그를 위해 DEBUG 레벨 유지)
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class SentimentAnalyzer:
-    def __init__(self, model_name="daekeun-ml/koelectra-small-v3-nsmc"): 
+    def __init__(self, model_name="hun3359/klue-bert-base-sentiment"): # 모델 이름 변경
         """
         감정 분석 모델을 초기화합니다.
         모델은 초기화 시 바로 로드되지 않고, 필요할 때 (첫 analyze_sentiment 호출 시) 로드됩니다.
@@ -23,10 +24,7 @@ class SentimentAnalyzer:
         """
         모델과 토크나이저를 실제로 로드하는 내부 메서드입니다.
         이 메서드는 analyze_sentiment가 처음 호출될 때 한 번만 실행됩니다.
-        여기서 transformers를 임포트합니다.
         """
-        from transformers import AutoTokenizer, AutoModelForSequenceClassification
-
         if self.model is not None: # 이미 로드되었다면 다시 로드하지 않음
             return
 
@@ -74,16 +72,10 @@ class SentimentAnalyzer:
         
         raw_predicted_id = predicted_id.item() # 예측된 레이블의 숫자 ID
         
-        # NSMC 모델의 일반적인 레이블 ID (0, 1)를 더 의미 있는 감정으로 매핑
-        mapped_label = "unknown" # 기본값 설정
-        if raw_predicted_id == 0: # 모델의 부정 레이블 ID
-            mapped_label = "부정"
-        elif raw_predicted_id == 1: # 모델의 긍정 레이블 ID
-            mapped_label = "긍정"
-        # 여기에 추가적인 매핑이 필요하다면 더 추가할 수 있습니다.
-        # 예를 들어, 모델이 다른 레이블을 반환할 경우를 대비하여:
-        # elif self.id2label.get(str(raw_predicted_id)) == "NEUTRAL": mapped_label = "중립"
-
+        # hun3359/klue-bert-base-sentiment 모델의 id2label 매핑을 직접 사용
+        # 이 모델은 긍정/부정/중립 외에 '기쁨', '슬픔', '분노', '불안', '상처', '당황' 등 세분화된 감정을 가집니다.
+        mapped_label = self.id2label.get(raw_predicted_id, "알 수 없음") # 모델의 실제 레이블 사용
+        
         result = {
             "label": mapped_label, # 매핑된 레이블 사용
             "score": predicted_score.item(),
@@ -96,7 +88,8 @@ class SentimentAnalyzer:
 if __name__ == "__main__":
     logging.info("--- SentimentAnalyzer 모듈 직접 실행 테스트 시작 ---")
     try:
-        from transformers import pipeline
+        # transformers 임포트가 이미 상단에 있으므로 여기서 다시 할 필요 없음
+        pass 
     except ImportError:
         logging.error("transformers 라이브러리가 설치되어 있지 않습니다. 'pip install transformers'를 실행해주세요.")
         exit(1)
@@ -107,16 +100,16 @@ if __name__ == "__main__":
         logging.info("\n--- 감정 분석 테스트 ---")
 
         test_cases = [
-            "신나는 날이야!", # 긍정으로 매핑되어야 함
-            "우울한 날이야", # 부정으로 매핑되어야 함
-            "공부하느라 집중해야 해", # 중립 또는 긍정으로 매핑될 수 있음 (모델에 따라 다름)
-            "정말 화가 나!", # 부정으로 매핑되어야 함
-            "와우, 깜짝 놀랐어!", # 긍정으로 매핑될 수 있음
-            "아, 정말 짜증나 죽겠네.", # 부정으로 매핑되어야 함
-            "너무 편안하고 기분이 좋아.", # 긍정으로 매핑되어야 함
-            "조금 걱정이 되네.", # 부정으로 매핑될 수 있음
-            "나는 지금 행복해", # 긍정으로 매핑되어야 함
-            "이 상황은 정말 혼란스럽다." # 부정 또는 중립으로 매핑될 수 있음
+            "신나는 날이야!", 
+            "우울한 날이야", 
+            "공부하느라 집중해야 해", 
+            "정말 화가 나!", 
+            "와우, 깜짝 놀랐어!", 
+            "아, 정말 짜증나 죽겠네.", 
+            "너무 편안하고 기분이 좋아.", 
+            "조금 걱정이 되네.", 
+            "나는 지금 행복해", 
+            "이 상황은 정말 혼란스럽다."
         ]
 
         for i, text in enumerate(test_cases):
