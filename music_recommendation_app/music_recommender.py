@@ -21,20 +21,24 @@ if nlp_dir not in sys.path:
 class SentimentAnalyzer: # 기본적으로 Mock 버전으로 시작
     def analyze_sentiment(self, text: str):
         logging.debug("MockSentimentAnalyzer: Analyzing '%s'", text)
-        if "신나" in text or "기분 좋" in text or "활기찬" in text:
-            return {"label": "신이 난", "score": 0.9} # bpm_mapper.py에 있는 세분화된 감정
-        elif "슬프" in text or "우울" in text:
-            return {"label": "슬픔", "score": 0.8} # bpm_mapper.py에 있는 세분화된 감정
-        elif "공부" in text or "집중" in text or "잔잔" in text:
-            return {"label": "공부", "score": 0.7} # bpm_mapper.py에 있는 세분화된 감정
-        elif "화가 나" in text or "분노" in text:
-            return {"label": "분노", "score": 0.85} # bpm_mapper.py에 있는 세분화된 감정
-        elif "스트레스" in text or "쉬고 싶" in text:
-            return {"label": "스트레스 받는", "score": 0.75} # bpm_mapper.py에 있는 세분화된 감정
-        elif "편안" in text or "느긋" in text or "안도" in text:
-            return {"label": "편안한", "score": 0.75} # bpm_mapper.py에 있는 세분화된 감정
+        # 긍정 감정 키워드
+        if any(keyword in text for keyword in ["신나", "기분 좋", "활기찬", "행복", "즐거워", "기뻐"]):
+            return {"label": "신이 난", "score": 0.9} 
+        # 슬픔/부정 감정 키워드 (더 많은 변형 포함)
+        elif any(keyword in text for keyword in ["슬프", "우울", "비통", "괴로워", "힘들어", "외로워", "눈물", "답답", "씁쓸"]):
+            return {"label": "슬픔", "score": 0.8} 
+        # 분노 감정 키워드
+        elif any(keyword in text for keyword in ["화가 나", "분노", "짜증나", "열받아", "성나"]):
+            return {"label": "분노", "score": 0.85}
+        # 스트레스 감정 키워드
+        elif any(keyword in text for keyword in ["스트레스", "쉬고 싶", "지쳐", "피곤"]):
+            return {"label": "스트레스 받는", "score": 0.75}
+        # 편안 감정 키워드
+        elif any(keyword in text for keyword in ["편안", "느긋", "안도", "평화", "고요"]):
+            return {"label": "편안한", "score": 0.75}
         else:
-            return {"label": "중립", "score": 0.5} # '중립'으로 직접 매핑
+            # 매핑되지 않는 경우 "긍정"으로 기본값 설정 (Mock 테스트 시)
+            return {"label": "긍정", "score": 0.5} 
 
 class BPMMapper: # 기본적으로 Mock 버전으로 시작 (bpm_mapper.py의 내용과 동일하게 유지)
     def __init__(self):
@@ -107,16 +111,10 @@ class BPMMapper: # 기본적으로 Mock 버전으로 시작 (bpm_mapper.py의 �
             "혐오스러운": {"bpm": (90, 120), "danceability": (40, 70), "acousticness": (10, 50)},
             "한심한": {"bpm": (60, 90), "danceability": (10, 40), "acousticness": (50, 90)},
             "혼란스러운(당황한)": {"bpm": (80, 110), "danceability": (35, 65), "acousticness": (25, 55)},
-            
-            # '공부' 감정 추가
-            "공부": {"bpm": (80, 110), "danceability": (0, 50), "acousticness": (30, 70)},
-            
-            # '중립' 감정 추가 (이전 'neutral')
-            "중립": {"bpm": (90, 120), "danceability": (40, 80), "acousticness": (20, 70)}
         }
         
-        # 매핑되지 않은 감정에 대한 기본 오디오 특성 범위 설정
-        self.default_features_range = self.emotion_features_map["중립"] # 'neutral' 대신 '중립' 사용
+        # '공부' 및 '중립' 감정 제거에 따라 기본 오디오 특성 범위 재설정
+        self.default_features_range = {"bpm": (90, 120), "danceability": (40, 80), "acousticness": (20, 70)}
         logging.info("BPM 매퍼 초기화 완료. 기본 오디오 특성 범위: %s", self.default_features_range)
 
     def get_bpm_range(self, emotion_label: str) -> tuple:
@@ -171,10 +169,11 @@ def _calculate_relevance_score(song_data: dict, target_features: dict, weights: 
             return 0.0
         try:
             # tempo (BPM)만 0-1 스케일링을 고려하고, 나머지는 int로 변환
+            # (Getsong API가 danceability, acousticness를 0-100으로 반환한다고 가정)
             if is_tempo and isinstance(song_value, float) and (song_value >= 0 and song_value <= 1):
                 song_value = int(song_value * 100)
             else:
-                song_value = int(song_value) # danceability, acousticness는 이미 0-100이라고 가정
+                song_value = int(song_value) # 이미 정수이거나 정수로 변환 가능해야 함
 
             if min_target <= song_value <= max_target:
                 center_target = (min_target + max_target) / 2
@@ -210,12 +209,16 @@ broad_emotion_category_map = {
     "고립된": "부정", "충격 받은": "부정", "가난한 불우한": "부정", "희생된": "부정",
     "억울한": "부정", "괴로워하는": "부정", "외로운": "부정", "열등감": "부정",
     "죄책감의": "부정", "부끄러운": "부정", "한심한": "부정",
+    # 이전에 '중립'으로 매핑되었던 감정들을 '부정' 또는 '평온'으로 재분류
+    "혼란스러운": "부정", "당혹스러운": "부정", "회의적인": "부정", "조심스러운": "부정",
+    "걱정스러운": "부정", 
+    "초조한": "부정", 
+    "불안": "부정", 
+    "고립된(당황한)": "부정", "남의 시선을 의식하는": "부정", "혼란스러운(당황한)": "부정",
+
 
     # 평온 (사용자 요청에 따라 '편안한', '느긋', '안도'를 이 카테고리로 매핑)
     "편안한": "평온", "느긋": "평온", "안도": "평온",
-
-    # 공부 (사용자 요청에 따라 추가)
-    "공부": "공부",
 
     # 분노 (사용자 요청에 따라 '화가 나'를 '분노'로 통일)
     "분노": "분노", "툴툴대는": "분노", "좌절한": "분노", "짜증내는": "분노",
@@ -223,17 +226,11 @@ broad_emotion_category_map = {
 
     # 스트레스 (사용자 요청에 따라 추가)
     "스트레스 받는": "스트레스",
-
-    # 중립 (사용자 요청에 따라 'neutral' 대신 '중립' 사용)
-    "혼란스러운": "중립", "당혹스러운": "중립", "회의적인": "중립", "조심스러운": "중립",
-    "걱정스러운": "중립", # 걱정스러운은 불안보다는 중립에 가깝게 판단
-    "초조한": "중립", # 초조한은 불안보다는 중립에 가깝게 판단
-    "불안": "중립", # 불안도 중립에 가깝게 판단 (가중치 적용 시)
-    "고립된(당황한)": "중립", "남의 시선을 의식하는": "중립", "혼란스러운(당황한)": "중립",
 }
 
 # --- 감정 카테고리별 오디오 특성 가중치 ---
 # 사용자의 요청에 따라 '화가 나' -> '분노', 'neutral' -> '중립'으로 이름 변경
+# '공부'와 '중립' 감정은 삭제
 emotion_weights = {
     "긍정": { # 행복/신남
         "bpm": 1.0,
@@ -250,12 +247,7 @@ emotion_weights = {
         "danceability": 0.4,
         "acousticness": 0.9
     },
-    "공부": { # 집중/공부
-        "bpm": 0.6,
-        "danceability": 0.1,
-        "acousticness": 1.0
-    },
-    "분노": { # 분노/격렬 (이전 '화가 나')
+    "분노": { # 분노/격렬
         "bpm": 1.0,
         "danceability": 0.7,
         "acousticness": 0.1
@@ -265,11 +257,6 @@ emotion_weights = {
         "danceability": 0.4,
         "acousticness": 0.9
     },
-    "중립": { # 기본값 또는 중립 (이전 'neutral')
-        "bpm": 0.9,
-        "danceability": 0.7,
-        "acousticness": 0.5
-    }
 }
 
 
@@ -295,8 +282,9 @@ class MockMusicRecommender(object):
         target_audio_features = self.bpm_mapper.get_audio_feature_ranges(emotion_label)
         
         # SentimentAnalyzer의 출력 레이블을 광범위한 카테고리로 매핑하여 가중치 선택
-        broad_category = broad_emotion_category_map.get(emotion_label, "중립")
-        current_weights = emotion_weights.get(broad_category, emotion_weights["중립"])
+        # broad_emotion_category_map에 없는 경우, 기본 가중치 (예: 긍정의 가중치)를 사용하거나 오류 처리
+        broad_category = broad_emotion_category_map.get(emotion_label, "긍정") # 기본값을 "긍정"으로 설정
+        current_weights = emotion_weights.get(broad_category, emotion_weights["긍정"]) # 기본값을 "긍정"으로 설정
 
         mock_songs_data = [
             {"title": "Dancing Monkey (Mock)", "artist": "Tones And I (Mock)", "bpm": 98, "uri": "#", "genres": ["Pop", "Indie"], "danceability": 80, "acousticness": 10},
@@ -425,8 +413,9 @@ class MusicRecommender:
         target_features = self.bpm_mapper.get_audio_feature_ranges(emotion_label)
         
         # SentimentAnalyzer의 출력 레이블을 광범위한 카테고리로 매핑하여 가중치 선택
-        broad_category = broad_emotion_category_map.get(emotion_label, "중립")
-        current_weights = emotion_weights.get(broad_category, emotion_weights["중립"])
+        # broad_emotion_category_map에 없는 경우, 기본 가중치 (예: 긍정의 가중치)를 사용하거나 오류 처리
+        broad_category = broad_emotion_category_map.get(emotion_label, "긍정") # 기본값을 "긍정"으로 설정
+        current_weights = emotion_weights.get(broad_category, emotion_weights["긍정"]) # 기본값을 "긍정"으로 설정
 
         candidate_songs = []
         seen_titles = set() # 중복 제목을 추적하기 위한 셋
@@ -446,21 +435,20 @@ class MusicRecommender:
         # 감정 기반 검색 키워드 매핑 (더 다양하고 구체적인 키워드 추가)
         emotion_keywords_for_search = {
             "긍정": ["happy", "upbeat", "energetic", "joyful", "party", "celebration", "optimistic", "bright", "good vibes", "dancing", "fun"],
-            "부정": ["sad", "melancholy", "downbeat", "gloomy", "depressed", "lonely", "heartbreak", "somber", "blue"],
-            "공부": ["focus", "study", "concentration", "ambient", "instrumental", "classical", "lo-fi", "calm", "relaxing"],
-            "분노": ["angry", "rage", "intense", "aggressive", "metal", "punk", "hard rock", "rebellion"], # '화가 나' -> '분노'
+            "부정": ["sad", "melancholy", "downbeat", "gloomy", "depressed", "lonely", "heartbreak", "somber", "blue", "sorrow", "grief"], # '비통한' 관련 키워드 추가
+            "분노": ["angry", "rage", "intense", "aggressive", "metal", "punk", "hard rock", "rebellion"], 
             "스트레스": ["relax", "calm", "chill", "soothing", "meditation", "peaceful", "unwind"],
-            "평온": ["relax", "calm", "chill", "peaceful", "smooth", "mellow", "serene"], # '편안' -> '평온'
+            "평온": ["relax", "calm", "chill", "peaceful", "smooth", "mellow", "serene"], 
             "불안": ["soothing", "calm", "meditation", "peaceful", "gentle", "comforting"],
-            "중립": ["easy listening", "background music", "chill out", "acoustic", "mellow"] # 'neutral' -> '중립'
+            "비통한": ["grieved", "sorrowful", "heartbroken", "mournful", "despairing", "somber"] 
         }
         
         # 일반적인 장르 키워드 (fallback 용도 또는 추가 다양성)
         genre_keywords = ["pop", "dance", "rock", "electronic", "jazz", "hip hop", "ballad", "r&b", "k-pop", "indie", "soul", "funk", "classical"]
 
         # 감정 기반 키워드를 우선 사용하고, 장르 키워드를 추가합니다.
-        # emotion_label이 직접 broad_category_map에 매핑된 경우 해당 broad_category의 키워드를 사용
-        keywords_for_query = emotion_keywords_for_search.get(broad_category, emotion_keywords_for_search["중립"])
+        # broad_category_map에 없는 경우, 기본값으로 "긍정"의 키워드를 사용
+        keywords_for_query = emotion_keywords_for_search.get(broad_category, emotion_keywords_for_search["긍정"])
         combined_queries = set(keywords_for_query)
         combined_queries.update(genre_keywords)
         
@@ -531,10 +519,13 @@ class MusicRecommender:
 
                     if song_bpm is not None and song_danceability is not None and song_acousticness is not None:
                         try:
-                            # _calculate_relevance_score에서 BPM만 0-1 스케일링을 고려하므로, 여기서는 단순히 int로 변환
-                            # Getsong API가 danceability, acousticness를 0-100으로 반환한다고 가정
+                            # Getsong API에서 받은 값을 int로 변환하여 저장 (HTML 템플릿 사용을 위함)
+                            processed_bpm = int(song_bpm)
+                            processed_danceability = int(song_danceability)
+                            processed_acousticness = int(song_acousticness)
+
                             relevance_score = _calculate_relevance_score(
-                                {"tempo": song_bpm, "danceability": int(song_danceability), "acousticness": int(song_acousticness)},
+                                {"tempo": processed_bpm, "danceability": processed_danceability, "acousticness": processed_acousticness},
                                 target_features,
                                 current_weights # 가중치 전달
                             )
@@ -543,11 +534,11 @@ class MusicRecommender:
                                 candidate_songs.append({
                                     "title": song_title,
                                     "artist": artist_name,
-                                    "bpm": song_bpm,
+                                    "bpm": processed_bpm, # 정수형으로 저장
                                     "uri": song_uri, 
                                     "genres": genres,
-                                    "danceability": int(song_danceability), # 0-100 범위라고 가정
-                                    "acousticness": int(song_acousticness), # 0-100 범위라고 가정
+                                    "danceability": processed_danceability, # 정수형으로 저장
+                                    "acousticness": processed_acousticness, # 정수형으로 저장
                                     "relevance_score": relevance_score
                                 })
                                 seen_titles.add(song_title)
@@ -613,11 +604,14 @@ if __name__ == "__main__":
     test_inputs = [
         "오늘은 정말 기분이 좋고 신나!",
         "요즘 너무 우울해서 슬픈 노래가 듣고 싶어.",
-        "공부해야 하는데 집중이 안 돼. 잔잔한 음악 틀어줘.",
         "정말 화가 나서 아무것도 못 하겠어.",
         "하루 종일 스트레스 받아서 쉬고 싶어.",
         "너무 편안하고 기분이 좋아.",
-        "조금 불안하고 걱정이 되네."
+        "조금 불안하고 걱정이 되네.",
+        "비통하다. 마음이 찢어지는 것 같아.",
+        "너무 슬퍼.", # 슬픔 테스트 추가
+        "짜증나 죽겠어.", # 분노 테스트 추가
+        "마음이 너무 괴로워." # 슬픔 테스트 추가
     ]
 
     for user_text in test_inputs:
