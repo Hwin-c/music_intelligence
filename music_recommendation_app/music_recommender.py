@@ -45,10 +45,10 @@ class BPMMapper:
             "불안": {"bpm": (95, 125), "danceability": (30, 70), "acousticness": (20, 60)},
             "neutral": {"bpm": (90, 120), "danceability": (40, 80), "acousticness": (20, 70)}
         }
-        logging.info("MockBPMMapper initialized.")
+        logging.info("BPM 매퍼 초기화 완료. 기본 오디오 특성 범위: {'bpm': (90, 120), 'danceability': (40, 80), 'acousticness': (20, 70)}")
 
     def get_audio_feature_ranges(self, emotion_label: str):
-        logging.debug(f"MockBPMMapper: Mapping audio features for '{emotion_label}'")
+        logging.debug(f"BPMMapper: Mapping audio features for '{emotion_label}'")
         return self.emotion_features_map.get(emotion_label, self.emotion_features_map["neutral"])
 
 # --- 실제 SentimentAnalyzer 및 BPMMapper 임포트 시도 ---
@@ -57,7 +57,7 @@ try:
     from bpm_mapper import BPMMapper as RealBPMMapper
     
     SentimentAnalyzer = RealSentimentAnalyzer
-    BPMMapper = RealBPMMapper
+    BPMMapper = RealBPPMapper
     logging.debug("Actual SentimentAnalyzer and BPMMapper imported successfully.")
 except ImportError as e:
     logging.warning(f"Failed to import actual NLP modules: {e}. Continuing with Mock versions.")
@@ -104,11 +104,10 @@ class MockMusicRecommender(object):
     API 키가 없거나 개발 시에 사용할 모의(Mock) 추천기입니다.
     실제 API 호출 없이 미리 정의된 데이터를 반환합니다.
     """
-    def __init__(self, getsongbpm_api_key: str = None, getsong_recommendation_api_url: str = None):
+    def __init__(self, getsongbpm_api_key: str = None): # getsong_recommendation_api_url 인자 제거
         self.sentiment_analyzer = SentimentAnalyzer()
         self.bpm_mapper = BPMMapper()
         self.getsongbpm_api_key = getsongbpm_api_key # 사용되지 않지만 일관성을 위해 유지
-        self.getsong_recommendation_api_url = getsong_recommendation_api_url # 사용되지 않지만 일관성을 위해 유지
         logging.info("--- Mock Music Recommender initialized (using mock data only) ---")
 
     def recommend_music(self, user_text: str, limit: int = 3):
@@ -189,18 +188,22 @@ class MusicRecommender:
     """
     사용자의 감정을 분석하여 음악 특성 기반으로 음악을 추천하는 클래스입니다.
     """
-    def __init__(self, getsongbpm_api_key: str, getsong_recommendation_api_url: str):
+    def __init__(self, getsongbpm_api_key: str): # getsong_recommendation_api_url 인자 제거
         """
         MusicRecommender를 초기화합니다.
 
         Args:
             getsongbpm_api_key (str): getsong.co API 키.
-            getsong_recommendation_api_url (str): Getsong API의 텍스트 기반 추천 엔드포인트 URL.
         """
         self.sentiment_analyzer = SentimentAnalyzer()
         self.bpm_mapper = BPMMapper()
         self.getsongbpm_api_key = getsongbpm_api_key
-        self.getsong_recommendation_api_url = getsong_recommendation_api_url
+        # Getsong API의 기본 URL과 텍스트 추천 엔드포인트를 내부에 정의
+        self.getsongbpm_base_url = "https://api.getsong.co/" 
+        # TODO: Getsong API 문서에서 텍스트 기반 추천의 정확한 엔드포인트를 확인하여 교체하세요.
+        self.text_recommendation_endpoint = "v1/text-recommendation" # 예시 URL, 실제 URL로 교체 필요
+        self.getsong_recommendation_api_url = f"{self.getsongbpm_base_url}{self.text_recommendation_endpoint}"
+
         logging.info(f"Music recommendation system initialized with API URL: {self.getsong_recommendation_api_url}")
 
     def recommend_music(self, user_text: str, limit: int = 3):
@@ -290,15 +293,14 @@ class MusicRecommender:
 
 # 이 파일이 직접 실행될 때만 실행되는 테스트 코드
 if __name__ == "__main__":
-    # 환경 변수에서 API 키와 URL을 가져옵니다.
+    # 환경 변수에서 API 키를 가져옵니다.
     getsongbpm_api_key = os.environ.get("GETSONGBPM_API_KEY")
-    getsong_recommendation_api_url = os.environ.get("GETSONG_RECOMMENDATION_API_URL")
 
-    if getsongbpm_api_key and getsong_recommendation_api_url:
-        logging.info("GETSONGBPM_API_KEY와 GETSONG_RECOMMENDATION_API_URL이 설정되어 실제 API를 사용합니다.")
-        recommender = MusicRecommender(getsongbpm_api_key, getsong_recommendation_api_url)
+    if getsongbpm_api_key:
+        logging.info("GETSONGBPM_API_KEY가 설정되어 실제 API를 사용합니다.")
+        recommender = MusicRecommender(getsongbpm_api_key)
     else:
-        logging.warning("GETSONGBPM_API_KEY 또는 GETSONG_RECOMMENDATION_API_URL 환경 변수가 설정되지 않았습니다. Mock 추천기를 사용합니다.")
+        logging.warning("GETSONGBPM_API_KEY 환경 변수가 설정되지 않았습니다. Mock 추천기를 사용합니다.")
         recommender = MockMusicRecommender()
 
     logging.info("\n==== Music Recommendation System Demo Start ====")
