@@ -109,8 +109,7 @@ flask run --port 5001
 
 ## 🎬 구현 영상
 
-프로젝트의 주요 기능을 보여주는 데모 영상 링크를 여기에 삽입하세요:  
-예시: [https://www.youtube.com/watch?v=YOUR_VIDEO_ID](https://www.youtube.com/watch?v=YOUR_VIDEO_ID)
+<img src="https://github.com/Hwin-c/music_intelligence/issues/2#issue-3273516488">
 
 ## 📄 라이선스
 
