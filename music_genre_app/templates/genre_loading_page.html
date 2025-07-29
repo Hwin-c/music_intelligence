@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>장르 분석 중... | 음잘딱깔센</title>
+  <title>음악 추천 중... | 음잘딱깔센</title>
   <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
   <style>
     body {
@@ -98,14 +98,14 @@
 <body>
   <header>
     <!-- 로고 링크는 메인 랜딩 페이지로 이동합니다. -->
-    <a href="/" class="logo-link">
+    <a href="http://127.0.0.1:8000" class="logo-link">
       <img src="{{ url_for('static', filename='logo.png') }}" alt="로고" class="logo-image" onerror="this.src='https://placehold.co/50x50/cccccc/000000?text=Logo'; this.alt='로고 (이미지 없음)';" />
     </a>
   </header>
 
   <main>
     <div class="spinner"></div>
-    <div class="loading-text">인공지능 모델이 장르를 분석하고 있어요..!</div>
+    <div class="loading-text">인공지능 모델이 음악을 추천하고 있어요..!</div>
   </main>
 
   <footer>
