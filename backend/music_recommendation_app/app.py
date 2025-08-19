@@ -1,102 +1,85 @@
+# app.py (수정 완료)
 import os
-from flask import Flask, render_template, request, jsonify, redirect, url_for
+from flask import Flask, request, jsonify
+from flask_cors import CORS # CORS 라이브러리 임포트
 import logging
-import sys
-import json
 
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
-logging.debug("Music Recommendation App 초기화 시작.")
+# ======================================================================
+# 1. 표준 상대 경로 임포트로 변경 (sys.path 조작 제거)
+# ======================================================================
+# '.'은 현재 패키지(music_recommendation_app)를 의미합니다.
+from .music_recommender import MusicRecommender, MockMusicRecommender
+# ======================================================================
 
-current_dir = os.path.dirname(os.path.abspath(__file__))
-if current_dir not in sys.path:
-    sys.path.insert(0, current_dir)
-    logging.debug(f"Added {current_dir} to sys.path for music_recommender.py")
+# Flask 앱 인스턴스 생성 (API 서버이므로 static/template 폴더 설정 불필요)
+app = Flask(__name__)
 
-from music_recommender import MusicRecommender, MockMusicRecommender
+# ======================================================================
+# 2. CORS 설정 (Vercel 프론트엔드와의 통신을 위해 필수)
+# ======================================================================
+CORS(app, resources={r"/recommend": {"origins": "*"}})
+logging.info("CORS 설정 완료. /recommend 엔드포인트에 대해 모든 출처의 요청을 허용합니다.")
+# ======================================================================
 
-app = Flask(__name__,
-            static_folder=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static'),
-            template_folder=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates'))
+# 로깅 설정
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.info("Music Recommendation App API 서버 초기화 시작.")
 
-GETSONGBPM_API_KEY = os.environ.get("GETSONGBPM_API_KEY")
-
-if GETSONGBPM_API_KEY:
-    logging.info("GETSONGBPM_API_KEY가 설정되어 실제 API를 사용합니다.")
-    recommender = MusicRecommender(GETSONGBPM_API_KEY) # 이제 API 키만 전달
-else:
-    logging.warning("GETSONGBPM_API_KEY 환경 변수가 설정되지 않았습니다. Mock 추천기를 사용합니다.")
-    recommender = MockMusicRecommender(GETSONGBPM_API_KEY) # Mock에도 API 키만 전달
-
-logging.info(f"Recommender 객체 타입: {type(recommender).__name__}")
-logging.info("음악 추천 모델 및 도구 로드 성공.")
-
-@app.route('/')
-@app.route('/recommendation') # /recommendation 경로도 index.html을 렌더링
-def recommendation_index():
-    logging.info("음악 추천 앱 메인 페이지 요청 수신.")
-    # 오류 메시지가 있다면 함께 렌더링
-    error_message = request.args.get('error_message')
-    return render_template('index.html', error_message=error_message)
+# 추천기 인스턴스 생성
+recommender = None
+try:
+    GETSONGBPM_API_KEY = os.environ.get("GETSONGBPM_API_KEY")
+    if GETSONGBPM_API_KEY:
+        logging.info("GETSONGBPM_API_KEY가 설정되어 실제 API를 사용하는 추천기를 초기화합니다.")
+        recommender = MusicRecommender(GETSONGBPM_API_KEY)
+    else:
+        logging.warning("GETSONGBPM_API_KEY 환경 변수가 설정되지 않았습니다. Mock 추천기를 사용합니다.")
+        recommender = MockMusicRecommender()
+    logging.info(f"추천기 객체 타입: {type(recommender).__name__}")
+except Exception as e:
+    logging.critical(f"추천기 객체 초기화 실패: {e}", exc_info=True)
+    recommender = None # 초기화 실패 시 recommender를 None으로 설정
 
 @app.route('/healthz')
 def health_check():
-    """Render 헬스 체크를 위한 엔드포인트."""
-    logging.debug("Health check 요청 수신.")
-    return "OK", 200
+    """헬스 체크 엔드포인트. 서비스 상태를 확인합니다."""
+    # 추천기 객체가 성공적으로 로드되었는지 확인
+    if recommender:
+        return "OK", 200
+    else:
+        return "Recommender not initialized", 503
 
 @app.route('/recommend', methods=['POST'])
 def recommend_music_endpoint():
-    """
-    사용자 메시지를 받아 음악을 추천하고 결과를 반환합니다.
-    """
-    user_text = request.form.get('user_message')
-    
-    if not user_text or user_text.strip() == '':
-        logging.warning("User message is empty. Returning 400 Bad Request.")
-        return jsonify({"error": "감정을 입력해주세요!"}), 400
+    """사용자 메시지를 받아 음악을 추천하고 JSON으로 결과를 반환하는 API 엔드포인트."""
+    if not recommender:
+        logging.error("API 오류: 추천기 객체가 초기화되지 않았습니다.")
+        return jsonify({"error": "Service is currently unavailable. Recommender not initialized."}), 503
 
-    logging.info(f"\n--- Starting music recommendation for '{user_text}' ---")
+    user_text = request.form.get('user_message')
+    if not user_text or not user_text.strip():
+        logging.warning("API 경고: 'user_message'가 비어있습니다.")
+        return jsonify({"error": "Please provide your emotion or situation in 'user_message'."}), 400
+
+    logging.info(f"API 요청 수신: '{user_text}'에 대한 음악 추천 시작")
     
     try:
         recommendation_info = recommender.recommend_music(user_text)
         
-        return jsonify({
+        # 프론트엔드가 사용하기 좋은 형태로 최종 JSON 응답 구성
+        response_data = {
             "user_message": user_text,
             "recommendation_info": recommendation_info
-        })
+        }
+        logging.info(f"추천 성공: '{user_text}' -> 감정: {recommendation_info.get('user_emotion')}")
+        return jsonify(response_data)
+        
     except Exception as e:
-        logging.error(f"음악 추천 중 오류 발생: {e}", exc_info=True)
-        return jsonify({"error": f"음악을 추천하는 중 오류가 발생했습니다: {str(e)}"}), 500
+        logging.error(f"API 오류: 음악 추천 중 예외 발생 - {e}", exc_info=True)
+        return jsonify({"error": f"An internal error occurred during recommendation: {str(e)}"}), 500
 
-@app.route('/recommend_result')
-def recommend_result_page():
-    """
-    음악 추천 결과를 표시하는 페이지를 렌더링합니다.
-    """
-    user_message = request.args.get('user_message')
-    recommendation_info_json = request.args.get('recommendation_info_json')
-    
-    recommendation_info = {}
-    if recommendation_info_json:
-        try:
-            recommendation_info = json.loads(recommendation_info_json)
-        except json.JSONDecodeError:
-            logging.error("Failed to decode recommendation_info JSON string.")
-            recommendation_info = {"recommendations": [], "user_emotion": "알 수 없음", "target_audio_features": {"bpm": (0,0), "danceability": (0,0), "acousticness": (0,0)}}
-    
-    if not recommendation_info.get("recommendations"):
-        recommendation_info["recommendations"] = []
-    if not recommendation_info.get("user_emotion"):
-        recommendation_info["user_emotion"] = "알 수 없음"
-    if not recommendation_info.get("target_audio_features"):
-        recommendation_info["target_audio_features"] = {"bpm": (0,0), "danceability": (0,0), "acousticness": (0,0)}
-
-    return render_template(
-        'recommend_result_page.html',
-        user_message=user_message,
-        recommendation_info=recommendation_info
-    )
-
+# 로컬 개발 환경에서 직접 실행할 때 사용됩니다.
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5001))
-    app.run(debug=True, host='0.0.0.0', port=port)
+    # Gunicorn이 프로덕션에서 실행하므로, 로컬 테스트 시 debug=False로 설정
+    app.run(host='0.0.0.0', port=port, debug=False)
