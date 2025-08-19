@@ -4,281 +4,53 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>음악 장르 분류 | 음잘딱깔센</title>
-    <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+    <!-- 수정: 상대 경로로 변경 -->
+    <link rel="icon" href="static/favicon.ico" type="image/x-icon">
     <style>
-        body {
-            margin: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(to bottom right, #a3c8f5, #4a90e2);
-            color: #333;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        header {
-            display: flex;
-            align-items: center;
-            background-color: transparent;
-            padding: 1rem 2rem;
-        }
-
-        .logo-link {
-            text-decoration: none;
-        }
-
-        .logo-image {
-            height: 50px;
-        }
-
-        main {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 3rem;
-            text-align: center;
-        }
-
-        .main-heading {
-            font-size: 3rem;
-            font-weight: bold;
-            color: #333;
-            margin-bottom: 2rem;
-            text-align: center;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-
-        .upload-box {
-            background-color: #ffffffcc;
-            padding: 3rem;
-            border-radius: 20px;
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 2rem;
-            width: 90%;
-            max-width: 500px;
-        }
-
-        input[type="file"] {
-            font-size: 1.2rem;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            width: calc(100% - 20px);
-        }
-
-        .predict-button {
-            background-color: #4a90e2;
-            color: white;
-            font-size: 1.5rem;
-            padding: 1rem 3rem;
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-            width: 100%;
-        }
-
-        .predict-button:hover {
-            background-color: #357abd;
-        }
-
-        #loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.7);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            z-index: 1000;
-            color: white;
-        }
-
-        .spinner {
-            width: 80px;
-            height: 80px;
-            border: 10px solid rgba(255, 255, 255, 0.3);
-            border-top: 10px solid white;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .loading-text {
-            font-size: 2rem;
-            font-weight: bold;
-            margin-top: 2rem;
-            animation: blink 1.5s infinite;
-        }
-
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        .audio-player-section {
-            margin-top: 1.5rem;
-            width: 100%;
-            text-align: left;
-            color: #555;
-        }
-        .audio-player-section h3 {
-            margin-top: 0;
-            margin-bottom: 0.5rem;
-            font-size: 1.1rem;
-        }
-        #audio-preview {
-            width: 100%;
-            border-radius: 8px;
-            background-color: #f0f0f0;
-        }
-
-        /* 오류 메시지 스타일 */
-        #error-message-display {
-            color: #d9534f;
-            background-color: #f2dede;
-            border: 1px solid #ebccd1;
-            padding: 1rem;
-            margin-top: 1.5rem;
-            border-radius: 8px;
-            font-weight: bold;
-            display: none;
-            width: 90%;
-            max-width: 500px;
-            text-align: center;
-        }
-
-        /* 파일 형식 안내 메시지 스타일 */
-        #file-format-info {
-            color: #007bff; /* 파란색 */
-            background-color: #e7f3ff; /* 연한 파란색 배경 */
-            border: 1px solid #cce5ff;
-            padding: 0.8rem;
-            margin-top: 1rem;
-            border-radius: 8px;
-            font-size: 0.95rem;
-            text-align: center;
-            width: 90%;
-            max-width: 500px;
-        }
-
-        .navigation-buttons {
-            margin-top: 2rem;
-            display: flex;
-            gap: 1.5rem;
-            justify-content: center;
-            width: 100%;
-            max-width: 500px;
-        }
-
-        .nav-button {
-            padding: 0.8rem 2rem;
-            font-size: 1rem;
-            background-color: #6c757d; /* 회색 계열 */
-            color: white;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-            flex: 1; /* 공간 균등 분배 */
-            text-decoration: none; /* 링크 스타일 제거 */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .nav-button:hover {
-            background-color: #5a6268;
-        }
-
-
-        @media (max-width: 600px) {
-            main {
-                padding: 1rem;
-            }
-            .main-heading {
-                font-size: 2rem;
-                margin-bottom: 1.5rem;
-            }
-            .upload-box {
-                padding: 2rem;
-                gap: 1.5rem;
-            }
-            input[type="file"] {
-                font-size: 1rem;
-            }
-            .predict-button {
-                font-size: 1.2rem;
-                padding: 0.8rem 2rem;
-            }
-            .loading-text {
-                font-size: 1.5rem;
-            }
-            .spinner {
-                width: 60px;
-                height: 60px;
-                border-width: 8px;
-            }
-            #error-message-display {
-                padding: 0.8rem;
-                font-size: 0.9rem;
-            }
-            #file-format-info {
-                padding: 0.6rem;
-                font-size: 0.85rem;
-            }
-            .navigation-buttons {
-                flex-direction: column;
-                gap: 1rem;
-            }
-            .nav-button {
-                width: 100%;
-            }
-        }
-        footer {
-            margin-top: auto;
-            padding: 1rem;
-            text-align: center;
-            color: #777;
-            font-size: 0.9em;
-            width: 100%;
-            box-sizing: border-box;
-        }
-        footer p {
-            margin: 0.5rem 0;
-        }
-        footer a {
-            color: #0056b3;
-            text-decoration: none;
-        }
-        footer a:hover {
-            text-decoration: underline;
-        }
+        /* CSS는 변경할 필요가 없으므로 생략합니다. 기존 CSS를 그대로 사용하세요. */
+        body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(to bottom right, #a3c8f5, #4a90e2); color: #333; height: 100vh; display: flex; flex-direction: column; }
+        header { display: flex; align-items: center; background-color: transparent; padding: 1rem 2rem; }
+        .logo-link { text-decoration: none; }
+        .logo-image { height: 50px; }
+        main { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3rem; text-align: center; }
+        .main-heading { font-size: 3rem; font-weight: bold; color: #333; margin-bottom: 2rem; text-align: center; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .upload-box { background-color: #ffffffcc; padding: 3rem; border-radius: 20px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2); display: flex; flex-direction: column; align-items: center; gap: 2rem; width: 90%; max-width: 500px; }
+        input[type="file"] { font-size: 1.2rem; padding: 10px; border: 1px solid #ccc; border-radius: 8px; width: calc(100% - 20px); }
+        .predict-button { background-color: #4a90e2; color: white; font-size: 1.5rem; padding: 1rem 3rem; border: none; border-radius: 12px; cursor: pointer; transition: background-color 0.3s ease; width: 100%; }
+        .predict-button:hover { background-color: #357abd; }
+        #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); display: none; justify-content: center; align-items: center; flex-direction: column; z-index: 1000; color: white; }
+        .spinner { width: 80px; height: 80px; border: 10px solid rgba(255, 255, 255, 0.3); border-top: 10px solid white; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .loading-text { font-size: 2rem; font-weight: bold; margin-top: 2rem; animation: blink 1.5s infinite; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .audio-player-section { margin-top: 1.5rem; width: 100%; text-align: left; color: #555; }
+        .audio-player-section h3 { margin-top: 0; margin-bottom: 0.5rem; font-size: 1.1rem; }
+        #audio-preview { width: 100%; border-radius: 8px; background-color: #f0f0f0; }
+        #error-message-display { color: #d9534f; background-color: #f2dede; border: 1px solid #ebccd1; padding: 1rem; margin-top: 1.5rem; border-radius: 8px; font-weight: bold; display: none; width: 90%; max-width: 500px; text-align: center; }
+        #file-format-info { color: #007bff; background-color: #e7f3ff; border: 1px solid #cce5ff; padding: 0.8rem; margin-top: 1rem; border-radius: 8px; font-size: 0.95rem; text-align: center; width: 90%; max-width: 500px; }
+        .navigation-buttons { margin-top: 2rem; display: flex; gap: 1.5rem; justify-content: center; width: 100%; max-width: 500px; }
+        .nav-button { padding: 0.8rem 2rem; font-size: 1rem; background-color: #6c757d; color: white; border: none; border-radius: 10px; cursor: pointer; transition: background-color 0.3s ease; flex: 1; text-decoration: none; display: flex; align-items: center; justify-content: center; }
+        .nav-button:hover { background-color: #5a6268; }
+        footer { margin-top: auto; padding: 1rem; text-align: center; color: #777; font-size: 0.9em; width: 100%; box-sizing: border-box; }
+        footer p { margin: 0.5rem 0; }
+        footer a { color: #0056b3; text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
+        @media (max-width: 600px) { main { padding: 1rem; } .main-heading { font-size: 2rem; margin-bottom: 1.5rem; } .upload-box { padding: 2rem; gap: 1.5rem; } input[type="file"] { font-size: 1rem; } .predict-button { font-size: 1.2rem; padding: 0.8rem 2rem; } .loading-text { font-size: 1.5rem; } .spinner { width: 60px; height: 60px; border-width: 8px; } #error-message-display { padding: 0.8rem; font-size: 0.9rem; } #file-format-info { padding: 0.6rem; font-size: 0.85rem; } .navigation-buttons { flex-direction: column; gap: 1rem; } .nav-button { width: 100%; } }
     </style>
 </head>
 <body>
     <header>
         <a href="main_landing_page.html" class="logo-link">
-            <img src="/static/logo.png" alt="로고" class="logo-image" onerror="this.src='https://placehold.co/50x50/cccccc/000000?text=Logo'; this.alt='로고 (이미지 없음)';" />
+            <!-- 수정: 상대 경로로 변경 -->
+            <img src="static/logo.png" alt="로고" class="logo-image" onerror="this.src='https://placehold.co/50x50/cccccc/000000?text=Logo'; this.alt='로고 (이미지 없음)';" />
         </a>
     </header>
 
     <main>
         <h1 class="main-heading">음악 장르 분석</h1>
         <div class="upload-box">
-            <img src="/static/music_genre_classification.png" alt="음악 장르 분류 이미지" style="width: 100%; max-width: 300px; border-radius: 15px; margin-bottom: 1rem;" onerror="this.src='https://placehold.co/300x200/cccccc/000000?text=Genre+Image'; this.alt='음악 장르 분류 이미지 (없음)';">
+            <!-- 수정: 상대 경로로 변경 -->
+            <img src="static/music_genre_classification.png" alt="음악 장르 분류 이미지" style="width: 100%; max-width: 300px; border-radius: 15px; margin-bottom: 1rem;" onerror="this.src='https://placehold.co/300x200/cccccc/000000?text=Genre+Image'; this.alt='음악 장르 분류 이미지 (없음)';">
             <h2>음악 파일을 업로드하세요</h2>
             <form id="upload-form">
                 <input type="file" name="audio" accept=".wav" required />
@@ -311,8 +83,12 @@
     </footer>
 
     <script>
-        // 이 부분을 Google Cloud Functions의 실제 URL로 변경하세요.
-        const API_ENDPOINT = 'YOUR_GOOGLE_CLOUD_FUNCTION_URL';
+        // ======================================================================
+        // ★★★★★ 수정: API 엔드포인트 URL을 플레이스홀더로 변경 ★★★★★
+        // 나중에 Google Cloud Run에 'music_genre_app'을 배포하고 얻은 실제 URL로 이 값을 교체해야 합니다.
+        // 예: const API_ENDPOINT = 'https://music-genre-service-abcdef-an.a.run.app/predict';
+        const API_ENDPOINT = 'YOUR_GENRE_APP_URL/predict';
+        // ======================================================================
 
         const uploadForm = document.getElementById('upload-form');
         const loadingOverlay = document.getElementById('loading-overlay');
@@ -321,75 +97,8 @@
         const audioPreview = document.getElementById('audio-preview');
         const errorMessageDisplay = document.getElementById('error-message-display');
 
-        // 장르별 상세 정보를 프론트엔드에 추가
-        const GENRE_DETAILS = {
-            "blues": {
-                "title": "블루스 (Blues)",
-                "origin": "19세기 말 미국 남부 아프리카계 미국인 공동체에서 시작된 음악 장르입니다.",
-                "features": "주요 특징은 블루 노트, 콜 앤 리스폰스(Call and Response) 형식, 서정적이고 감성적인 가사입니다.",
-                "bpm_range": "BPM은 대개 60-90 사이로 느린 편입니다."
-            },
-            "classical": {
-                "title": "클래식 (Classical)",
-                "origin": "서양 예술 음악의 한 장르로, 주로 18세기 중반부터 19세기 초까지의 시대를 지칭합니다.",
-                "features": "정교한 형식과 구조, 조화로운 선율과 화성, 풍부한 오케스트레이션이 특징입니다.",
-                "bpm_range": "BPM은 곡에 따라 매우 다양하나, 대체로 템포 변화가 큽니다."
-            },
-            "country": {
-                "title": "컨트리 (Country)",
-                "origin": "1920년대 미국 남부의 민속 음악과 서부 카우보이 음악에서 유래했습니다.",
-                "features": "단순하고 서정적인 멜로디, 어쿠스틱 기타, 밴조, 피들 등의 악기 사용, 일상생활과 자연에 대한 가사가 특징입니다.",
-                "bpm_range": "BPM은 대개 80-120 사이입니다."
-            },
-            "disco": {
-                "title": "디스코 (Disco)",
-                "origin": "1970년대 뉴욕 클럽 문화에서 시작된 댄스 음악 장르입니다.",
-                "features": "강렬한 4/4박자 비트, 신시사이저, 스트링, 혼 섹션 사용, 춤추기 좋은 리듬이 특징입니다.",
-                "bpm_range": "BPM은 대개 110-130 사이입니다."
-            },
-            "hiphop": {
-                "title": "힙합 (Hip-Hop)",
-                "origin": "1970년대 뉴욕 브롱스에서 시작된 문화 운동의 일부입니다.",
-                "features": "랩(Rapping), 디제잉(DJing), 샘플링, 강력한 비트와 리듬, 사회 비판적 또는 자전적 가사가 특징입니다.",
-                "bpm_range": "BPM은 대개 80-120 사이입니다."
-            },
-            "jazz": {
-                "title": "재즈 (Jazz)",
-                "origin": "19세기 말 미국 뉴올리언스의 흑인 문화에서 비롯되었습니다.",
-                "features": "즉흥 연주, 스윙 리듬, 4/4 박자, 고유한 코드 진행, 다양한 악기들의 상호작용이 특징입니다.",
-                "bpm_range": "BPM은 대개 128~185 사이로 다양합니다."
-            },
-            "metal": {
-                "title": "메탈 (Metal)",
-                "origin": "1960년대 후반 하드 록에서 파생된 장르입니다.",
-                "features": "강력한 기타 리프, 왜곡된 사운드, 빠른 드럼 비트, 공격적인 보컬, 복잡한 곡 구조가 특징입니다.",
-                "bpm_range": "BPM은 대개 120-200 이상으로 매우 빠를 수 있습니다."
-            },
-            "pop": {
-                "title": "팝 (Pop)",
-                "origin": "대중적인 인기를 얻기 위해 만들어진 상업적인 음악 장르입니다.",
-                "features": "쉽고 따라 부르기 쉬운 멜로디, 다양한 스타일의 혼합, 최신 트렌드 반영, 반복적인 후렴구가 특징입니다.",
-                "bpm_range": "BPM은 대개 90-140 사이입니다."
-            },
-            "reggae": {
-                "title": "레게 (Reggae)",
-                "origin": "1960년대 후반 자메이카에서 시작된 음악 장르입니다.",
-                "features": "오프비트(off-beat) 리듬, 베이스 기타와 드럼의 강조, 종교적 또는 사회적 메시지를 담은 가사가 특징입니다.",
-                "bpm_range": "BPM은 대개 60-90 사이로 느린 편입니다."
-            },
-            "rock": {
-                "title": "록 (Rock)",
-                "origin": "1950년대 미국에서 로큰롤에서 파생된 장르입니다.",
-                "features": "강렬한 기타 리프, 드럼 비트, 보컬이 특징이며, 다양한 하위 장르를 가집니다. 반항적이고 자유로운 정신을 표현합니다.",
-                "bpm_range": "BPM은 대개 100-180 사이입니다."
-            },
-            "기타": {
-                "title": "기타 (Other)",
-                "origin": "이 음악은 특정 장르로 분류하기 어렵거나, 새로운 장르일 수 있습니다.",
-                "features": "특징적인 요소들을 파악하기 어렵습니다.",
-                "bpm_range": "BPM 정보는 알 수 없습니다."
-            }
-        };
+        // GENRE_DETAILS 객체는 변경할 필요가 없으므로 생략합니다.
+        const GENRE_DETAILS = { "blues": { "title": "블루스 (Blues)", "origin": "19세기 말 미국 남부 아프리카계 미국인 공동체에서 시작된 음악 장르입니다.", "features": "주요 특징은 블루 노트, 콜 앤 리스폰스(Call and Response) 형식, 서정적이고 감성적인 가사입니다.", "bpm_range": "BPM은 대개 60-90 사이로 느린 편입니다." }, "classical": { "title": "클래식 (Classical)", "origin": "서양 예술 음악의 한 장르로, 주로 18세기 중반부터 19세기 초까지의 시대를 지칭합니다.", "features": "정교한 형식과 구조, 조화로운 선율과 화성, 풍부한 오케스트레이션이 특징입니다.", "bpm_range": "BPM은 곡에 따라 매우 다양하나, 대체로 템포 변화가 큽니다." }, "country": { "title": "컨트리 (Country)", "origin": "1920년대 미국 남부의 민속 음악과 서부 카우보이 음악에서 유래했습니다.", "features": "단순하고 서정적인 멜로디, 어쿠스틱 기타, 밴조, 피들 등의 악기 사용, 일상생활과 자연에 대한 가사가 특징입니다.", "bpm_range": "BPM은 대개 80-120 사이입니다." }, "disco": { "title": "디스코 (Disco)", "origin": "1970년대 뉴욕 클럽 문화에서 시작된 댄스 음악 장르입니다.", "features": "강렬한 4/4박자 비트, 신시사이저, 스트링, 혼 섹션 사용, 춤추기 좋은 리듬이 특징입니다.", "bpm_range": "BPM은 대개 110-130 사이입니다." }, "hiphop": { "title": "힙합 (Hip-Hop)", "origin": "1970년대 뉴욕 브롱스에서 시작된 문화 운동의 일부입니다.", "features": "랩(Rapping), 디제잉(DJing), 샘플링, 강력한 비트와 리듬, 사회 비판적 또는 자전적 가사가 특징입니다.", "bpm_range": "BPM은 대개 80-120 사이입니다." }, "jazz": { "title": "재즈 (Jazz)", "origin": "19세기 말 미국 뉴올리언스의 흑인 문화에서 비롯되었습니다.", "features": "즉흥 연주, 스윙 리듬, 4/4 박자, 고유한 코드 진행, 다양한 악기들의 상호작용이 특징입니다.", "bpm_range": "BPM은 대개 128~185 사이로 다양합니다." }, "metal": { "title": "메탈 (Metal)", "origin": "1960년대 후반 하드 록에서 파생된 장르입니다.", "features": "강력한 기타 리프, 왜곡된 사운드, 빠른 드럼 비트, 공격적인 보컬, 복잡한 곡 구조가 특징입니다.", "bpm_range": "BPM은 대개 120-200 이상으로 매우 빠를 수 있습니다." }, "pop": { "title": "팝 (Pop)", "origin": "대중적인 인기를 얻기 위해 만들어진 상업적인 음악 장르입니다.", "features": "쉽고 따라 부르기 쉬운 멜로디, 다양한 스타일의 혼합, 최신 트렌드 반영, 반복적인 후렴구가 특징입니다.", "bpm_range": "BPM은 대개 90-140 사이입니다." }, "reggae": { "title": "레게 (Reggae)", "origin": "1960년대 후반 자메이카에서 시작된 음악 장르입니다.", "features": "오프비트(off-beat) 리듬, 베이스 기타와 드럼의 강조, 종교적 또는 사회적 메시지를 담은 가사가 특징입니다.", "bpm_range": "BPM은 대개 60-90 사이로 느린 편입니다." }, "rock": { "title": "록 (Rock)", "origin": "1950년대 미국에서 로큰롤에서 파생된 장르입니다.", "features": "강렬한 기타 리프, 드럼 비트, 보컬이 특징이며, 다양한 하위 장르를 가집니다. 반항적이고 자유로운 정신을 표현합니다.", "bpm_range": "BPM은 대개 100-180 사이입니다." }, "기타": { "title": "기타 (Other)", "origin": "이 음악은 특정 장르로 분류하기 어렵거나, 새로운 장르일 수 있습니다.", "features": "특징적인 요소들을 파악하기 어렵습니다.", "bpm_range": "BPM 정보는 알 수 없습니다." } };
 
         function displayError(message) {
             errorMessageDisplay.textContent = '오류 발생: ' + message;
@@ -425,19 +134,20 @@
             e.preventDefault();
             hideError();
 
+            // ★★★★★ 수정: API 엔드포인트 URL 확인 ★★★★★
+            if (API_ENDPOINT.includes('YOUR_GENRE_APP_URL')) {
+                displayError('API 엔드포인트 URL이 설정되지 않았습니다. Javascript 코드를 확인해주세요.');
+                return;
+            }
+
             const formData = new FormData(uploadForm);
 
             if (!audioFileInput.files || audioFileInput.files.length === 0) {
                 displayError("음악 파일을 선택해주세요.");
                 return;
             }
-            if (!audioFileInput.files[0].name.toLowerCase().endsWith('.wav')) {
-                displayError("WAV 파일만 업로드할 수 있습니다. 다른 형식의 파일은 지원되지 않습니다.");
-                return;
-            }
 
             loadingOverlay.style.display = 'flex';
-
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 90000); 
 
@@ -452,12 +162,12 @@
 
                 if (!response.ok) {
                     const errorText = await response.text();
-                    let errorMessage = '알 수 없는 오류';
+                    let errorMessage = '알 수 없는 서버 오류';
                     try {
                         const errorData = JSON.parse(errorText);
                         errorMessage = errorData.error || errorMessage;
                     } catch (jsonError) {
-                        errorMessage = `서버 응답 오류 (JSON 파싱 실패): ${errorText.substring(0, 200)}...`;
+                        errorMessage = `서버 응답 오류 (상태 코드: ${response.status}): ${errorText.substring(0, 200)}`;
                     }
                     throw new Error(errorMessage);
                 }
@@ -469,7 +179,6 @@
                 
                 const genreInfo = GENRE_DETAILS[genre] || GENRE_DETAILS['기타'];
 
-                // URL 쿼리 파라미터에 장르와 확률, 상세 정보를 모두 전달합니다.
                 const queryString = new URLSearchParams({
                     genre: genre,
                     probability: probability,
@@ -479,14 +188,13 @@
                     bpm_range: genreInfo.bpm_range
                 }).toString();
                 
-                // 결과 페이지로 이동합니다.
                 window.location.href = `genre_result_page.html?${queryString}`;
 
             } catch (error) {
                 clearTimeout(timeoutId);
                 console.error('장르 분류 요청 중 오류 발생:', error);
                 if (error.name === 'AbortError') {
-                    displayError('요청 시간 초과: 서버가 너무 오래 응답하지 않습니다. 짧은 WAV 파일을 시도하거나 잠시 후 다시 시도해주세요.');
+                    displayError('요청 시간 초과: 서버가 응답하지 않습니다. 잠시 후 다시 시도해주세요.');
                 } else {
                     displayError(error.message);
                 }
@@ -495,9 +203,7 @@
             }
         });
 
-        // 로고와 이미지 경로도 static 폴더로 변경
-        document.querySelector('.logo-link img').src = '/static/logo.png';
-        document.querySelector('img[alt="음악 장르 분류 이미지"]').src = '/static/music_genre_classification.png';
+        // 불필요한 이미지 경로 변경 코드 제거 (HTML에서 이미 수정됨)
 
         document.querySelector('.logo-image').onerror = function() {
             this.src = 'https://placehold.co/50x50/cccccc/000000?text=Logo';

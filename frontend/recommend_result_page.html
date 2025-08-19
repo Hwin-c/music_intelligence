@@ -4,413 +4,86 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>음악 추천 결과 | 음잘딱깔센</title>
-    <link rel="icon" href="{{ url_for('static', filename='favicon.ico', v='1') }}" type="image/x-icon">
+    <!-- 수정: 상대 경로로 변경 -->
+    <link rel="icon" href="static/favicon.ico" type="image/x-icon">
     <style>
-        body {
-            margin: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(to bottom right, #a3c8f5, #4a90e2);
-            color: #333;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        header {
-            display: flex;
-            align-items: center;
-            padding: 1rem 2rem;
-        }
-
-        .logo-link {
-            text-decoration: none;
-        }
-
-        .logo-image {
-            height: 50px;
-        }
-
-        main {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 2rem;
-        }
-
-        .result-box {
-            background-color: #ffffffcc;
-            padding: 3rem;
-            border-radius: 20px;
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
-            max-width: 800px;
-            width: 90%;
-        }
-
-        .user-message {
-            font-size: 1.4rem;
-            font-style: italic;
-            margin-bottom: 1rem;
-            color: #555;
-        }
-
-        .response-text {
-            font-size: 1.6rem;
-            font-weight: bold;
-            margin-bottom: 1rem;
-            color: #0056b3;
-        }
-
-        .recommendation-explanation {
-            font-size: 1.1rem;
-            color: #666;
-            margin-bottom: 2rem;
-            line-height: 1.5;
-            text-align: left; /* 설명 텍스트 왼쪽 정렬 */
-            padding: 0 1rem; /* 좌우 패딩 */
-        }
-        .recommendation-explanation strong {
-            color: #0056b3;
-        }
-        .recommendation-explanation ul {
-            list-style: none; /* 기본 리스트 스타일 제거 */
-            padding-left: 0; /* 기본 패딩 제거 */
-            margin-top: 0.5rem;
-        }
-        .recommendation-explanation ul li {
-            margin-bottom: 0.3rem;
-        }
-
-        .music-list {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .music-item {
-            display: flex;
-            align-items: flex-start;
-            background-color: #f9f9f9;
-            padding: 1rem;
-            border-radius: 10px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            text-align: left;
-            position: relative;
-        }
-
-        .music-item .rank-number {
-            /* 기존 text-align: right 대신 flexbox를 사용하여 내부 콘텐츠 정렬 */
-            display: flex;
-            align-items: center; /* 수직 중앙 정렬 */
-            justify-content: center; /* 수평 중앙 정렬 */
-            font-weight: bold;
-            font-size: 1.8rem;
-            color: #4a90e2;
-            margin-right: 15px;
-            flex-shrink: 0;
-            width: 40px; /* 이미지와 숫자를 위한 고정 너비 */
-            height: 40px; /* 이미지와 숫자를 위한 고정 높이 */
-        }
-
-        .music-item .rank-image {
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain; /* 이미지가 잘리지 않고 비율 유지 */
-            display: block; /* 이미지 하단 여백 제거 */
-        }
-
-        .music-item .details {
-            flex-grow: 1;
-        }
-
-        .music-item .title-label {
-            font-weight: bold;
-            font-size: 1.5rem;
-            color: #333;
-            margin-right: 0.5rem;
-        }
-
-        .music-item .title-link {
-            font-weight: bold;
-            font-size: 1.5rem;
-            color: #0056b3;
-            text-decoration: none;
-            display: inline;
-        }
-        .music-item .title-link:hover {
-            text-decoration: underline;
-        }
-
-        .music-item .artist-name {
-            font-size: 1.1rem;
-            color: #333;
-            margin-bottom: 0.2rem;
-        }
-
-        .music-item .genre-text {
-            font-size: 0.95rem;
-            color: #666;
-            margin-bottom: 0.2rem;
-        }
-
-        /* 오디오 특성 바 스타일 */
-        .audio-features {
-            margin-top: 0.8rem;
-            display: grid;
-            grid-template-columns: auto 1fr auto;
-            gap: 0.2rem 0.5rem;
-            align-items: center;
-            width: 100%;
-            max-width: 300px; /* 원래대로 300px로 되돌림 */
-        }
-        .audio-features div {
-            font-size: 0.85rem;
-            color: #555;
-        }
-        .audio-features .feature-label {
-            font-weight: bold;
-            text-align: right;
-        }
-        .audio-features .feature-bar-container {
-            background-color: #e0e0e0;
-            border-radius: 5px;
-            height: 10px;
-            overflow: hidden;
-        }
-        .audio-features .feature-bar {
-            height: 100%;
-            background-color: #4a90e2;
-            border-radius: 5px;
-            transition: width 0.5s ease-out;
-        }
-        .audio-features .feature-value {
-            font-weight: bold;
-            text-align: left;
-            min-width: 30px;
-        }
-
-        /* 점수 배지 */
-        .score-badge {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background-color: #28a745;
-            color: white;
-            padding: 0.3rem 0.6rem;
-            border-radius: 15px;
-            font-size: 0.8rem;
-            font-weight: bold;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-        }
-
-        .actions {
-            display: flex;
-            gap: 1.5rem;
-            justify-content: center;
-        }
-
-        .action-button {
-            padding: 0.8rem 2rem;
-            font-size: 1rem;
-            background-color: #4a90e2;
-            color: white;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-
-        .action-button:hover {
-            background-color: #357abd;
-        }
-
-        .home-button { /* 새로운 버튼 스타일 */
-            padding: 0.8rem 2rem;
-            font-size: 1rem;
-            background-color: #6c757d; /* 회색 계열 */
-            color: white;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-            text-decoration: none; /* 링크 스타일 제거 */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .home-button:hover {
-            background-color: #5a6268;
-        }
-
-        @media (max-width: 600px) {
-            .result-box {
-                padding: 1.5rem;
-            }
-            .user-message {
-                font-size: 1.2rem;
-            }
-            .response-text {
-                font-size: 1.4rem;
-            }
-            .recommendation-explanation {
-                font-size: 0.95rem;
-                padding: 0 0.5rem;
-            }
-            .music-item {
-                flex-direction: row;
-                align-items: flex-start;
-                padding: 0.8rem;
-            }
-            .music-item .rank-number {
-                font-size: 1.5rem;
-                width: 30px; /* 모바일에서 너비 조정 */
-                height: 30px; /* 모바일에서 높이 조정 */
-                margin-right: 10px;
-            }
-            .music-item .title-label,
-            .music-item .title-link {
-                font-size: 1.2rem;
-            }
-            .music-item .artist-name, .music-item .genre-text {
-                font-size: 0.85rem;
-            }
-            .audio-features {
-                grid-template-columns: auto 1fr auto;
-                gap: 0.1rem 0.3rem;
-                max-width: 100%; /* 모바일에서 전체 너비 사용 */
-            }
-            .audio-features div {
-                font-size: 0.75rem;
-            }
-            .score-badge {
-                padding: 0.2rem 0.4rem;
-                font-size: 0.7rem;
-                top: 5px;
-                right: 5px;
-            }
-            .actions {
-                flex-direction: column;
-                gap: 1rem;
-            }
-            .action-button, .home-button { /* 두 버튼 모두에 적용 */
-                width: 100%;
-            }
-        }
-        footer {
-            margin-top: auto;
-            padding: 1rem;
-            text-align: center;
-            color: #777;
-            font-size: 0.9em;
-            width: 100%;
-            box-sizing: border-box;
-        }
-        footer p {
-            margin: 0.5rem 0;
-        }
-        footer a {
-            color: #0056b3;
-            text-decoration: none;
-        }
-        footer a:hover {
-            text-decoration: underline;
-        }
+        /* CSS는 변경할 필요가 없으므로 생략합니다. */
+        body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(to bottom right, #a3c8f5, #4a90e2); color: #333; min-height: 100vh; display: flex; flex-direction: column; }
+        header { display: flex; align-items: center; padding: 1rem 2rem; }
+        .logo-link { text-decoration: none; }
+        .logo-image { height: 50px; }
+        main { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 2rem; }
+        .result-box { background-color: #ffffffcc; padding: 3rem; border-radius: 20px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2); max-width: 800px; width: 90%; }
+        .user-message { font-size: 1.4rem; font-style: italic; margin-bottom: 1rem; color: #555; }
+        .response-text { font-size: 1.6rem; font-weight: bold; margin-bottom: 1rem; color: #0056b3; }
+        .recommendation-explanation { font-size: 1.1rem; color: #666; margin-bottom: 2rem; line-height: 1.5; text-align: left; padding: 0 1rem; }
+        .recommendation-explanation strong { color: #0056b3; }
+        .recommendation-explanation ul { list-style: none; padding-left: 0; margin-top: 0.5rem; }
+        .recommendation-explanation ul li { margin-bottom: 0.3rem; }
+        .music-list { display: flex; flex-direction: column; gap: 1.5rem; margin-bottom: 2rem; }
+        .music-item { display: flex; align-items: flex-start; background-color: #f9f9f9; padding: 1rem; border-radius: 10px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); text-align: left; position: relative; }
+        .music-item .rank-number { display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.8rem; color: #4a90e2; margin-right: 15px; flex-shrink: 0; width: 40px; height: 40px; }
+        .music-item .rank-image { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+        .music-item .details { flex-grow: 1; }
+        .music-item .title-label { font-weight: bold; font-size: 1.5rem; color: #333; margin-right: 0.5rem; }
+        .music-item .title-link { font-weight: bold; font-size: 1.5rem; color: #0056b3; text-decoration: none; display: inline; }
+        .music-item .title-link:hover { text-decoration: underline; }
+        .music-item .artist-name { font-size: 1.1rem; color: #333; margin-bottom: 0.2rem; }
+        .music-item .genre-text { font-size: 0.95rem; color: #666; margin-bottom: 0.2rem; }
+        .audio-features { margin-top: 0.8rem; display: grid; grid-template-columns: auto 1fr auto; gap: 0.2rem 0.5rem; align-items: center; width: 100%; max-width: 300px; }
+        .audio-features div { font-size: 0.85rem; color: #555; }
+        .audio-features .feature-label { font-weight: bold; text-align: right; }
+        .audio-features .feature-bar-container { background-color: #e0e0e0; border-radius: 5px; height: 10px; overflow: hidden; }
+        .audio-features .feature-bar { height: 100%; background-color: #4a90e2; border-radius: 5px; transition: width 0.5s ease-out; }
+        .audio-features .feature-value { font-weight: bold; text-align: left; min-width: 30px; }
+        .score-badge { position: absolute; top: 10px; right: 10px; background-color: #28a745; color: white; padding: 0.3rem 0.6rem; border-radius: 15px; font-size: 0.8rem; font-weight: bold; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); }
+        .actions { display: flex; gap: 1.5rem; justify-content: center; }
+        .action-button { padding: 0.8rem 2rem; font-size: 1rem; background-color: #4a90e2; color: white; border: none; border-radius: 10px; cursor: pointer; transition: background-color 0.3s ease; }
+        .action-button:hover { background-color: #357abd; }
+        .home-button { padding: 0.8rem 2rem; font-size: 1rem; background-color: #6c757d; color: white; border: none; border-radius: 10px; cursor: pointer; transition: background-color 0.3s ease; text-decoration: none; display: flex; align-items: center; justify-content: center; }
+        .home-button:hover { background-color: #5a6268; }
+        footer { margin-top: auto; padding: 1rem; text-align: center; color: #777; font-size: 0.9em; width: 100%; box-sizing: border-box; }
+        footer p { margin: 0.5rem 0; }
+        footer a { color: #0056b3; text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
+        @media (max-width: 600px) { .result-box { padding: 1.5rem; } .user-message { font-size: 1.2rem; } .response-text { font-size: 1.4rem; } .recommendation-explanation { font-size: 0.95rem; padding: 0 0.5rem; } .music-item { flex-direction: row; align-items: flex-start; padding: 0.8rem; } .music-item .rank-number { font-size: 1.5rem; width: 30px; height: 30px; margin-right: 10px; } .music-item .title-label, .music-item .title-link { font-size: 1.2rem; } .music-item .artist-name, .music-item .genre-text { font-size: 0.85rem; } .audio-features { grid-template-columns: auto 1fr auto; gap: 0.1rem 0.3rem; max-width: 100%; } .audio-features div { font-size: 0.75rem; } .score-badge { padding: 0.2rem 0.4rem; font-size: 0.7rem; top: 5px; right: 5px; } .actions { flex-direction: column; gap: 1rem; } .action-button, .home-button { width: 100%; } }
     </style>
 </head>
 <body>
     <header>
-        <!-- 로고 링크는 메인 랜딩 페이지로 이동합니다. -->
-        <a href="http://127.0.0.1:8000" class="logo-link">
-            <img src="{{ url_for('static', filename='logo.png') }}" alt="로고" class="logo-image" onerror="this.src='https://placehold.co/50x50/cccccc/000000?text=Logo'; this.alt='로고 (이미지 없음)';" />
+        <a href="main_landing_page.html" class="logo-link">
+            <!-- 수정: 상대 경로로 변경 -->
+            <img src="static/logo.png" alt="로고" class="logo-image" onerror="this.src='https://placehold.co/50x50/cccccc/000000?text=Logo'; this.alt='로고 (이미지 없음)';" />
         </a>
     </header>
 
     <main>
         <div class="result-box">
-            <div class="user-message">"{{ user_message }}"</div>
+            <!-- 수정: Jinja2 -> id를 가진 span으로 변경 -->
+            <div class="user-message">"<span id="user-message-display"></span>"</div>
             <div class="response-text">요청하신 내용을 바탕으로 추천했어요…!</div>
 
-            <!-- 감정 분석 및 추천 근거 설명 추가 -->
+            <!-- 수정: Jinja2 -> id를 가진 span/strong으로 변경 -->
             <div class="recommendation-explanation">
-                {% if recommendation_info.user_emotion and recommendation_info.target_audio_features %}
-                    사용자님의 감정은 <strong>{{ recommendation_info.user_emotion }}</strong> 으로 분석되었습니다.<br>
-                    이에 따라, 다음과 같은 음악적 특성 범위의 음악을 추천했습니다:
-                    <ul>
-                        <li>BPM: <strong>{{ recommendation_info.target_audio_features.bpm[0] }} ~ {{ recommendation_info.target_audio_features.bpm[1] }}</strong></li>
-                        <li>Danceability: <strong>{{ recommendation_info.target_audio_features.danceability[0] }} ~ {{ recommendation_info.target_audio_features.danceability[1] }}</strong></li>
-                        <li>Acousticness: <strong>{{ recommendation_info.target_audio_features.acousticness[0] }} ~ {{ recommendation_info.target_audio_features.acousticness[1] }}</strong></li>
-                    </ul>
-                    아래 추천 목록은 각 음악의 특성이 설정된 범위에 얼마나 잘 부합하는지 점수를 매겨 높은 순서대로 정렬되었습니다.
-                {% else %}
-                    <p>추천 정보를 불러오는 데 문제가 발생했습니다.</p>
-                {% endif %}
+                사용자님의 감정은 <strong id="user-emotion"></strong> (으)로 분석되었습니다.<br>
+                이에 따라, 다음과 같은 음악적 특성 범위의 음악을 추천했습니다:
+                <ul>
+                    <li>BPM: <strong id="bpm-range"></strong></li>
+                    <li>Danceability: <strong id="danceability-range"></strong></li>
+                    <li>Acousticness: <strong id="acousticness-range"></strong></li>
+                </ul>
+                아래 추천 목록은 각 음악의 특성이 설정된 범위에 얼마나 잘 부합하는지 점수를 매겨 높은 순서대로 정렬되었습니다.
             </div>
 
+            <!-- 수정: Jinja2 for loop -> Javascript가 채워넣을 빈 div로 변경 -->
             <div class="music-list">
-                {% if recommendation_info.recommendations %}
-                    {% for song in recommendation_info.recommendations %}
-                        <div class="music-item">
-                            <div class="rank-number">
-                                {% if loop.index == 1 %}
-                                    <img src="{{ url_for('static', filename='1st.png') }}" alt="1위" class="rank-image" onerror="this.src='https://placehold.co/40x40/cccccc/000000?text=1st';" />
-                                {% elif loop.index == 2 %}
-                                    <img src="{{ url_for('static', filename='2nd.png') }}" alt="2위" class="rank-image" onerror="this.src='https://placehold.co/40x40/cccccc/000000?text=2nd';" />
-                                {% elif loop.index == 3 %}
-                                    <img src="{{ url_for('static', filename='3rd.png') }}" alt="3위" class="rank-image" onerror="this.src='https://placehold.co/40x40/cccccc/000000?text=3rd';" />
-                                {% else %}
-                                    {{ loop.index }}.
-                                {% endif %}
-                            </div>
-                            <div class="details">
-                                <div class="flex items-baseline mb-1">
-                                    <span class="title-label">제목:</span>
-                                    <a href="{{ song.uri }}" target="_blank" class="title-link">{{ song.title }}</a>
-                                </div>
-                                <p class="artist-name">아티스트: {{ song.artist }}</p>
-                                {% if song.genres %}
-                                    <p class="genre-text">장르: {{ song.genres | join(', ') }}</p>
-                                {% endif %}
-                                
-                                <!-- 오디오 특성 표시 -->
-                                <div class="audio-features">
-                                    <div class="feature-label">BPM:</div>
-                                    <div class="feature-bar-container">
-                                        <div class="feature-bar" data-width="{{ (song.bpm / 200 * 100) | round(0) }}"></div> <!-- BPM은 대략 0~200 범위로 가정 -->
-                                    </div>
-                                    <div class="feature-value">{{ song.bpm }}</div>
-
-                                    <div class="feature-label">Danceability:</div>
-                                    <div class="feature-bar-container">
-                                        <div class="feature-bar" data-width="{{ song.danceability }}"></div>
-                                    </div>
-                                    <div class="feature-value">{{ song.danceability }}</div>
-
-                                    <div class="feature-label">Acousticness:</div>
-                                    <div class="feature-bar-container">
-                                        <div class="feature-bar" data-width="{{ song.acousticness }}"></div>
-                                    </div>
-                                    <div class="feature-value">{{ song.acousticness }}</div>
-                                </div>
-                            </div>
-                            <!-- 점수 배지 -->
-                            {% if song.relevance_score is not none %}
-                                <div class="score-badge">점수: {{ song.relevance_score | round(2) }}</div>
-                            {% endif %}
-                        </div>
-                    {% endfor %}
-                {% else %}
-                    <p>추천할 음악을 찾을 수 없습니다. 다른 키워드로 시도해 주세요.</p>
-                {% endif %}
+                <!-- Javascript가 여기에 음악 아이템들을 동적으로 생성합니다. -->
             </div>
+
             <div class="actions">
-                <!-- "다시 해보기" 버튼은 음악 추천 앱의 메인 페이지로 이동 -->
-                <button class="action-button" onclick="location.href='http://127.0.0.1:5001/recommendation'">다시 해보기</button>
-                <!-- "메인 페이지로 돌아가기" 버튼 추가 -->
-                <a href="http://127.0.0.1:8000" class="home-button">메인 페이지로 돌아가기</a>
+                <!-- 수정: 상대 경로로 변경 -->
+                <button class="action-button" onclick="location.href='recommend_index.html'">다시 해보기</button>
+                <a href="main_landing_page.html" class="home-button">메인 페이지로 돌아가기</a>
             </div>
         </div>
     </main>
@@ -420,22 +93,109 @@
     </footer>
 
     <script>
+        // ======================================================================
+        // ★★★★★ 수정: 전체 Javascript 로직을 Client-Side Rendering으로 재작성 ★★★★★
+        // ======================================================================
         document.addEventListener('DOMContentLoaded', function() {
-            const logoPlaceholderUrl = "{{ url_for('static', filename='logo.png') }}";
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const userMessage = urlParams.get('user_message');
+                const recommendationInfoJson = urlParams.get('recommendation_info_json');
 
-            const logoImage = document.querySelector('.logo-image');
-            if (logoImage) {
-                logoImage.onerror = function() {
-                    this.src = logoPlaceholderUrl;
-                    this.alt = '로고 (이미지 없음)';
-                };
+                // 1. URL 파라미터로부터 받은 JSON 문자열을 Javascript 객체로 파싱
+                const recoInfo = JSON.parse(decodeURIComponent(recommendationInfoJson));
+
+                // 2. 파싱된 데이터로 HTML의 빈 공간(placeholder)들 채우기
+                document.getElementById('user-message-display').textContent = userMessage;
+                document.getElementById('user-emotion').textContent = recoInfo.user_emotion || '분석 불가';
+                
+                const features = recoInfo.target_audio_features;
+                if (features) {
+                    document.getElementById('bpm-range').textContent = `${features.bpm[0]} ~ ${features.bpm[1]}`;
+                    document.getElementById('danceability-range').textContent = `${features.danceability[0]} ~ ${features.danceability[1]}`;
+                    document.getElementById('acousticness-range').textContent = `${features.acousticness[0]} ~ ${features.acousticness[1]}`;
+                }
+
+                const musicListContainer = document.querySelector('.music-list');
+                musicListContainer.innerHTML = ''; // 기존 내용을 비웁니다.
+
+                // 3. 추천된 노래 목록을 순회하며 HTML을 동적으로 생성
+                if (recoInfo.recommendations && recoInfo.recommendations.length > 0) {
+                    recoInfo.recommendations.forEach((song, index) => {
+                        // 순위별 이미지 또는 숫자 생성
+                        let rankHtml;
+                        if (index === 0) {
+                            rankHtml = `<img src="static/1st.png" alt="1위" class="rank-image" />`;
+                        } else if (index === 1) {
+                            rankHtml = `<img src="static/2nd.png" alt="2위" class="rank-image" />`;
+                        } else if (index === 2) {
+                            rankHtml = `<img src="static/3rd.png" alt="3위" class="rank-image" />`;
+                        } else {
+                            rankHtml = `${index + 1}.`;
+                        }
+
+                        // 장르가 있을 경우에만 표시
+                        const genreHtml = song.genres && song.genres.length > 0 
+                            ? `<p class="genre-text">장르: ${song.genres.join(', ')}</p>` 
+                            : '';
+                        
+                        // 점수가 있을 경우에만 배지 표시
+                        const scoreBadgeHtml = typeof song.relevance_score === 'number'
+                            ? `<div class="score-badge">점수: ${song.relevance_score.toFixed(2)}</div>`
+                            : '';
+
+                        // 각 노래 아이템의 전체 HTML 구조
+                        const songItemHtml = `
+                            <div class="music-item">
+                                <div class="rank-number">${rankHtml}</div>
+                                <div class="details">
+                                    <div>
+                                        <span class="title-label">제목:</span>
+                                        <a href="${song.uri}" target="_blank" class="title-link">${song.title}</a>
+                                    </div>
+                                    <p class="artist-name">아티스트: ${song.artist}</p>
+                                    ${genreHtml}
+                                    <div class="audio-features">
+                                        <div class="feature-label">BPM:</div>
+                                        <div class="feature-bar-container"><div class="feature-bar" data-width="${Math.round((song.bpm / 200) * 100)}"></div></div>
+                                        <div class="feature-value">${song.bpm}</div>
+                                        <div class="feature-label">Danceability:</div>
+                                        <div class="feature-bar-container"><div class="feature-bar" data-width="${song.danceability}"></div></div>
+                                        <div class="feature-value">${song.danceability}</div>
+                                        <div class="feature-label">Acousticness:</div>
+                                        <div class="feature-bar-container"><div class="feature-bar" data-width="${song.acousticness}"></div></div>
+                                        <div class="feature-value">${song.acousticness}</div>
+                                    </div>
+                                </div>
+                                ${scoreBadgeHtml}
+                            </div>
+                        `;
+                        // 생성된 HTML을 music-list 컨테이너에 추가
+                        musicListContainer.innerHTML += songItemHtml;
+                    });
+                } else {
+                    musicListContainer.innerHTML = '<p>추천할 음악을 찾을 수 없습니다. 다른 키워드로 시도해 주세요.</p>';
+                }
+
+                // 4. 동적으로 생성된 오디오 특성 바의 너비를 설정하여 애니메이션 효과 주기
+                document.querySelectorAll('.feature-bar').forEach(bar => {
+                    const width = bar.dataset.width;
+                    // 약간의 지연을 주어 CSS transition이 작동하도록 함
+                    setTimeout(() => {
+                        bar.style.width = `${width}%`;
+                    }, 100);
+                });
+
+            } catch (error) {
+                console.error("결과 페이지를 렌더링하는 중 오류 발생:", error);
+                const musicListContainer = document.querySelector('.music-list');
+                musicListContainer.innerHTML = '<p>결과를 표시하는 데 문제가 발생했습니다. 이전 페이지로 돌아가 다시 시도해주세요.</p>';
             }
 
-            // 오디오 특성 바의 너비를 동적으로 설정
-            document.querySelectorAll('.feature-bar').forEach(bar => {
-                const width = bar.dataset.width;
-                bar.style.width = `${width}%`;
-            });
+            document.querySelector('.logo-image').onerror = function() {
+                this.src = 'https://placehold.co/50x50/cccccc/000000?text=Logo';
+                this.alt = '로고 (이미지 없음)';
+            };
         });
     </script>
 </body>
