@@ -1,33 +1,22 @@
-# fly.toml app configuration file for music-genre-app
-# Last updated: 2025-08-19
+# fly.toml app configuration file generated for music-genre-app on 2025-08-19T16:21:15+09:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
 
-# 앱 이름은 그대로 유지합니다.
 app = 'music-genre-app'
-
-# 1. 수정: 주 리전을 'sel' (서울)로 변경하여 한국에서의 접속 속도를 향상시킵니다.
-primary_region = 'sel'
+primary_region = 'nrt'
 
 [build]
-# 빌드 관련 설정은 Dockerfile을 따르므로 비워둡니다.
 
 [http_service]
-  # 내부 포트와 HTTPS 설정은 그대로 유지합니다.
   internal_port = 8080
   force_https = true
-  
-  # 2. 수정: 'Always-on'을 위해 머신이 자동으로 멈추지 않도록 설정합니다.
-  # auto_stop_machines를 주석 처리하거나 'off'로 설정하고, min_machines_running을 1로 설정합니다.
-  auto_stop_machines = false
+  auto_stop_machines = 'stop'
   auto_start_machines = true
-  min_machines_running = 1 # 최소 1대의 머신이 항상 실행되도록 보장합니다.
-
+  min_machines_running = 0
   processes = ['app']
 
-# 3. 수정: VM 사양을 업그레이드합니다.
-# 섹션 이름을 [[vm]]에서 [compute]로 변경하는 것이 최신 Fly.io 형식입니다.
-[compute]
-  # 메모리를 2GB로 상향 조정합니다.
+[[vm]]
   memory = '2gb'
-  size = "shared-cpu-1x" # 무료 플랜의 기본 CPU 유형
-
-# [[vm]] 섹션은 [compute]로 대체되었으므로 삭제합니다.
+  cpu_kind = 'shared'
+  cpus = 1

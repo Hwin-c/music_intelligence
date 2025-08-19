@@ -9,7 +9,8 @@ WORKDIR /app
 # 3. 의존성 설치: requirements.txt 파일을 먼저 복사하여 라이브러리를 설치합니다.
 #    이렇게 하면 소스 코드가 변경될 때마다 라이브러리를 다시 설치하는 것을 방지하여 빌드 속도를 높일 수 있습니다.
 COPY requirements.txt requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt --compile --no-binary=:all:
 
 # 4. 소스 코드 복사: 현재 폴더(.)의 모든 파일(app.py, model.keras 등)을 컨테이너의 /app 폴더로 복사합니다.
 COPY . .
