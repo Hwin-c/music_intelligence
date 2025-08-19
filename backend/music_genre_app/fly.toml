@@ -8,7 +8,7 @@ primary_region = 'nrt'
 
 [build]
   # 이 설정을 추가하여 원격 빌더 대신 로컬 Docker를 사용하도록 강제합니다.
-  remote_only = false
+  remote_only = true
 
 [http_service]
   internal_port = 8080
