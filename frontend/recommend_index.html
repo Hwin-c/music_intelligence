@@ -38,9 +38,7 @@
 </head>
 <body>
     <header>
-        <!-- 수정: 상대 경로로 변경 -->
         <a href="main_landing_page.html" class="logo-link">
-            <!-- 수정: 상대 경로로 변경 -->
             <img src="static/logo.png" alt="로고" class="logo-image" onerror="this.src='https://placehold.co/50x50/cccccc/000000?text=Logo'; this.alt='로고 (이미지 없음)';" />
         </a>
     </header>
@@ -48,7 +46,6 @@
     <main>
         <h1 class="main-heading">음악 추천</h1>
         <div class="chat-box">
-            <!-- 수정: 상대 경로로 변경 -->
             <img src="static/music_recommendation.png" alt="음악 추천 이미지" onerror="this.src='https://placehold.co/300x200/cccccc/000000?text=Recommendation+Image'; this.alt='음악 추천 이미지 (없음)';" />
             <h2>어떤 음악을 추천해 드릴까요?</h2>
             <form id="recommend-form">
@@ -59,12 +56,10 @@
         </div>
 
         <div class="navigation-buttons">
-            <!-- 수정: 상대 경로로 변경 -->
             <a href="main_landing_page.html" class="nav-button">메인 페이지로 돌아가기</a>
         </div>
     </main>
 
-    <!-- 로딩 화면 (기존 recommend_loading_page.html의 내용 통합) -->
     <div id="loading-overlay">
         <div class="spinner"></div>
         <div class="loading-text">추천 음악을 찾고 있어요..!</div>
@@ -76,10 +71,9 @@
 
     <script>
         // ======================================================================
-        // ★★★★★ 수정: API 엔드포인트 URL을 플레이스홀더로 변경 ★★★★★
-        // 나중에 Google Cloud Run에 'music_recommendation_app'을 배포하고 얻은 실제 URL로 이 값을 교체해야 합니다.
-        // 예: const API_ENDPOINT = 'https://music-recommendation-service-abcdef-an.a.run.app/recommend';
-        const API_ENDPOINT = 'YOUR_RECOMMEND_APP_URL/recommend';
+        // ★★★★★ 수정: API 엔드포인트 URL을 Render 백엔드 서버의 정확한 주소로 설정 ★★★★★
+        // 백엔드 API 경로가 '/recommend' 등과 같다면 주소 끝에 추가해야 합니다.
+        const API_ENDPOINT = 'https://music-recommendation-api-mf2u.onrender.com/recommend';
         // ======================================================================
 
         const recommendForm = document.getElementById('recommend-form');
@@ -101,11 +95,7 @@
             e.preventDefault();
             hideError();
 
-            // ★★★★★ 수정: API 엔드포인트 URL 확인 로직 추가 ★★★★★
-            if (API_ENDPOINT.includes('YOUR_RECOMMEND_APP_URL')) {
-                displayError('API 엔드포인트 URL이 설정되지 않았습니다. Javascript 코드를 확인해주세요.');
-                return;
-            }
+            // ★★★★★ 수정: 불필요한 URL 확인 로직 삭제 ★★★★★
             
             const userText = userTextInput.value.trim();
             if (!userText) {
@@ -119,7 +109,6 @@
                 const formData = new FormData();
                 formData.append('user_message', userText);
 
-                // 수정: fetch URL을 API_ENDPOINT 변수로 변경
                 const response = await fetch(API_ENDPOINT, {
                     method: 'POST',
                     body: formData
@@ -139,7 +128,6 @@
 
                 const data = await response.json();
                 
-                // ★★★★★ 수정: 페이지 이동 경로를 'recommend_result_page.html'로 정확히 명시 ★★★★★
                 window.location.href = `recommend_result_page.html?user_message=${encodeURIComponent(data.user_message)}&recommendation_info_json=${encodeURIComponent(JSON.stringify(data.recommendation_info))}`;
 
             } catch (error) {

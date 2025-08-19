@@ -84,10 +84,8 @@
 
     <script>
         // ======================================================================
-        // ★★★★★ 수정: API 엔드포인트 URL을 플레이스홀더로 변경 ★★★★★
-        // 나중에 Google Cloud Run에 'music_genre_app'을 배포하고 얻은 실제 URL로 이 값을 교체해야 합니다.
-        // 예: const API_ENDPOINT = 'https://music-genre-service-abcdef-an.a.run.app/predict';
-        const API_ENDPOINT = 'YOUR_GENRE_APP_URL/predict';
+        // ★★★★★ 수정: API 엔드포인트 URL을 Render 백엔드 서버 주소로 변경 ★★★★★
+        const API_ENDPOINT = 'https://music-genre-api.onrender.com/predict'; // '/predict' 경로를 추가하는 것이 일반적입니다. 실제 API 경로에 맞춰주세요.
         // ======================================================================
 
         const uploadForm = document.getElementById('upload-form');
@@ -134,12 +132,8 @@
             e.preventDefault();
             hideError();
 
-            // ★★★★★ 수정: API 엔드포인트 URL 확인 ★★★★★
-            if (API_ENDPOINT.includes('YOUR_GENRE_APP_URL')) {
-                displayError('API 엔드포인트 URL이 설정되지 않았습니다. Javascript 코드를 확인해주세요.');
-                return;
-            }
-
+            // ★★★★★ 수정: 잘못된 확인 로직을 삭제하여 API 호출이 정상적으로 진행되도록 함 ★★★★★
+            
             const formData = new FormData(uploadForm);
 
             if (!audioFileInput.files || audioFileInput.files.length === 0) {
@@ -202,8 +196,6 @@
                 loadingOverlay.style.display = 'none';
             }
         });
-
-        // 불필요한 이미지 경로 변경 코드 제거 (HTML에서 이미 수정됨)
 
         document.querySelector('.logo-image').onerror = function() {
             this.src = 'https://placehold.co/50x50/cccccc/000000?text=Logo';
