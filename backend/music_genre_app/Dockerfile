@@ -25,4 +25,6 @@ COPY . .
 #    - --workers 1 --threads 8 : Fly.io의 기본 CPU(shared-cpu-1x)에 적합한 설정입니다.
 #    - --timeout 0 : 모델 로딩 등 시간이 오래 걸리는 작업이 타임아웃되지 않도록 설정합니다.
 #    - app:app : 'app.py' 파일 안에 있는 'app'이라는 이름의 Flask 객체를 실행하라는 의미입니다.
-CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 --timeout 0 app:app
+# --no-preload: 각 워커가 독립적으로 앱을 로드하도록 하여 시작 부담을 분산시킵니다.
+# --graceful-timeout 60: 워커가 시작되고 응답할 때까지 60초간 기다려줍니다.
+CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 --timeout 0 --no-preload --graceful-timeout 60 app:app
