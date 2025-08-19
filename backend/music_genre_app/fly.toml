@@ -1,25 +1,23 @@
-# fly.toml app configuration file generated for music-genre-app on 2025-08-19T16:21:15+09:00
+# fly.toml app configuration file generated for music-genre-api on 2025-08-19T21:01:43+09:00
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = 'music-genre-app'
+app = 'music-genre-api'
 primary_region = 'nrt'
 
 [build]
-  # 이 설정을 추가하여 원격 빌더 대신 로컬 Docker를 사용하도록 강제합니다.
-  remote_only = false
 
 [http_service]
   internal_port = 8080
   force_https = true
-  auto_stop_machines = false
+  auto_stop_machines = 'off'
   auto_start_machines = true
   min_machines_running = 1
   processes = ['app']
 
-[compute]
+[[vm]]
+  size = 'performance-1x'
   memory = '2gb'
-  size = "shared-cpu-1x"
-
-swap_size_mb = 1024
+  cpu_kind = 'shared'
+  cpus = 1
