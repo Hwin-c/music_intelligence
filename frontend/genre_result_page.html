@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>장르 분석 결과 | 음잘딱깔센</title>
+    <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(to bottom right, #a3c8f5, #4a90e2);
+            color: #333;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            padding: 1rem 2rem;
+        }
+
+        .logo-link {
+            text-decoration: none;
+        }
+
+        .logo-image {
+            height: 50px;
+        }
+
+        main {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .result-box {
+            background-color: #ffffffcc;
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+            max-width: 800px;
+            width: 90%;
+        }
+
+        .genre-title {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .genre-info {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+            text-align: left;
+        }
+
+        .genre-info strong {
+            color: #0056b3;
+        }
+
+        .recommend-section {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .recommend-item {
+            background: white;
+            padding: 1rem;
+            border-radius: 10px;
+            width: 200px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .recommend-item a {
+            text-decoration: none;
+            color: #4a90e2;
+            font-weight: bold;
+            display: block;
+            margin-top: 0.5rem;
+        }
+
+        .actions {
+            margin-top: 2rem;
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+        }
+
+        .action-button {
+            padding: 0.8rem 2rem;
+            font-size: 1rem;
+            background-color: #4a90e2;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .action-button:hover {
+            background-color: #357abd;
+        }
+
+        .home-button { /* 새로운 버튼 스타일 */
+            padding: 0.8rem 2rem;
+            font-size: 1rem;
+            background-color: #6c757d; /* 회색 계열 */
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            text-decoration: none; /* 링크 스타일 제거 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .home-button:hover {
+            background-color: #5a6268;
+        }
+
+        @media (max-width: 600px) {
+            .result-box {
+                padding: 1.5rem;
+            }
+            .genre-title {
+                font-size: 1.5rem;
+            }
+            .genre-info {
+                font-size: 1rem;
+            }
+            .recommend-item {
+                width: 100%;
+            }
+            .actions {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            .action-button, .home-button { /* 두 버튼 모두에 적용 */
+                width: 100%;
+            }
+        }
+        footer {
+            margin-top: auto;
+            padding: 1rem;
+            text-align: center;
+            color: #777;
+            font-size: 0.9em;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        footer p {
+            margin: 0.5rem 0;
+        }
+        footer a {
+            color: #0056b3;
+            text-decoration: none;
+        }
+        footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="main_landing_page.html" class="logo-link">
+            <img src="/static/logo.png" alt="로고" class="logo-image" onerror="this.src='https://placehold.co/50x50/cccccc/000000?text=Logo'; this.alt='로고 (이미지 없음)';" />
+        </a>
+    </header>
+
+    <main>
+        <div class="result-box">
+            <div class="genre-title">
+                <span id="predicted-genre-display-name"></span>
+                일 확률이 <span id="predicted-probability"></span>%입니다.
+            </div>
+            <div class="genre-info">
+                <h3><span id="predicted-genre-title"></span> 음악이란?</h3>
+                <p>- 기원: <span id="genre-origin"></span></p>
+                <p>- 주요 특징: <span id="genre-features"></span></p>
+                <p>- BPM 범위: <span id="genre-bpm-range"></span></p>
+            </div>
+            <div class="recommend-section">
+                </div>
+            <div class="actions">
+                <button class="action-button" onclick="location.href='genre_index.html'">다시 해보기</button>
+                <a href="main_landing_page.html" class="home-button">메인 페이지로 돌아가기</a>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 음잘딱깔센</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // URL 쿼리 파라미터에서 데이터 읽기
+            const urlParams = new URLSearchParams(window.location.search);
+            const genre = urlParams.get('genre');
+            const probability = urlParams.get('probability');
+            const title = urlParams.get('title');
+            const origin = urlParams.get('origin');
+            const features = urlParams.get('features');
+            const bpm_range = urlParams.get('bpm_range');
+
+            // HTML 요소 업데이트
+            document.getElementById('predicted-genre-display-name').textContent = title;
+            document.getElementById('predicted-probability').textContent = probability;
+            document.getElementById('predicted-genre-title').textContent = title;
+            document.getElementById('genre-origin').textContent = origin;
+            document.getElementById('genre-features').textContent = features;
+            document.getElementById('genre-bpm-range').textContent = bpm_range;
+
+            const recommendSectionElement = document.querySelector('.recommend-section');
+
+            // API의 GENRE_DETAILS와 동일한 songs 정보만 JavaScript 객체로 정의
+            const genreSongs = {
+                "blues": [
+                    { title: "The Thrill Is Gone", artist: "B.B. King", youtube: "https://www.youtube.com/watch?v=oica5jG7FpU" },
+                    { title: "Cross Road Blues", artist: "Robert Johnson", youtube: "https://www.youtube.com/watch?v=GsB_cGdgPTo" },
+                    { title: "난 아직도 널", artist: "작품 하나", youtube: "https://www.youtube.com/watch?v=axdggnTlCEA" }
+                ],
+                "classical": [
+                    { title: "Eine kleine Nachtmusik (A Little Night Music), K. 525", artist: "Mozart", youtube: "https://www.youtube.com/watch?v=oy2zDJPIgwc" },
+                    { title: "Symphony No. 5 in C minor, Op. 67 “Fate”", artist: "Beethoven", youtube: "https://www.youtube.com/watch?v=UgQarIwXVEA&list=RDUgQarIwXVEA&start_radio=1" },
+                    { title: "Swan Lake, Op. 20", artist: "Tchaikovsky", youtube: "https://www.youtube.com/watch?v=9cNQFB0TDfY" }
+                ],
+                "country": [
+                    { title: "Take Me Home, Country Roads", artist: "John Denver", youtube: "https://www.youtube.com/watch?v=1vrEljMfXYo" },
+                    { title: "Old Town Road", artist: "Lil Nas X ft. Billy Ray Cyrus", youtube: "https://www.youtube.com/watch?v=w2Ov5jzm3j8" },
+                    { title: "Friends in Low Places", artist: "Garth Brooks", youtube: "https://www.youtube.com/watch?v=mvCgSqPZ4EM" }
+                ],
+                "disco": [
+                    { title: "Stayin’ Alive", artist: "Bee Gees", youtube: "https://www.youtube.com/watch?v=fNFzfwLM72c" },
+                    { title: "I Will Survive", artist: "Gloria Gaynor", youtube: "https://www.youtube.com/watch?v=6dYWe1c3OyU&list=RD6dYWe1c3OyU&start_radio=1" },
+                    { title: "Funkytown", artist: "Lipps Inc.", youtube: "https://youtu.be/Z6dqIYKIBSU?si=yIJLXybL_zkwD_WI" }
+                ],
+                "hiphop": [
+                    { title: "Lose Yourself", artist: "Eminem", youtube: "https://www.youtube.com/watch?v=_Yhyp-_hX2s" },
+                    { title: "가라사대", artist: "비와이", youtube: "https://youtu.be/ckZor7HRU1E?si=Y9ZQ6HKFqt63wmxh" },
+                    { title: "Sicko Mode", artist: "Travis Scott ft. Drake", youtube: "https://www.youtube.com/watch?v=6ONRf7h3Mdk" }
+                ],
+                "jazz": [
+                    { title: "sing sing sing", artist: "Benny Goodman", youtube: "https://www.youtube.com/watch?v=r2S1I_ien6A&list=RDr2S1I_ien6A&start_radio=1" },
+                    { title: "La vie en rose", artist: "Louis Armstrong", youtube: "https://www.youtube.com/watch?v=9n-hyA2-FDg&list=RD9n-hyA2-FDg&start_radio=1" },
+                    { title: "In the mood", artist: "Glenn Miller", youtube: "https://www.youtube.com/watch?v=_CI-0E_jses&list=RD_CI-0E_jses&start_radio=1" }
+                ],
+                "metal": [
+                    { title: "You Really Got Me", artist: "The Kinks", youtube: "https://youtu.be/fTTsY-oz6Go?si=HrEe11NX1EFxNI8y" },
+                    { title: "Helter Skelter", artist: "The Beatles", youtube: "https://youtu.be/vWW2SzoAXMo?si=w41acoC2-Iyr3v9b" },
+                    { title: "Run To The Hills", artist: "Iron Maiden", youtube: "https://youtu.be/86URGgqONvA?si=xizLKw78FcZ1nT45" }
+                ],
+                "pop": [
+                    { title: "Shape of You", artist: "Ed Sheeran", youtube: "https://www.youtube.com/watch?v=JGwWNGJdvx8" },
+                    { title: "Dynamite", artist: "BTS", youtube: "https://www.youtube.com/watch?v=gdZLi9oWNZg" },
+                    { title: "Blinding Lights", artist: "The Weeknd", youtube: "https://www.youtube.com/watch?v=4NRXx6U8ABQ" }
+                ],
+                "reggae": [
+                    { title: "Ob-La-Di, Ob-La-Da", artist: "The Beatles", youtube: "https://youtu.be/vYEY5Jmz3pU?si=Z0cS_sLzWJiXPKa_" },
+                    { title: "Hold Me Tight", artist: "Johnny Nash", youtube: "https://youtu.be/x79a2qB5L-Q?si=4gvv2Jz9XqFdfFfj" },
+                    { title: "칵테일 사랑", artist: "마로니에", youtube: "https://youtu.be/D-tP16V17QI?si=uHdGlLkeM3Dd0HHx" }
+                ],
+                "rock": [
+                    { title: "Sk8er Boi", artist: "Avril Lavigne", youtube: "https://youtu.be/TIy3n2b7V9k?si=YnA-rO_BzMrQGVi2" },
+                    { title: "The House of the Rising Sun", artist: "The Animals", youtube: "https://www.youtube.com/watch?v=4-43lLKaqBQ" },
+                    { title: "스물다섯, 스물하나", artist: "자우림", youtube: "https://www.youtube.com/watch?v=7xobleMnKhU" }
+                ],
+                "기타": [] // '기타' 장르에 대한 추천곡은 없음
+            };
+
+            const songsToRecommend = genreSongs[genre] || genreSongs["기타"];
+            
+            if (songsToRecommend.length > 0) {
+                songsToRecommend.forEach((song, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'recommend-item';
+                    item.innerHTML = `
+                        <div>🎵 대표곡 ${index + 1}</div>
+                        <a href="${song.youtube}" target="_blank">${song.title} - ${song.artist}</a>
+                    `;
+                    recommendSectionElement.appendChild(item);
+                });
+                recommendSectionElement.style.display = 'flex';
+            } else {
+                recommendSectionElement.innerHTML = '<p>추천할 대표곡이 없습니다.</p>';
+                recommendSectionElement.style.display = 'block';
+            }
+        });
+
+        // 로고와 이미지 경로도 static 폴더로 변경
+        document.querySelector('.logo-link img').src = '/static/logo.png';
+        document.querySelector('.logo-image').onerror = function() {
+            this.src = 'https://placehold.co/50x50/cccccc/000000?text=Logo';
+            this.alt = '로고 (이미지 없음)';
+        };
+    </script>
+</body>
+</html>

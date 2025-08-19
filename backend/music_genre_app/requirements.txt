@@ -1,0 +1,7 @@
+Flask
+gunicorn
+librosa
+pandas
+numpy
+tensorflow
+scikit-learn==1.6.1
