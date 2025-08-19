@@ -6,7 +6,7 @@ import logging
 
 # 표준 상대 경로 임포트
 # MockMusicRecommender는 삭제되었으므로, MusicRecommender만 임포트합니다.
-from .music_recommender import MusicRecommender
+from music_recommender import MusicRecommender
 
 # Flask 앱 인스턴스 생성
 app = Flask(__name__)

@@ -1,4 +1,4 @@
-# music_recommender.py (수정 완료 - 확률 반영)
+# music_recommender.py (최종 수정 완료)
 
 import requests
 import random
@@ -7,20 +7,18 @@ import logging
 import time
 import json
 
-# 표준 상대 경로 임포트
-from .natural_language_processing.sentiment_analyzer import SentimentAnalyzer
-from .natural_language_processing.bpm_mapper import BPMMapper
+# ======================================================================
+# ★★★★★ 수정: 상대 경로 임포트('.')를 제거하여 절대 경로 임포트로 변경 ★★★★★
+# ======================================================================
+from natural_language_processing.sentiment_analyzer import SentimentAnalyzer
+from natural_language_processing.bpm_mapper import BPMMapper
+# ======================================================================
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
-# ======================================================================
-# 1. 수정: _calculate_relevance_score 함수에 sentiment_score 파라미터 추가
-# ======================================================================
+# _calculate_relevance_score 함수 (변경 없음)
 def _calculate_relevance_score(song_data: dict, target_features: dict, weights: dict, sentiment_score: float) -> float:
-    """
-    노래의 오디오 특성 점수와 감정 분석 점수를 결합하여 최종 관련성 점수를 계산합니다.
-    """
     audio_feature_score = 0.0
     def calculate_feature_score(song_value, min_target, max_target):
         if song_value is None: return 0.0
@@ -40,8 +38,6 @@ def _calculate_relevance_score(song_data: dict, target_features: dict, weights: 
     audio_feature_score += calculate_feature_score(song_data.get("danceability"), *target_features["danceability"]) * weights.get("danceability", 1.0)
     audio_feature_score += calculate_feature_score(song_data.get("acousticness"), *target_features["acousticness"]) * weights.get("acousticness", 1.0)
     
-    # 최종 점수 = (오디오 특성 점수의 합 / 가중치 합) * 감정 분석 점수
-    # 가중치 합으로 나누어 0~1 사이로 정규화한 뒤, 감정 점수를 곱합니다.
     total_weight = sum(weights.values())
     if total_weight == 0: return 0.0
 
@@ -50,13 +46,14 @@ def _calculate_relevance_score(song_data: dict, target_features: dict, weights: 
     
     return final_score
 
-# 감정 카테고리별 오디오 특성 가중치
+# emotion_weights 딕셔너리 (변경 없음)
 emotion_weights = {
     "긍정": {"bpm": 1.0, "danceability": 1.0, "acousticness": 0.2},
     "부정": {"bpm": 0.8, "danceability": 0.3, "acousticness": 1.0},
 }
 
 
+# MusicRecommender 클래스 (내부 로직 변경 없음)
 class MusicRecommender:
     def __init__(self, getsongbpm_api_key: str):
         self.sentiment_analyzer = SentimentAnalyzer()
@@ -83,7 +80,6 @@ class MusicRecommender:
             logging.error(f"Getsong API 호출 실패: {err}")
             return None
 
-    # 2. 수정: get_ranked_songs_by_audio_features에 sentiment_score 파라미터 추가
     def get_ranked_songs_by_audio_features(self, emotion_label: str, sentiment_score: float, limit: int = 3):
         logging.info(f"'{emotion_label}' 감정(점수: {sentiment_score:.2f})에 맞는 노래를 검색합니다...")
         target_features = self.bpm_mapper.get_audio_feature_ranges(emotion_label)
@@ -114,7 +110,6 @@ class MusicRecommender:
                     if not all(k in song_data for k in ["tempo", "danceability", "acousticness"]):
                         continue
 
-                    # 3. 수정: _calculate_relevance_score 호출 시 sentiment_score 전달
                     relevance_score = _calculate_relevance_score(song_data, target_features, current_weights, sentiment_score)
 
                     if relevance_score > 0.1:
@@ -134,16 +129,14 @@ class MusicRecommender:
         candidate_songs.sort(key=lambda x: x["relevance_score"], reverse=True)
         return candidate_songs[:limit]
 
-    # 4. 수정: recommend_music에서 sentiment_score를 추출하여 전달
     def recommend_music(self, user_text: str, limit: int = 3):
         logging.info(f"추천 프로세스 시작: '{user_text}'")
         sentiment_result = self.sentiment_analyzer.analyze_sentiment(user_text)
         user_emotion = sentiment_result["label"]
-        sentiment_score = sentiment_result["score"] # 감정 점수 추출
+        sentiment_score = sentiment_result["score"]
 
         target_audio_features = self.bpm_mapper.get_audio_feature_ranges(user_emotion)
         
-        # 감정 점수를 다음 함수로 전달
         recommended_songs = self.get_ranked_songs_by_audio_features(user_emotion, sentiment_score, limit=limit)
         
         return {
@@ -153,7 +146,7 @@ class MusicRecommender:
         }
 
 
-# 이 파일이 직접 실행될 때만 실행되는 테스트 코드
+# 테스트 코드 (변경 없음)
 if __name__ == "__main__":
     import os
     getsongbpm_api_key = os.environ.get("GETSONGBPM_API_KEY")
