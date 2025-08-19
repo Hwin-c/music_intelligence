@@ -40,4 +40,4 @@ ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 COPY . .
 
 # 서버 실행 명령어 (이전과 동일)
-CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 --timeout 0 --no-preload --graceful-timeout 60 app:app
+CMD ["gunicorn", "--bind", "0.0.0.0:$PORT", "--workers", "1", "--threads", "8", "--timeout", "0", "--no-preload", "--graceful-timeout", "60", "app:app"]
