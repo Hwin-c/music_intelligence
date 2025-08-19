@@ -1,25 +1,18 @@
 # app.py (수정 완료)
 import os
 from flask import Flask, request, jsonify
-from flask_cors import CORS # CORS 라이브러리 임포트
+from flask_cors import CORS
 import logging
 
-# ======================================================================
-# 1. 표준 상대 경로 임포트로 변경 (sys.path 조작 제거)
-# ======================================================================
-# '.'은 현재 패키지(music_recommendation_app)를 의미합니다.
-from .music_recommender import MusicRecommender, MockMusicRecommender
-# ======================================================================
+# 표준 상대 경로 임포트
+# MockMusicRecommender는 삭제되었으므로, MusicRecommender만 임포트합니다.
+from .music_recommender import MusicRecommender
 
-# Flask 앱 인스턴스 생성 (API 서버이므로 static/template 폴더 설정 불필요)
+# Flask 앱 인스턴스 생성
 app = Flask(__name__)
 
-# ======================================================================
-# 2. CORS 설정 (Vercel 프론트엔드와의 통신을 위해 필수)
-# ======================================================================
+# CORS 설정
 CORS(app, resources={r"/recommend": {"origins": "*"}})
-logging.info("CORS 설정 완료. /recommend 엔드포인트에 대해 모든 출처의 요청을 허용합니다.")
-# ======================================================================
 
 # 로깅 설정
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -28,14 +21,14 @@ logging.info("Music Recommendation App API 서버 초기화 시작.")
 # 추천기 인스턴스 생성
 recommender = None
 try:
+    # GETSONGBPM_API_KEY가 없으면 MusicRecommender 내부에서 처리하므로, 여기서 바로 생성합니다.
     GETSONGBPM_API_KEY = os.environ.get("GETSONGBPM_API_KEY")
-    if GETSONGBPM_API_KEY:
-        logging.info("GETSONGBPM_API_KEY가 설정되어 실제 API를 사용하는 추천기를 초기화합니다.")
-        recommender = MusicRecommender(GETSONGBPM_API_KEY)
-    else:
-        logging.warning("GETSONGBPM_API_KEY 환경 변수가 설정되지 않았습니다. Mock 추천기를 사용합니다.")
-        recommender = MockMusicRecommender()
-    logging.info(f"추천기 객체 타입: {type(recommender).__name__}")
+    if not GETSONGBPM_API_KEY:
+        logging.warning("GETSONGBPM_API_KEY 환경 변수가 설정되지 않았습니다. API 호출이 제한됩니다.")
+    
+    recommender = MusicRecommender(GETSONGBPM_API_KEY)
+    logging.info("추천기 객체(MusicRecommender)가 성공적으로 초기화되었습니다.")
+
 except Exception as e:
     logging.critical(f"추천기 객체 초기화 실패: {e}", exc_info=True)
     recommender = None # 초기화 실패 시 recommender를 None으로 설정
@@ -43,7 +36,6 @@ except Exception as e:
 @app.route('/healthz')
 def health_check():
     """헬스 체크 엔드포인트. 서비스 상태를 확인합니다."""
-    # 추천기 객체가 성공적으로 로드되었는지 확인
     if recommender:
         return "OK", 200
     else:
@@ -66,7 +58,6 @@ def recommend_music_endpoint():
     try:
         recommendation_info = recommender.recommend_music(user_text)
         
-        # 프론트엔드가 사용하기 좋은 형태로 최종 JSON 응답 구성
         response_data = {
             "user_message": user_text,
             "recommendation_info": recommendation_info
@@ -81,5 +72,4 @@ def recommend_music_endpoint():
 # 로컬 개발 환경에서 직접 실행할 때 사용됩니다.
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5001))
-    # Gunicorn이 프로덕션에서 실행하므로, 로컬 테스트 시 debug=False로 설정
     app.run(host='0.0.0.0', port=port, debug=False)
