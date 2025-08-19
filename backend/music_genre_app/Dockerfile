@@ -1,7 +1,7 @@
 # Dockerfile for music_genre_app
 
-# 1. 기반 이미지 설정: Python 3.9 슬림 버전을 사용합니다.
-FROM python:3.9-slim
+# 1. 기반 이미지 설정: Python 3.11 슬림 버전을 사용합니다.
+FROM python:3.11-slim
 
 # 2. 작업 디렉토리 설정: 컨테이너 내에서 /app 폴더를 기본 경로로 사용합니다.
 WORKDIR /app

@@ -16,8 +16,8 @@ COPY getsongbpm-client/ ./
 
 
 # --- 2단계: 최종 Python 애플리케이션 스테이지 ---
-# Python 3.9 슬림 버전을 최종 배포 이미지의 기반으로 사용합니다.
-FROM python:3.9-slim
+# Python 3.11 슬림 버전을 최종 배포 이미지의 기반으로 사용합니다.
+FROM python:3.11-slim
 
 # 작업 디렉토리를 설정합니다.
 WORKDIR /app
