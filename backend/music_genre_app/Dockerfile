@@ -39,5 +39,8 @@ ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 # 소스 코드 복사
 COPY . .
 
-# 서버 실행 명령어 (이전과 동일)
-CMD ["gunicorn", "--bind", "0.0.0.0:$PORT", "--workers", "1", "--threads", "8", "--timeout", "0", "--no-preload", "--graceful-timeout", "60", "app:app"]
+# 1. 수정: start.sh 스크립트에 실행 권한을 부여합니다.
+RUN chmod +x ./start.sh
+
+# 2. 수정: CMD 명령어를 start.sh 스크립트를 실행하도록 변경합니다.
+CMD ["./start.sh"]
