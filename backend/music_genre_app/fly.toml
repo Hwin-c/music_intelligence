@@ -17,7 +17,9 @@ primary_region = 'nrt'
   processes = ['app']
 
 [[vm]]
-  size = 'performance-2x'
-  memory = '4gb'
+  size = 'shared-cpu-1x'
+  memory = '2gb'
   cpu_kind = 'shared'
   cpus = 1
+
+swap_size_mb = 2048 # 스왑 메모리를 2GB로 늘림
