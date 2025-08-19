@@ -32,5 +32,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # 나머지 Python 소스 코드를 복사합니다.
 COPY . .
 
-# Gunicorn 웹 서버를 실행합니다.
-CMD ["gunicorn", "--bind", "0.0.0.0:$PORT", "--workers", "1", "--threads", "8", "--timeout", "0", "--no-preload", "--graceful-timeout", "60", "app:app"]
+# 1. 수정: start.sh 스크립트에 실행 권한을 부여합니다.
+RUN chmod +x ./start.sh
+
+# 2. 수정: CMD 명령어를 start.sh 스크립트를 실행하도록 변경합니다.
+CMD ["./start.sh"]
