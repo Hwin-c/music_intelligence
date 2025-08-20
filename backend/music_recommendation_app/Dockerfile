@@ -1,39 +1,30 @@
-# Dockerfile for music_recommendation_app (수정 완료)
+# ======================================================================
+# Music Genre API - Dockerfile (최종 수정안)
+# 성공한 music_recommendation_api와 동일한 단일 스테이지 빌드 방식으로 단순화하여
+# Render 플랫폼과의 호환성 문제를 해결합니다.
+# ======================================================================
 
-# --- 1단계: Node.js 클라이언트 준비 스테이지 ---
-FROM node:18-slim as node-builder
-
-# 수정: 작업 디렉토리 경로 변경
-WORKDIR /app/getsongbpm_client
-
-# 수정: 복사할 소스 경로 변경
-COPY getsongbpm_client/package*.json ./
-RUN npm install
-
-# 수정: 복사할 소스 경로 변경
-COPY getsongbpm_client/ ./
-
-
-# --- 2단계: 최종 Python 애플리케이션 스테이지 ---
+# --- 최종 애플리케이션 스테이지 ---
 FROM python:3.11-slim
 
+# 작업 디렉토리 설정
 WORKDIR /app
 
 # 시스템 의존성을 설치합니다.
-RUN apt-get update && apt-get install -y build-essential && rm -rf /var/lib/apt/lists/*
+# build-essential은 pip 설치 중 C 확장 모듈 컴파일에 필요할 수 있으며,
+# ffmpeg은 오디오 처리에 필수적입니다.
+RUN apt-get update && apt-get install -y build-essential ffmpeg && rm -rf /var/lib/apt/lists/*
 
-# 수정: 복사해 올 폴더 경로 변경
-COPY --from=node-builder /app/getsongbpm_client ./getsongbpm_client
-
-# Python 의존성을 설치합니다.
+# requirements.txt 복사 및 의존성 설치
+# 이 단계에서 최적화된 필수 라이브러리만 설치됩니다.
 COPY requirements.txt requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 나머지 Python 소스 코드를 복사합니다.
+# 소스 코드 복사
 COPY . .
 
-# 1. 수정: start.sh 스크립트에 실행 권한을 부여합니다.
+# start.sh 스크립트에 실행 권한 부여
 RUN chmod +x ./start.sh
 
-# 2. 수정: CMD 명령어를 start.sh 스크립트를 실행하도록 변경합니다.
+# start.sh 스크립트를 실행하여 서버 시작 (sh를 명시하여 안정성 확보)
 CMD ["sh", "./start.sh"]
