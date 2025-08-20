@@ -3,29 +3,90 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>장르 분석 결과 | 음잘딱깔센</title>
-    <!-- 수정: 상대 경로로 변경 -->
+    <title>장르 분류 결과 | PickNFit</title>
     <link rel="icon" href="static/favicon.ico" type="image/x-icon">
     <style>
-        /* CSS는 변경할 필요가 없으므로 생략합니다. */
-        body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(to bottom right, #a3c8f5, #4a90e2); color: #333; height: 100vh; display: flex; flex-direction: column; }
+        @font-face {
+            font-family: '양진체';
+            src: url('https://fastly.jsdelivr.net/gh/supernovice-lab/font@0.9/yangjin.woff') format('woff');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        body { 
+            margin: 0; 
+            font-family: '양진체', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #a8e0ff, #8ee3f5, #97b2ff, #c79aff); 
+            color: #333; 
+            min-height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+        }
+
         header { display: flex; align-items: center; padding: 1rem 2rem; }
         .logo-link { text-decoration: none; }
         .logo-image { height: 50px; }
         main { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 2rem; }
-        .result-box { background-color: #ffffffcc; padding: 3rem; border-radius: 20px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2); max-width: 800px; width: 90%; }
-        .genre-title { font-size: 2rem; margin-bottom: 1rem; }
+        .result-box { 
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 3rem; 
+            border-radius: 20px; 
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15); 
+            max-width: 800px; 
+            width: 90%; 
+        }
+        .genre-title { 
+            font-size: 2rem; 
+            margin-bottom: 1rem;
+            color: #2c3e50;
+        }
         .genre-info { font-size: 1.1rem; line-height: 1.6; margin-bottom: 2rem; text-align: left; }
+        .genre-info h3 { color: #2c3e50; }
         .genre-info strong { color: #0056b3; }
         .recommend-section { display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem; margin-top: 1.5rem; }
         .recommend-item { background: white; padding: 1rem; border-radius: 10px; width: 200px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center; }
         .recommend-item a { text-decoration: none; color: #4a90e2; font-weight: bold; display: block; margin-top: 0.5rem; }
         .actions { margin-top: 2rem; display: flex; gap: 1.5rem; justify-content: center; }
-        .action-button { padding: 0.8rem 2rem; font-size: 1rem; background-color: #4a90e2; color: white; border: none; border-radius: 10px; cursor: pointer; transition: background-color 0.3s ease; }
+
+        /* ★★★ 버튼 폰트 수정 ★★★ */
+        .action-button { 
+            padding: 0.8rem 2rem; 
+            font-size: 1rem; 
+            background-color: #4a90e2; 
+            color: white; 
+            border: none; 
+            border-radius: 10px; 
+            cursor: pointer; 
+            transition: background-color 0.3s ease; 
+            font-family: inherit; /* 부모(body)의 폰트를 상속받도록 설정 */
+        }
         .action-button:hover { background-color: #357abd; }
-        .home-button { padding: 0.8rem 2rem; font-size: 1rem; background-color: #6c757d; color: white; border: none; border-radius: 10px; cursor: pointer; transition: background-color 0.3s ease; text-decoration: none; display: flex; align-items: center; justify-content: center; }
+        .home-button { 
+            padding: 0.8rem 2rem; 
+            font-size: 1rem; 
+            background-color: #6c757d; 
+            color: white; 
+            border: none; 
+            border-radius: 10px; 
+            cursor: pointer; 
+            transition: background-color 0.3s ease; 
+            text-decoration: none; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            font-family: inherit; /* 부모(body)의 폰트를 상속받도록 설정 */
+        }
         .home-button:hover { background-color: #5a6268; }
-        footer { margin-top: auto; padding: 1rem; text-align: center; color: #777; font-size: 0.9em; width: 100%; box-sizing: border-box; }
+
+        footer { 
+            margin-top: auto; 
+            padding: 1rem; 
+            text-align: center; 
+            color: #2c3e50;
+            font-size: 0.9em; 
+            width: 100%; 
+            box-sizing: border-box; 
+        }
         footer p { margin: 0.5rem 0; }
         footer a { color: #0056b3; text-decoration: none; }
         footer a:hover { text-decoration: underline; }
@@ -35,7 +96,6 @@
 <body>
     <header>
         <a href="index.html" class="logo-link">
-            <!-- 수정: 상대 경로로 변경 -->
             <img src="static/logo.png" alt="로고" class="logo-image" onerror="this.src='https://placehold.co/50x50/cccccc/000000?text=Logo'; this.alt='로고 (이미지 없음)';" />
         </a>
     </header>
@@ -62,11 +122,10 @@
     </main>
 
     <footer>
-        <p>&copy; 2025 음잘딱깔센</p>
+        <p>&copy; 2025 PickNFit (음잘딱깔센)</p>
     </footer>
 
     <script>
-        // 이 Javascript 코드는 외부 API 호출이 없으므로 수정할 필요가 없습니다.
         document.addEventListener('DOMContentLoaded', function() {
             const urlParams = new URLSearchParams(window.location.search);
             const genre = urlParams.get('genre');
@@ -105,7 +164,6 @@
             }
         });
 
-        // 불필요한 JS 코드 제거
         document.querySelector('.logo-image').onerror = function() {
             this.src = 'https://placehold.co/50x50/cccccc/000000?text=Logo';
             this.alt = '로고 (이미지 없음)';

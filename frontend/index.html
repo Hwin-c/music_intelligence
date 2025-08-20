@@ -3,14 +3,20 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>음잘딱깔센 - 음악 서비스 통합</title>
-    <!-- 수정: 맨 앞 '/' 제거 -->
+    <title>PickNFit - AI 음악 추천 서비스</title>
     <link rel="icon" href="static/favicon.ico" type="image/x-icon">
     <style>
+        @font-face {
+            font-family: '양진체';
+            src: url('https://fastly.jsdelivr.net/gh/supernovice-lab/font@0.9/yangjin.woff') format('woff');
+            font-weight: normal;
+            font-style: normal;
+        }
+
         body {
             margin: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(to bottom right, #a3c8f5, #4a90e2);
+            font-family: '양진체', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #a8e0ff, #8ee3f5, #97b2ff, #c79aff);
             color: #333;
             height: 100vh;
             display: flex;
@@ -47,23 +53,24 @@
         }
 
         .main-logo {
-            width: 150px;
-            margin-bottom: 1rem;
+            width: 320px;
+            margin-bottom: 2rem;
         }
 
         .main-heading {
-            font-size: 3rem;
+            font-size: 2.25rem;
             font-weight: bold;
-            color: #333;
+            color: #2c3e50;
             margin: 0;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.15);
         }
 
         .tagline {
             font-size: 1.2rem;
-            margin: 1rem 0 2rem 0;
-            color: #555;
-            line-height: 1.6;
+            margin: 1.5rem 0 2.5rem 0;
+            color: #34495e;
+            line-height: 1.7;
+            max-width: 700px;
         }
 
         .feature-container {
@@ -75,10 +82,10 @@
         }
 
         .feature-card {
-            background-color: #ffffffcc;
+            background-color: rgba(255, 255, 255, 0.8);
             padding: 2rem;
             border-radius: 20px;
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
             text-decoration: none;
             color: #333;
             transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -91,7 +98,7 @@
 
         .feature-card:hover {
             transform: translateY(-10px);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
         }
 
         .feature-image {
@@ -111,7 +118,7 @@
             margin-top: auto;
             padding: 1rem;
             text-align: center;
-            color: #777;
+            color: #2c3e50;
             font-size: 0.9em;
             width: 100%;
             box-sizing: border-box;
@@ -120,7 +127,7 @@
             margin: 0.5rem 0;
         }
         footer a {
-            color: #0056b3;
+            color: #2980b9;
             text-decoration: none;
         }
         footer a:hover {
@@ -128,8 +135,11 @@
         }
 
         @media (max-width: 600px) {
+            .main-logo {
+                width: 240px;
+            }
             .main-heading {
-                font-size: 2.5rem;
+                font-size: 2rem;
             }
             .tagline {
                 font-size: 1rem;
@@ -149,44 +159,45 @@
     </header>
 
     <main>
-        <!-- 수정: 맨 앞 '/' 제거 -->
-        <img src="static/logo.png" alt="로고" class="main-logo" onerror="this.src='https://placehold.co/150x150/cccccc/000000?text=Logo'; this.alt='로고 (이미지 없음)';" />
-        <h1 class="main-heading">음잘딱깔센</h1>
+        <img src="static/logo.png" alt="로고" class="main-logo" onerror="this.src='https://placehold.co/320x220/cccccc/000000?text=Logo'; this.alt='로고 (이미지 없음)';" />
+        <h1 class="main-heading">PickNFit에 오신 것을 환영합니다!</h1>
         <p class="tagline">
-            음악 장르도 딱! 깔끔하게 분석하고, 당신의 감성에 딱! 맞는<br />
-            음악을 센스 있게 추천해주는 서비스
+            '음잘딱깔센(PickNFit)'?<br />
+            인공지능이 음악 장르 분류와 감정 분석 바탕 음악 추천 기능을<br />
+            사용자의 요청에 따라 알아서 잘 딱 깔끔하고 센스있게 처리한다는 뜻을 내포합니다.<br />
+            원하는 대로 음악 장르를 분류해보거나, 감정에 걸맞는 음악을 추천받아보세요!
         </p>
 
         <div class="feature-container">
             <a href="genre_index.html" class="feature-card">
-                <!-- 수정: 맨 앞 '/' 제거 -->
-                <img src="static/music_genre_classification.png" alt="음악 장르 분류" class="feature-image" onerror="this.src='https://placehold.co/250x250/cccccc/000000?text=Genre'; this.alt='장르 분류 이미지 없음';" />
+                <img src="static/music_genre_classification.png" alt="음악 장르 분류" class="feature-image" onerror="this.src='https.placehold.co/250x250/cccccc/000000?text=Genre'; this.alt='장르 분류 이미지 없음';" />
                 <div class="feature-text">음악 장르 분류</div>
             </a>
             <a href="recommend_index.html" class="feature-card">
-                <!-- 수정: 맨 앞 '/' 제거 -->
-                <img src="static/music_recommendation.png" alt="음악 추천" class="feature-image" onerror="this.src='https://placehold.co/250x250/cccccc/000000?text=Recommend'; this.alt='음악 추천 이미지 없음';" />
-                <div class="feature-text">음악 추천</div>
+                <!-- ★★★ 수정: 이미지 alt 텍스트 변경 ★★★ -->
+                <img src="static/music_recommendation.png" alt="감정 기반 음악 추천" class="feature-image" onerror="this.src='https.placehold.co/250x250/cccccc/000000?text=Recommend'; this.alt='음악 추천 이미지 없음';" />
+                <!-- ★★★ 수정: 버튼 텍스트 변경 ★★★ -->
+                <div class="feature-text">감정 기반 음악 추천</div>
             </a>
         </div>
     </main>
 
     <footer>
-        <p>&copy; 2025 음잘딱깔센</p>
+        <p>&copy; 2025 PickNFit (음잘딱깔센)</p>
     </footer>
 
     <script>
-        // 이 스크립트는 외부 API 호출이나 페이지 이동 로직이 없으므로 수정할 필요가 없습니다.
         document.querySelector('.main-logo').onerror = function() {
-            this.src = 'https://placehold.co/150x150/cccccc/000000?text=Logo';
+            this.src = 'https.placehold.co/320x220/cccccc/000000?text=Logo';
             this.alt = '로고 (이미지 없음)';
         };
         document.querySelector('img[alt="음악 장르 분류"]').onerror = function() {
-            this.src = 'https://placehold.co/250x250/cccccc/000000?text=Genre';
+            this.src = 'https.placehold.co/250x250/cccccc/000000?text=Genre';
             this.alt = '장르 분류 이미지 없음';
         };
-        document.querySelector('img[alt="음악 추천"]').onerror = function() {
-            this.src = 'https://placehold.co/250x250/cccccc/000000?text=Recommend';
+        // ★★★ 수정: onerror 스크립트의 alt 선택자도 함께 수정 ★★★
+        document.querySelector('img[alt="감정 기반 음악 추천"]').onerror = function() {
+            this.src = 'https.placehold.co/250x250/cccccc/000000?text=Recommend';
             this.alt = '음악 추천 이미지 없음';
         };
     </script>
