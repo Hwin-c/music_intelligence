@@ -7,6 +7,8 @@ __pycache__/
 # Virtual Environment
 venv/
 .venv/
+.env
+*/.env
 env/
 pip-selfcheck.json
 

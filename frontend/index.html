@@ -13,6 +13,14 @@
             font-style: normal;
         }
 
+        /* ★★★ 1. 새로운 'SUITE-Regular' 폰트 추가 ★★★ */
+        @font-face {
+            font-family: 'SUITE-Regular';
+            src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2304-2@1.0/SUITE-Regular.woff2') format('woff2');
+            font-weight: 400;
+            font-style: normal;
+        }
+
         body {
             margin: 0;
             font-family: '양진체', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -65,7 +73,9 @@
             text-shadow: 0 2px 4px rgba(0,0,0,0.15);
         }
 
+        /* ★★★ 2. 설명 문구(.tagline)에 새로운 폰트 적용 ★★★ */
         .tagline {
+            font-family: 'SUITE-Regular', sans-serif;
             font-size: 1.2rem;
             margin: 1.5rem 0 2.5rem 0;
             color: #34495e;
@@ -114,6 +124,7 @@
             text-align: center;
         }
 
+        /* ★★★ 2. 푸터(footer)에 새로운 폰트 적용 ★★★ */
         footer {
             margin-top: auto;
             padding: 1rem;
@@ -122,6 +133,7 @@
             font-size: 0.9em;
             width: 100%;
             box-sizing: border-box;
+            font-family: 'SUITE-Regular', sans-serif;
         }
         footer p {
             margin: 0.5rem 0;
@@ -174,9 +186,7 @@
                 <div class="feature-text">음악 장르 분류</div>
             </a>
             <a href="recommend_index.html" class="feature-card">
-                <!-- ★★★ 수정: 이미지 alt 텍스트 변경 ★★★ -->
                 <img src="static/music_recommendation.png" alt="감정 기반 음악 추천" class="feature-image" onerror="this.src='https.placehold.co/250x250/cccccc/000000?text=Recommend'; this.alt='음악 추천 이미지 없음';" />
-                <!-- ★★★ 수정: 버튼 텍스트 변경 ★★★ -->
                 <div class="feature-text">감정 기반 음악 추천</div>
             </a>
         </div>
@@ -195,7 +205,6 @@
             this.src = 'https.placehold.co/250x250/cccccc/000000?text=Genre';
             this.alt = '장르 분류 이미지 없음';
         };
-        // ★★★ 수정: onerror 스크립트의 alt 선택자도 함께 수정 ★★★
         document.querySelector('img[alt="감정 기반 음악 추천"]').onerror = function() {
             this.src = 'https.placehold.co/250x250/cccccc/000000?text=Recommend';
             this.alt = '음악 추천 이미지 없음';

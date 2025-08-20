@@ -13,6 +13,14 @@
             font-style: normal;
         }
 
+        /* ★★★ 1. 새로운 'SUITE-Regular' 폰트 추가 ★★★ */
+        @font-face {
+            font-family: 'SUITE-Regular';
+            src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2304-2@1.0/SUITE-Regular.woff2') format('woff2');
+            font-weight: 400;
+            font-style: normal;
+        }
+
         body { 
             margin: 0; 
             font-family: '양진체', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
@@ -47,8 +55,12 @@
             width: 90%; 
             max-width: 500px; 
         }
-        input[type="file"] { font-size: 1.2rem; padding: 10px; border: 1px solid #ccc; border-radius: 8px; width: calc(100% - 20px); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .predict-button { background-color: #4a90e2; color: white; font-size: 1.5rem; padding: 1rem 3rem; border: none; border-radius: 12px; cursor: pointer; transition: background-color 0.3s ease; width: 100%; }
+        /* ★★★ 2. 작은 글씨 폰트 적용 ★★★ */
+        .upload-box h2 {
+            font-family: 'SUITE-Regular', sans-serif;
+        }
+        input[type="file"] { font-size: 1.2rem; padding: 10px; border: 1px solid #ccc; border-radius: 8px; width: calc(100% - 20px); font-family: 'SUITE-Regular', sans-serif; }
+        .predict-button { background-color: #4a90e2; color: white; font-size: 1.5rem; padding: 1rem 3rem; border: none; border-radius: 12px; cursor: pointer; transition: background-color 0.3s ease; width: 100%; font-family: inherit; }
         .predict-button:hover { background-color: #357abd; }
         #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); display: none; justify-content: center; align-items: center; flex-direction: column; z-index: 1000; color: white; }
         .spinner { width: 80px; height: 80px; border: 10px solid rgba(255, 255, 255, 0.3); border-top: 10px solid white; border-radius: 50%; animation: spin 1s linear infinite; }
@@ -56,11 +68,10 @@
         .loading-text { font-size: 2rem; font-weight: bold; margin-top: 2rem; animation: blink 1.5s infinite; }
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         .audio-player-section { margin-top: 1.5rem; width: 100%; text-align: left; color: #555; }
-        .audio-player-section h3 { margin-top: 0; margin-bottom: 0.5rem; font-size: 1.1rem; }
+        .audio-player-section h3 { margin-top: 0; margin-bottom: 0.5rem; font-size: 1.1rem; font-family: 'SUITE-Regular', sans-serif; }
         #audio-preview { width: 100%; border-radius: 8px; background-color: #f0f0f0; }
-        #error-message-display { color: #d9534f; background-color: #f2dede; border: 1px solid #ebccd1; padding: 1rem; margin-top: 1.5rem; border-radius: 8px; font-weight: bold; display: none; width: 90%; max-width: 500px; text-align: center; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        #error-message-display { color: #d9534f; background-color: #f2dede; border: 1px solid #ebccd1; padding: 1rem; margin-top: 1.5rem; border-radius: 8px; font-weight: bold; display: none; width: 90%; max-width: 500px; text-align: center; font-family: 'SUITE-Regular', sans-serif; }
         
-        /* ★★★ 안내 문구 폰트 유지 ★★★ */
         #file-format-info { 
             color: #007bff; 
             background-color: #e7f3ff; 
@@ -72,12 +83,11 @@
             text-align: center; 
             width: 90%; 
             max-width: 500px;
-            /* 기본 시스템 폰트를 명시적으로 지정하여 '양진체' 상속을 막음 */
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            font-family: 'SUITE-Regular', sans-serif; 
         }
         
         .navigation-buttons { margin-top: 2rem; display: flex; gap: 1.5rem; justify-content: center; width: 100%; max-width: 500px; }
-        .nav-button { padding: 0.8rem 2rem; font-size: 1rem; background-color: #6c757d; color: white; border: none; border-radius: 10px; cursor: pointer; transition: background-color 0.3s ease; flex: 1; text-decoration: none; display: flex; align-items: center; justify-content: center; }
+        .nav-button { padding: 0.8rem 2rem; font-size: 1rem; background-color: #6c757d; color: white; border: none; border-radius: 10px; cursor: pointer; transition: background-color 0.3s ease; flex: 1; text-decoration: none; display: flex; align-items: center; justify-content: center; font-family: inherit; }
         .nav-button:hover { background-color: #5a6268; }
         footer { 
             margin-top: auto; 
@@ -87,6 +97,7 @@
             font-size: 0.9em; 
             width: 100%; 
             box-sizing: border-box; 
+            font-family: 'SUITE-Regular', sans-serif;
         }
         footer p { margin: 0.5rem 0; }
         footer a { color: #0056b3; text-decoration: none; }
@@ -102,7 +113,6 @@
     </header>
 
     <main>
-        <!-- ★★★ 헤드라인 텍스트 수정 ★★★ -->
         <h1 class="main-heading">음악 장르 분류</h1>
         <div class="upload-box">
             <img src="static/music_genre_classification.png" alt="음악 장르 분류 이미지" style="width: 100%; max-width: 300px; border-radius: 15px; margin-bottom: 1rem;" onerror="this.src='https://placehold.co/300x200/cccccc/000000?text=Genre+Image'; this.alt='음악 장르 분류 이미지 (없음)';">
@@ -138,7 +148,7 @@
     </footer>
 
     <script>
-        const API_ENDPOINT = 'https://music-genre-api.onrender.com/predict';
+        const API_ENDPOINT = 'http://127.0.0.1:5000/predict';
 
         const uploadForm = document.getElementById('upload-form');
         const loadingOverlay = document.getElementById('loading-overlay');

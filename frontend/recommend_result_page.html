@@ -6,7 +6,6 @@
     <title>음악 추천 결과 | PickNFit</title>
     <link rel="icon" href="static/favicon.ico" type="image/x-icon">
     <style>
-        /* ★★★ 1. 폰트 변경: '양진체' 폰트 적용 ★★★ */
         @font-face {
             font-family: '양진체';
             src: url('https://fastly.jsdelivr.net/gh/supernovice-lab/font@0.9/yangjin.woff') format('woff');
@@ -14,11 +13,17 @@
             font-style: normal;
         }
 
+        /* ★★★ 1. 새로운 'SUITE-Regular' 폰트 추가 ★★★ */
+        @font-face {
+            font-family: 'SUITE-Regular';
+            src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2304-2@1.0/SUITE-Regular.woff2') format('woff2');
+            font-weight: 400;
+            font-style: normal;
+        }
+
         body { 
             margin: 0; 
-            /* ★★★ 1. 폰트 변경: body 전체에 '양진체'를 기본 폰트로 설정 ★★★ */
             font-family: '양진체', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            /* ★★★ 2. 배경 변경: 몽환적인 푸른 계열 그라데이션 적용 ★★★ */
             background: linear-gradient(135deg, #a8e0ff, #8ee3f5, #97b2ff, #c79aff); 
             color: #333; 
             min-height: 100vh; 
@@ -31,26 +36,27 @@
         .logo-image { height: 50px; }
         main { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 2rem; }
         .result-box { 
-            background-color: rgba(255, 255, 255, 0.8); /* 배경에 맞춰 투명도 조정 */
+            background-color: rgba(255, 255, 255, 0.8);
             padding: 3rem; 
             border-radius: 20px; 
             box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15); 
             max-width: 800px; 
             width: 90%; 
         }
-        .user-message { font-size: 1.4rem; font-style: italic; margin-bottom: 1rem; color: #555; }
+        /* ★★★ 2. 작은 글씨 폰트 적용 ★★★ */
+        .user-message { font-size: 1.4rem; font-style: italic; margin-bottom: 1rem; color: #555; font-family: 'SUITE-Regular', sans-serif;}
         .response-text { font-size: 1.6rem; font-weight: bold; margin-bottom: 1rem; color: #2c3e50; }
-        .recommendation-explanation { font-size: 1.1rem; color: #34495e; margin-bottom: 2rem; line-height: 1.5; text-align: left; padding: 0 1rem; }
+        .recommendation-explanation { font-size: 1.1rem; color: #34495e; margin-bottom: 2rem; line-height: 1.5; text-align: left; padding: 0 1rem; font-family: 'SUITE-Regular', sans-serif;}
         .recommendation-explanation strong { color: #0056b3; }
         .recommendation-explanation ul { list-style: none; padding-left: 0; margin-top: 0.5rem; }
         .recommendation-explanation ul li { margin-bottom: 0.3rem; }
-        .music-list { display: flex; flex-direction: column; gap: 1.5rem; margin-bottom: 2rem; }
+        .music-list { display: flex; flex-direction: column; gap: 1.5rem; margin-bottom: 2rem; font-family: 'SUITE-Regular', sans-serif;}
         .music-item { display: flex; align-items: flex-start; background-color: #f9f9f9; padding: 1rem; border-radius: 10px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); text-align: left; position: relative; }
         .music-item .rank-number { display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.8rem; color: #4a90e2; margin-right: 15px; flex-shrink: 0; width: 40px; height: 40px; }
         .music-item .rank-image { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
         .music-item .details { flex-grow: 1; }
-        .music-item .title-label { font-weight: bold; font-size: 1.5rem; color: #333; margin-right: 0.5rem; }
-        .music-item .title-link { font-weight: bold; font-size: 1.5rem; color: #0056b3; text-decoration: none; display: inline; }
+        .music-item .title-label { font-size: 1.5rem; color: #333; margin-right: 0.5rem; font-family: '양진체', sans-serif;}
+        .music-item .title-link { font-size: 1.5rem; color: #0056b3; text-decoration: none; display: inline; font-family: '양진체', sans-serif;}
         .music-item .title-link:hover { text-decoration: underline; }
         .music-item .artist-name { font-size: 1.1rem; color: #333; margin-bottom: 0.2rem; }
         .music-item .genre-text { font-size: 0.95rem; color: #666; margin-bottom: 0.2rem; }
@@ -60,7 +66,7 @@
         .audio-features .feature-bar-container { background-color: #e0e0e0; border-radius: 5px; height: 10px; overflow: hidden; }
         .audio-features .feature-bar { height: 100%; background-color: #4a90e2; border-radius: 5px; transition: width 0.5s ease-out; }
         .audio-features .feature-value { font-weight: bold; text-align: left; min-width: 30px; }
-        .score-badge { position: absolute; top: 10px; right: 10px; background-color: #28a745; color: white; padding: 0.3rem 0.6rem; border-radius: 15px; font-size: 0.8rem; font-weight: bold; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); }
+        .score-badge { position: absolute; top: 10px; right: 10px; background-color: #28a745; color: white; padding: 0.3rem 0.6rem; border-radius: 15px; font-size: 0.8rem; font-weight: bold; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); font-family: 'SUITE-Regular', sans-serif;}
         .actions { display: flex; gap: 1.5rem; justify-content: center; }
         .action-button { padding: 0.8rem 2rem; font-size: 1rem; background-color: #4a90e2; color: white; border: none; border-radius: 10px; cursor: pointer; transition: background-color 0.3s ease; font-family: inherit; }
         .action-button:hover { background-color: #357abd; }
@@ -70,10 +76,11 @@
             margin-top: auto; 
             padding: 1rem; 
             text-align: center; 
-            color: #2c3e50; /* 가독성을 위한 색상 조정 */
+            color: #2c3e50;
             font-size: 0.9em; 
             width: 100%; 
             box-sizing: border-box; 
+            font-family: 'SUITE-Regular', sans-serif;
         }
         footer p { margin: 0.5rem 0; }
         footer a { color: #2980b9; text-decoration: none; }
