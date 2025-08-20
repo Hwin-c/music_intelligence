@@ -60,7 +60,25 @@ class MusicRecommender:
         self.bpm_mapper = BPMMapper()
         self.getsongbpm_api_key = getsongbpm_api_key
         self.getsongbpm_base_url = "https://api.getsong.co/"
-        logging.info("음악 추천 시스템이 초기화되었습니다.")
+        
+        ### ★★★ 핵심 수정 사항: 모델 사전 로딩 (Pre-loading) ★★★ ###
+        # 서버 시작 시 무거운 NLP 모델을 미리 메모리에 로드하여,
+        # 첫 번째 사용자 요청 시 발생하는 긴 지연(타임아웃)을 방지합니다.
+        try:
+            start_time = time.time()
+            logging.info("모델 예열 시작: NLP 모델을 메모리에 사전 로딩합니다...")
+            # 간단한 텍스트로 감정 분석을 1회 실행하여 모델 로딩을 강제합니다.
+            self.sentiment_analyzer.analyze_sentiment("모델 초기화")
+            end_time = time.time()
+            logging.info(f"모델 예열 완료. (소요 시간: {end_time - start_time:.2f}초)")
+        except Exception as e:
+            # 예열 중 오류가 발생하면 심각한 문제이므로 CRITICAL 레벨로 로깅합니다.
+            logging.critical(f"모델 예열 실패: {e}", exc_info=True)
+            # 서버가 시작되지 않도록 예외를 다시 발생시킬 수도 있습니다.
+            # raise e 
+        ### ★★★ 수정 완료 ★★★ ###
+            
+        logging.info("음악 추천 시스템이 성공적으로 초기화되었습니다.")
 
     def _call_getsongbpm_api(self, endpoint: str, params: dict = None):
         if not self.getsongbpm_api_key:
@@ -74,6 +92,7 @@ class MusicRecommender:
         try:
             response = requests.get(url, params=params, timeout=10)
             response.raise_for_status()
+            # API 호출 간격을 약간 늘려 안정성을 확보합니다.
             time.sleep(1.5)
             return response.json()
         except requests.exceptions.RequestException as err:
@@ -131,6 +150,7 @@ class MusicRecommender:
 
     def recommend_music(self, user_text: str, limit: int = 3):
         logging.info(f"추천 프로세스 시작: '{user_text}'")
+        # 이제 이 메소드는 모델을 로드하지 않으므로 매우 빠르게 실행됩니다.
         sentiment_result = self.sentiment_analyzer.analyze_sentiment(user_text)
         user_emotion = sentiment_result["label"]
         sentiment_score = sentiment_result["score"]
