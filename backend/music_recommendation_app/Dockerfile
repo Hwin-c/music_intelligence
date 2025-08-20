@@ -36,4 +36,4 @@ COPY . .
 RUN chmod +x ./start.sh
 
 # 2. 수정: CMD 명령어를 start.sh 스크립트를 실행하도록 변경합니다.
-CMD ["./start.sh"]
+CMD ["sh", "./start.sh"]
